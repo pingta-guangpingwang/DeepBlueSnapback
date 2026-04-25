@@ -132,21 +132,73 @@ dbgvs git-push <path> -m "sync message"     # 推送到远程
 dbgvs git-push <path> -m "msg" -u user -t TOKEN
 ```
 
-## AI 智能体接入
+## AI 工作小世界
 
-每个由 DBGODVS 管理的项目目录下都会自动生成 `DBGODVS-GUIDE.md`，其中包含：
-- 项目基本信息（名称、路径、仓库路径）
-- 常用 CLI 命令速查
-- 版本管理操作指引
+DBGODVS 的核心理念：**让 AI 放开手脚开发，每一行代码都可追溯、可回滚。**
+
+<img src="yanshi.png" alt="DBGODVS AI 工作小世界演示" width="100%" />
+
+### AI 智能体接入
+
+每个由 DBGODVS 管理的项目目录下都会自动生成两份文档：
+
+| 文件 | 用途 |
+|------|------|
+| `DBGODVS-GUIDE.md` | CLI 命令速查、版本操作指引、故障恢复 |
+| `DBGODVS-REQUIREMENTS.md` | 项目需求跟踪、功能实现状态、AI 工作流规范 |
+
+### AI 自动权限配置
+
+AI 首次进入项目时，会自动在 `.claude/settings.json` 中配置以下权限，无需反复弹授权：
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(dbgvs *)", "Bash(npm *)", "Bash(git *)", "Bash(node *)",
+      "Read", "Glob", "Grep", "Edit", "Write"
+    ]
+  }
+}
+```
+
+若 AI 无法自动创建配置，会主动提示用户手动授权；用户不同意则正常继续，不影响功能。
 
 ### AI 智能体推荐工作流
 
-1. **了解项目**: 读取项目目录下的 `DBGODVS-GUIDE.md`
-2. **开始工作前**: `dbvs status <path>` 检查当前变更
-3. **修改文件后**: `dbvs commit <path> -m "描述变更内容"`
-4. **查看差异**: `dbvs diff <path> -f <file>` 查看具体变更
-5. **回滚误操作**: `dbvs rollback <path> -v <version>`
-6. **远程同步**: `dbvs git-pull <path>` / `dbvs git-push <path> -m "msg"`
+1. **了解项目**: 读取 `DBGODVS-GUIDE.md` 和 `DBGODVS-REQUIREMENTS.md`
+2. **开始工作前**: `dbgvs status <path>` 检查当前变更
+3. **每完成一个功能/修复**: 立即 `dbgvs commit <path> -m "feat: 描述"` — 不要积累变更
+4. **查看差异**: `dbgvs diff <path> -f <file>` 查看具体变更
+5. **回滚误操作**: `dbgvs rollback <path> -v <version>`
+6. **远程同步**: `dbgvs git-pull <path>` / `dbgvs git-push <path> -m "msg"`
+
+### AI 语义化提交规范
+
+| 类型 | 格式 | 示例 |
+|------|------|------|
+| 新功能 | `feat: 描述` | `feat: 新增用户登录页面` |
+| 修复 | `fix: 描述` | `fix: 修复文件上传失败问题` |
+| 重构 | `refactor: 描述` | `refactor: 重构数据库连接模块` |
+| 文档 | `docs: 描述` | `docs: 更新 API 文档` |
+| 测试 | `test: 描述` | `test: 新增订单模块单元测试` |
+
+### AI 提交追踪
+
+AI 提交时可标记来源，便于区分人工与 AI 操作：
+
+```bash
+dbgvs commit <path> --message "feat: 新增功能" \
+  --ai claude-code \
+  --session <会话ID> \
+  --summary "本次变更的目的和范围"
+```
+
+按 AI 会话批量回滚：
+
+```bash
+dbgvs rollback-ai <path> --session <会话ID>
+```
 
 ## 忽略规则
 

@@ -142,21 +142,73 @@ dbgvs git-push <path> -m "sync message"     # Push to remote
 dbgvs git-push <path> -m "msg" -u user -t TOKEN
 ```
 
-## AI Agent Integration
+## AI Workspace
 
-Every project managed by DBGODVS automatically generates a `DBGODVS-GUIDE.md` containing:
-- Project metadata (name, path, repository path)
-- CLI command quick reference
-- Version control operation guidelines
+DBGODVS core philosophy: **Let AI develop freely — every line of code is traceable and rollbackable.**
+
+<img src="yanshi.png" alt="DBGODVS AI Workspace Demo" width="100%" />
+
+### AI Agent Integration
+
+Every project managed by DBGODVS automatically generates two documents:
+
+| File | Purpose |
+|------|---------|
+| `DBGODVS-GUIDE.md` | CLI quick reference, version control guide, disaster recovery |
+| `DBGODVS-REQUIREMENTS.md` | Project requirements tracking, feature status, AI workflow spec |
+
+### Auto Permission Configuration
+
+On first entering a project, AI agents auto-configure `.claude/settings.json` to avoid repeated authorization prompts:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(dbgvs *)", "Bash(npm *)", "Bash(git *)", "Bash(node *)",
+      "Read", "Glob", "Grep", "Edit", "Write"
+    ]
+  }
+}
+```
+
+If auto-configuration fails, the AI will prompt the user to manually authorize. If declined, work continues normally.
 
 ### Recommended AI Agent Workflow
 
-1. **Understand the project**: Read `DBGODVS-GUIDE.md` in the project directory
-2. **Before starting work**: `dbvs status <path>` to check current changes
-3. **After modifying files**: `dbvs commit <path> -m "Describe changes"`
-4. **View diffs**: `dbvs diff <path> -f <file>` to inspect specific changes
-5. **Undo mistakes**: `dbvs rollback <path> -v <version>`
-6. **Remote sync**: `dbvs git-pull <path>` / `dbvs git-push <path> -m "msg"`
+1. **Understand the project**: Read `DBGODVS-GUIDE.md` and `DBGODVS-REQUIREMENTS.md`
+2. **Before starting work**: `dbgvs status <path>` to check current changes
+3. **After each feature/fix**: Immediately `dbgvs commit <path> -m "feat: description"` — don't accumulate changes
+4. **View diffs**: `dbgvs diff <path> -f <file>` to inspect specific changes
+5. **Undo mistakes**: `dbgvs rollback <path> -v <version>`
+6. **Remote sync**: `dbgvs git-pull <path>` / `dbgvs git-push <path> -m "msg"`
+
+### Semantic Commit Convention
+
+| Type | Format | Example |
+|------|--------|---------|
+| Feature | `feat: description` | `feat: add user login page` |
+| Fix | `fix: description` | `fix: resolve file upload failure` |
+| Refactor | `refactor: description` | `refactor: restructure DB connection module` |
+| Docs | `docs: description` | `docs: update API documentation` |
+| Test | `test: description` | `test: add order module unit tests` |
+
+### AI Commit Tracking
+
+Tag commits with AI source for easy human/AI distinction:
+
+```bash
+dbgvs commit <path> --message "feat: add feature" \
+  --ai claude-code \
+  --session <session-id> \
+  --summary "Purpose and scope of this change"
+```
+
+Rollback all commits from a specific AI session:
+
+```bash
+dbgvs rollback-ai <path> --session <session-id>
+```
 
 ## Ignore Rules
 
