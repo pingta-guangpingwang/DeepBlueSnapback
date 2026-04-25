@@ -769,6 +769,33 @@ export default function RepoList() {
                       重新查看新手引导
                     </button>
                   </div>
+
+                  {/* 关于 */}
+                  <div style={{
+                    marginTop: '28px', padding: '16px', background: '#f8fafc',
+                    borderRadius: '8px', border: '1px solid #e5e7eb',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '16px', fontWeight: 700, color: '#1f2937' }}>DBVS</span>
+                        <span style={{
+                          fontSize: '11px', fontWeight: 600, color: '#fff',
+                          background: '#4f46e5', padding: '1px 8px', borderRadius: '10px',
+                        }}>v1.0.0</span>
+                      </div>
+                      <span style={{ fontSize: '11px', color: '#9ca3af' }}>MIT License</span>
+                    </div>
+                    <p style={{ margin: '8px 0 10px', fontSize: '12px', color: '#6b7280', lineHeight: 1.5 }}>
+                      DeepBlue Version System — 本地版本管理工具<br />
+                      给 AI 套上缰绳，让每一次代码生成都有迹可循
+                    </p>
+                    <div style={{ display: 'flex', gap: '16px', fontSize: '11px', color: '#9ca3af', flexWrap: 'wrap' }}>
+                      <span>作者：王广平</span>
+                      <span>Electron 28 + React 19</span>
+                      <span>SVN 集中式架构</span>
+                      <span>GUI + CLI</span>
+                    </div>
+                  </div>
                 </div>
               )}
 
