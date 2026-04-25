@@ -835,6 +835,61 @@ dbgvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
 
 > "请打开 DBGODVS 桌面应用，在历史面板中查看版本对比详情。"
 
+## AI 工作小世界可视化
+
+DBGODVS 内置"AI 工作小世界"标签页，可将 AI 的开发工作可视化为游戏场景。打开项目即自动生成空场景（基于项目目录结构），AI 在项目根目录写入 \`dbvs-visual.json\` 文件后自动同步丰富数据。
+
+### 激活方式
+
+在项目根目录创建 \`dbvs-visual.json\`，格式如下：
+
+\`\`\`json
+{
+  "schema": 1,
+  "timestamp": "2025-01-01T00:00:00.000Z",
+  "character": {
+    "name": "Claude",
+    "position": "src/components",
+    "action": "fighting",
+    "hp": 100,
+    "level": 1
+  },
+  "modules": [
+    { "id": "src/components", "name": "Components", "status": "active" },
+    { "id": "src/utils", "name": "Utils", "status": "empty" }
+  ],
+  "tasks": [
+    {
+      "id": "task-1",
+      "module": "src/components",
+      "description": "修复登录bug",
+      "files": ["Login.tsx"],
+      "progress": 60,
+      "status": "active",
+      "difficulty": "medium",
+      "reward": 50
+    }
+  ],
+  "stats": {
+    "gold": 0,
+    "tasksCompleted": 0,
+    "tasksFailed": 0,
+    "linesChanged": 0,
+    "filesModified": 0
+  }
+}
+\`\`\`
+
+### 字段说明
+
+- **character**: AI 角色，position 指向 modules 中的 id
+- **modules**: 项目模块（= 房间），status: empty/active/complete/building
+- **tasks**: AI 任务（= 怪物），progress 100=满血未完成 → 0=击败(完成)
+- **difficulty**: easy=🦇 medium=👹 hard=🐉
+- **action**: idle/walking/fighting/celebrating/resting
+
+AI 每完成一个任务或切换模块时更新此文件即可。
+
 ## 更多信息
 
 - DBGODVS 技术文档：请参阅 DBGODVS 安装目录下的 README.md
@@ -846,7 +901,7 @@ dbgvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
 async function ensureProjectGuide(projectPath: string, projectName: string, repoPath: string): Promise<void> {
   const guidePath = path.join(projectPath, 'DBGODVS-GUIDE.md')
   const newContent = generateDBGODVSGuide(projectName, projectPath, repoPath)
-  const versionTag = '<!-- DBGODVS-GUIDE-VERSION: 3 -->'
+  const versionTag = '<!-- DBGODVS-GUIDE-VERSION: 4 -->'
 
   if (await fs.pathExists(guidePath)) {
     const existing = await fs.readFile(guidePath, 'utf-8')
@@ -1336,7 +1391,7 @@ ipcMain.handle('dbgvs:ensure-project-docs', async (_, rootPath: string) => {
           if (!beforeExists) updated++
           else {
             const content = await fs.readFile(path.join(wc.path, 'DBGODVS-GUIDE.md'), 'utf-8')
-            if (content.includes('<!-- DBGODVS-GUIDE-VERSION: 3 -->')) updated++
+            if (content.includes('<!-- DBGODVS-GUIDE-VERSION: 4 -->')) updated++
           }
         }
       }
@@ -1344,6 +1399,94 @@ ipcMain.handle('dbgvs:ensure-project-docs', async (_, rootPath: string) => {
     return { success: true, added: updated, total: registry.reduce((s, e) => s + e.workingCopies.length, 0) }
   } catch (error) {
     return { success: false, message: String(error) }
+  }
+})
+
+// AI Workshop: read visual state JSON from project root
+ipcMain.handle('ai-workshop:read-visual-file', async (_, projectPath: string) => {
+  try {
+    const filePath = path.join(projectPath, 'dbvs-visual.json')
+    if (!(await fs.pathExists(filePath))) {
+      return { success: false }
+    }
+    const content = await fs.readFile(filePath, 'utf-8')
+    return { success: true, content }
+  } catch {
+    return { success: false }
+  }
+})
+
+ipcMain.handle('ai-workshop:scan-project-dirs', async (_, projectPath: string) => {
+  try {
+    const srcPath = path.join(projectPath, 'src')
+    const scanPath = (await fs.pathExists(srcPath)) ? srcPath : projectPath
+    const entries = await fs.readdir(scanPath, { withFileTypes: true })
+    const dirs = entries
+      .filter(e => e.isDirectory() && !e.name.startsWith('.') && e.name !== 'node_modules')
+      .map(e => ({ id: (scanPath === srcPath ? 'src/' : '') + e.name, name: e.name }))
+    return { success: true, dirs }
+  } catch {
+    return { success: false, dirs: [] }
+  }
+})
+
+// AI Workshop: ensure 3D model assets exist, download if missing
+ipcMain.handle('workshop:ensure-assets', async () => {
+  const assetsDir = path.join(process.cwd(), 'public', 'assets', 'models')
+  const ual1Path = path.join(assetsDir, 'ual1.glb')
+  const UAL1_URL = 'https://github.com/anthropics/ual-mannequin/releases/download/v1/ual1.glb'
+  const UAL1_FALLBACK_URL = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r170/examples/models/gltf/Soldier.glb'
+
+  try {
+    if (await fs.pathExists(ual1Path)) {
+      const stat = await fs.stat(ual1Path)
+      if (stat.size > 100000) return { ready: true, downloaded: false }
+    }
+
+    await fs.ensureDir(assetsDir)
+    console.log('[Workshop] Downloading 3D model assets...')
+
+    // Try primary URL, fallback to a smaller model
+    const https = await import('https')
+    const http = await import('http')
+
+    const downloadFile = (url: string, dest: string): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        const mod = url.startsWith('https') ? https : http
+        mod.get(url, { timeout: 30000 }, (response) => {
+          if (response.statusCode === 301 || response.statusCode === 302) {
+            const location = response.headers.location
+            if (location) return downloadFile(location, dest).then(resolve, reject)
+          }
+          if (response.statusCode !== 200) {
+            return reject(new Error(`HTTP ${response.statusCode}`))
+          }
+          const stream = fs.createWriteStream(dest)
+          response.pipe(stream)
+          stream.on('finish', () => { stream.close(); resolve() })
+          stream.on('error', reject)
+        }).on('error', reject)
+          .on('timeout', (req: any) => { req.destroy(); reject(new Error('timeout')) })
+      })
+    }
+
+    try {
+      await downloadFile(UAL1_URL, ual1Path)
+      console.log('[Workshop] ual1.glb downloaded from primary URL')
+    } catch (primaryErr) {
+      console.warn('[Workshop] Primary download failed, trying fallback:', primaryErr)
+      try {
+        await downloadFile(UAL1_FALLBACK_URL, ual1Path)
+        console.log('[Workshop] Fallback model downloaded')
+      } catch (fallbackErr) {
+        console.warn('[Workshop] All downloads failed:', fallbackErr)
+        return { ready: false, downloaded: false, error: String(fallbackErr) }
+      }
+    }
+
+    return { ready: true, downloaded: true }
+  } catch (err) {
+    return { ready: false, downloaded: false, error: String(err) }
   }
 })
 

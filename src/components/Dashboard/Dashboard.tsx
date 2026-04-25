@@ -2,13 +2,17 @@ import { useAppState } from '../../context/AppContext'
 import Overview from './Overview'
 import FileExplorer from './FileExplorer'
 import History from './History'
+import AIWorkshop from './AIWorkshop'
 import Settings from './Settings'
 import About from './About'
 
-const tabs: Array<{ key: 'overview' | 'files' | 'history' | 'settings' | 'about'; label: string }> = [
+type TabKey = 'overview' | 'files' | 'history' | 'workshop' | 'settings' | 'about'
+
+const tabs: Array<{ key: TabKey; label: string }> = [
   { key: 'overview', label: '概览' },
   { key: 'files', label: '文件' },
   { key: 'history', label: '历史' },
+  { key: 'workshop', label: 'AI工作小世界' },
   { key: 'settings', label: '设置' },
   { key: 'about', label: '关于' },
 ]
@@ -51,6 +55,7 @@ export default function Dashboard() {
         {state.activeTab === 'overview' && <Overview />}
         {state.activeTab === 'files' && <FileExplorer />}
         {state.activeTab === 'history' && <History />}
+        {state.activeTab === 'workshop' && <AIWorkshop />}
         {state.activeTab === 'settings' && <Settings />}
         {state.activeTab === 'about' && <About />}
       </main>

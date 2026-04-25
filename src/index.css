@@ -578,10 +578,11 @@ input {
 
 /* Dashboard */
 .dashboard {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   background: #f8fafc;
+  overflow: hidden;
 }
 
 .dashboard-header {
@@ -664,8 +665,16 @@ input {
 
 .dashboard-content {
   flex: 1;
+  min-height: 0;
   padding: 24px;
   overflow: auto;
+}
+
+/* Workshop mode: fill available space without scroll */
+.dashboard-content:has(.workshop-container) {
+  position: relative;
+  padding: 12px;
+  overflow: hidden;
 }
 
 /* Overview Tab */
@@ -1584,5 +1593,184 @@ pre {
 @keyframes onboarding-scale-in {
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
+}
+
+/* ==================== AI 工作小世界 ==================== */
+
+.workshop-container {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  overflow: hidden;
+  gap: 8px;
+}
+
+.ws-main-area {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 8px;
+}
+
+/* ---- HUD ---- */
+.ws-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 6px 14px;
+  flex-shrink: 0;
+}
+
+.ws-hud-left {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.ws-hud-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #94a3b8;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.ws-hud-icon { font-size: 0.9rem; }
+.ws-hud-val { font-variant-numeric: tabular-nums; }
+.ws-hud-gold .ws-hud-val { color: #fbbf24; }
+
+.ws-hud-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ws-status {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.ws-status-live {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+  animation: ws-glow-green 2s ease-in-out infinite;
+}
+
+.ws-status-idle {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+  animation: ws-blink 1.5s ease-in-out infinite;
+}
+
+.ws-cam-btn {
+  background: #1e293b !important;
+  color: #94a3b8 !important;
+  border: 1px solid #334155 !important;
+  padding: 3px 10px !important;
+  border-radius: 6px !important;
+  font-size: 0.85rem !important;
+  cursor: pointer;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.ws-cam-btn:hover { background: #334155 !important; }
+
+/* ---- Viewport (3D canvas container) ---- */
+.ws-viewport {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid #1e293b;
+  background: #0c1222;
+}
+
+/* ---- Event Log ---- */
+.ws-event-log {
+  width: 220px;
+  flex-shrink: 0;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ws-log-entry {
+  display: flex;
+  gap: 6px;
+  padding: 3px 5px;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  line-height: 1.4;
+  animation: ws-log-in 0.3s ease-out;
+}
+
+.ws-log-time { color: #475569; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.ws-log-text { color: #94a3b8; }
+.ws-log-success .ws-log-text { color: #4ade80; }
+.ws-log-warning .ws-log-text { color: #fbbf24; }
+.ws-log-error .ws-log-text   { color: #f87171; }
+
+/* ---- Sync Banner ---- */
+.workshop-sync-banner {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.9);
+  color: #60a5fa;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  border: 1px solid rgba(59, 130, 246, 0.15);
+}
+
+.sync-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3b82f6;
+  animation: ws-dot-pulse 1s ease-in-out infinite;
+}
+
+/* ---- Animations ---- */
+@keyframes ws-glow-green {
+  0%, 100% { text-shadow: 0 0 4px rgba(74, 222, 128, 0.3); }
+  50% { text-shadow: 0 0 8px rgba(74, 222, 128, 0.6); }
+}
+
+@keyframes ws-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes ws-log-in {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes ws-dot-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
 }
 

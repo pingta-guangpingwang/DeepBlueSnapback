@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node _rename.js)"
+      "Bash(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "Agent(*)",
+      "WebSearch(*)",
+      "WebFetch(*)",
+      "mcp__*"
     ]
   }
 }

@@ -13,6 +13,8 @@ npm-debug.log*
 *.exe
 *.dmg
 *.AppImage
+# Workshop 3D assets (downloaded on first launch)
+public/assets/models/*.glb
 test-cli-e2e.js
 test-create-project.js
 test-create-root-repo.js

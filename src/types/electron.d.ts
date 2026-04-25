@@ -110,6 +110,11 @@ export interface ElectronAPI {
   // 新手引导
   getOnboardingStatus: () => Promise<{ completed: boolean }>
   setOnboardingCompleted: (completed: boolean) => Promise<{ success: boolean; message?: string }>
+
+  // AI Workshop
+  readVisualFile: (projectPath: string) => Promise<{ success: boolean; content?: string }>
+  scanProjectDirs: (projectPath: string) => Promise<{ success: boolean; dirs: Array<{ id: string; name: string }> }>
+  ensureWorkshopAssets: () => Promise<{ ready: boolean; downloaded: boolean; error?: string }>
 }
 
 declare global {

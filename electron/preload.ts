@@ -160,6 +160,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('dbgvs:get-onboarding-status'),
   setOnboardingCompleted: (completed: boolean) =>
     ipcRenderer.invoke('dbgvs:set-onboarding-completed', completed),
+
+  // AI Workshop
+  readVisualFile: (projectPath: string) =>
+    ipcRenderer.invoke('ai-workshop:read-visual-file', projectPath),
+  scanProjectDirs: (projectPath: string) =>
+    ipcRenderer.invoke('ai-workshop:scan-project-dirs', projectPath),
+  ensureWorkshopAssets: () =>
+    ipcRenderer.invoke('workshop:ensure-assets'),
 })
 
 // 类型声明
