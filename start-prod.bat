@@ -1,5 +1,6 @@
 @echo off
 set ELECTRON_CACHE=%LOCALAPPDATA%\electron\Cache
+set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
 echo Building and starting DBVS production version...
 
 echo Checking dependencies...
