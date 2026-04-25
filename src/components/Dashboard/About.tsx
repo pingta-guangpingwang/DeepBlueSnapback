@@ -10,6 +10,55 @@ export default function About() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '100%' }}>
+      {/* 应用信息 */}
+      <div className="settings-section">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+              <span style={{
+                fontSize: '18px', fontWeight: 700, color: '#1f2937',
+              }}>DBVS</span>
+              <span style={{
+                fontSize: '12px', fontWeight: 600, color: '#fff',
+                background: '#4f46e5', padding: '2px 8px', borderRadius: '10px',
+              }}>v1.0.0</span>
+            </div>
+            <p style={{ margin: '0 0 4px', color: '#6b7280', fontSize: '13px' }}>
+              DeepBlue Version System — 面向开发者的本地版本管理工具
+            </p>
+            <p style={{ margin: 0, color: '#9ca3af', fontSize: '12px' }}>
+              给 AI 套上缰绳，让每一次代码生成都有迹可循
+            </p>
+          </div>
+          <div style={{
+            textAlign: 'right', fontSize: '12px', color: '#9ca3af', lineHeight: 1.8,
+          }}>
+            <div>Electron 28 + React 19 + TypeScript</div>
+            <div>Vite 8 + Node.js</div>
+            <div>Licensed under MIT</div>
+          </div>
+        </div>
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px',
+          marginTop: '16px',
+        }}>
+          {[
+            { label: '架构', value: 'SVN 集中式' },
+            { label: '存储', value: '本地 content-addressed' },
+            { label: '界面', value: 'GUI + CLI 双模式' },
+            { label: '同步', value: 'Git Remote 可选' },
+          ].map(item => (
+            <div key={item.label} style={{
+              padding: '10px 12px', background: '#f8fafc', borderRadius: '6px',
+              border: '1px solid #e5e7eb',
+            }}>
+              <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '2px' }}>{item.label}</div>
+              <div style={{ fontSize: '13px', color: '#374151', fontWeight: 500 }}>{item.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* 功能引导 */}
       <div className="settings-section">
         <h3>功能引导</h3>
