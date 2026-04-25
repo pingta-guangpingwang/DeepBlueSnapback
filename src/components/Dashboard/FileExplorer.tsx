@@ -233,7 +233,14 @@ export default function FileExplorer() {
             value={state.newFileName}
             onChange={(e) => dispatch({ type: 'SET_NEW_FILE_NAME', payload: e.target.value })}
           />
-          <button onClick={() => { createNewFile(state.newFileName); setTimeout(loadFileTree, 500) }}>创建文件</button>
+          <button onClick={async () => {
+            if (!state.newFileName.trim()) {
+              dispatch({ type: 'SET_MESSAGE', payload: '请输入文件名' })
+              return
+            }
+            await createNewFile(state.newFileName)
+            await loadFileTree()
+          }}>创建文件</button>
         </div>
         <button onClick={loadFileTree} disabled={treeLoading}>
           {treeLoading ? '加载中...' : '刷新列表'}
