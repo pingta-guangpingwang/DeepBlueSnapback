@@ -163,11 +163,6 @@ DBVS 自动忽略以下文件/目录（不纳入版本管理）：
 netstat -ano | findstr :3005
 taskkill /PID <pid> /F
 ```
-如果用得还行，给我打赏，我就是硬要，1分1毛也是爱，给出你心中的价值，我有更多更新动力
-
-![Uploading cd5741cc158ccc6be0b524f0444cc22c.jpg…]()
-![Uploading f9e661730d92fb35985a8d0dffcfb624.jpg…]()
-
 
 ## 许可
 

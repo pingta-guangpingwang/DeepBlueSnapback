@@ -1,0 +1,55 @@
+{
+  "name": "dbvs",
+  "version": "2.0.0",
+  "description": "DeepBlue Version System - 本地版本管理工具（SVN 服务器+客户端一体化）",
+  "main": "electron/main.js",
+  "bin": {
+    "dbvs": "./bin/dbvs-cli.js"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build:electron": "tsc --project tsconfig.node.json",
+    "dev-electron": "concurrently \"npm run dev\" \"wait-on http://localhost:3005 && npm run build:electron && cross-env NODE_ENV=development npm run electron\"",
+    "build": "npm run build:electron && vite build",
+    "electron": "electron .",
+    "start": "npm run build && npm run electron",
+    "cli": "node electron/cli-standalone.js",
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder",
+    "test": "node test-vcs-core.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "commander": "^14.0.3",
+    "cors": "^2.8.6",
+    "diff-match-patch": "^1.0.5",
+    "express": "^5.2.1",
+    "fs-extra": "^11.3.4",
+    "isomorphic-git": "^1.37.5",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "socket.io": "^4.8.3",
+    "typescript": "^6.0.2",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/diff-match-patch": "^1.0.36",
+    "@types/express": "^5.0.6",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^25.5.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "electron": "^28.0.0",
+    "electron-builder": "^26.8.1",
+    "vite": "^8.0.3",
+    "wait-on": "^7.2.0"
+  }
+}

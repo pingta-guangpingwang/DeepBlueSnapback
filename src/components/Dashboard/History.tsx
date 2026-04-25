@@ -1,0 +1,578 @@
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useAppState } from '../../context/AppContext'
+import { useRepository } from '../../hooks/useRepository'
+import { computeLineDiff, getDiffStats, type DiffLine } from './DiffView'
+
+interface CommitEntry {
+  id: string
+  message: string
+  timestamp: string
+  fileCount: number
+  totalSize: number
+  summary?: string
+  author?: string
+  sessionId?: string
+  changedFiles?: { added: string[]; modified: string[]; deleted: string[] }
+}
+
+interface FileEntry {
+  path: string
+  hash: string
+  size: number
+}
+
+interface CommitDetail {
+  id: string
+  message: string
+  timestamp: string
+  files: FileEntry[]
+  parentVersion: string | null
+  totalSize: number
+}
+
+export default function History() {
+  const [state, dispatch] = useAppState()
+  const { handleRollback } = useRepository()
+  const [commits, setCommits] = useState<CommitEntry[]>([])
+  const [loading, setLoading] = useState(false)
+  const [expandedCommit, setExpandedCommit] = useState<string | null>(null)
+  const [commitDetail, setCommitDetail] = useState<CommitDetail | null>(null)
+  const [parentDetail, setParentDetail] = useState<CommitDetail | null>(null)
+  const [diffFile, setDiffFile] = useState<{ path: string; oldContent: string; newContent: string } | null>(null)
+  const [diffLoading, setDiffLoading] = useState(false)
+  const [diffError, setDiffError] = useState('')
+  const [confirmVersion, setConfirmVersion] = useState<string | null>(null)
+  const [undoAvailable, setUndoAvailable] = useState(false)
+  const [undoLoading, setUndoLoading] = useState(false)
+  const [restoringFile, setRestoringFile] = useState<string | null>(null)
+  const [confirmRestore, setConfirmRestore] = useState<{ version: string; filePath: string } | null>(null)
+  const [showAllFiles, setShowAllFiles] = useState(false)
+  const [sortBy, setSortBy] = useState<'path' | 'type'>('path')
+
+  const diffLines = useMemo(() =>
+    diffFile ? computeLineDiff(diffFile.oldContent, diffFile.newContent) : [],
+    [diffFile])
+  const diffStats = useMemo(() => getDiffStats(diffLines), [diffLines])
+
+  const loadHistory = useCallback(async () => {
+    if (!state.repoPath) return
+    setLoading(true)
+    try {
+      const result = await window.electronAPI.getHistoryStructured(state.repoPath)
+      if (result?.success && result.commits) {
+        setCommits(result.commits)
+      } else {
+        setCommits([])
+      }
+    } catch {
+      setCommits([])
+    } finally {
+      setLoading(false)
+    }
+  }, [state.repoPath])
+
+  useEffect(() => {
+    if (state.repoPath) loadHistory()
+  }, [state.repoPath, loadHistory])
+
+  const toggleCommitDetail = async (commitId: string) => {
+    if (expandedCommit === commitId) {
+      setExpandedCommit(null)
+      setCommitDetail(null)
+      setParentDetail(null)
+      return
+    }
+
+    setExpandedCommit(commitId)
+    setCommitDetail(null)
+    setParentDetail(null)
+
+    try {
+      // 使用新的 IPC 方法读取 commit 详情
+      const detail = await window.electronAPI.getCommitDetail(state.repoPath, commitId)
+      if (detail) {
+        setCommitDetail(detail)
+
+        // 加载父版本详情
+        if (detail.parentVersion) {
+          const parent = await window.electronAPI.getCommitDetail(state.repoPath, detail.parentVersion)
+          if (parent) setParentDetail(parent)
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load commit detail:', e)
+    }
+  }
+
+  const showDiff = async (filePath: string) => {
+    if (!commitDetail) return
+    setDiffLoading(true)
+    setDiffError('')
+
+    try {
+      let oldContent = ''
+      if (parentDetail) {
+        const parentFile = parentDetail.files.find(f => f.path === filePath)
+        if (parentFile) {
+          const blobResult = await window.electronAPI.getBlobContent(state.repoPath, parentFile.hash)
+          if (blobResult.success) oldContent = blobResult.content || ''
+        }
+      }
+
+      let newContent = ''
+      const currentFile = commitDetail.files.find(f => f.path === filePath)
+      if (currentFile) {
+        const blobResult = await window.electronAPI.getBlobContent(state.repoPath, currentFile.hash)
+        if (blobResult.success) newContent = blobResult.content || ''
+      }
+
+      setDiffFile({ path: filePath, oldContent, newContent })
+    } catch (e) {
+      setDiffError('加载对比内容失败: ' + String(e))
+    } finally {
+      setDiffLoading(false)
+    }
+  }
+
+  const getFileStatus = (filePath: string): { label: string; color: string } => {
+    if (!commitDetail || !parentDetail) {
+      return { label: '新增', color: '#16a34a' }
+    }
+    const inParent = parentDetail.files.some(f => f.path === filePath)
+    const inCurrent = commitDetail.files.some(f => f.path === filePath)
+    if (!inParent && inCurrent) return { label: '新增', color: '#16a34a' }
+    if (inParent && !inCurrent) return { label: '删除', color: '#dc2626' }
+    const parentFile = parentDetail.files.find(f => f.path === filePath)
+    const currentFile = commitDetail.files.find(f => f.path === filePath)
+    if (parentFile && currentFile && parentFile.hash !== currentFile.hash) {
+      return { label: '修改', color: '#d97706' }
+    }
+    return { label: '未变', color: '#9ca3af' }
+  }
+
+  const onRollback = async (version: string) => {
+    setConfirmVersion(null)
+    await handleRollback(version)
+    setUndoAvailable(true)
+    await loadHistory()
+  }
+
+  const onUndoRollback = async () => {
+    if (!state.repoPath || !state.projectPath) return
+    setUndoLoading(true)
+    try {
+      const result = await window.electronAPI.undoRollback(state.repoPath, state.projectPath)
+      if (result.success) {
+        dispatch({ type: 'SET_MESSAGE', payload: result.message || '已撤销回滚' })
+        setUndoAvailable(false)
+        await loadHistory()
+      } else {
+        dispatch({ type: 'SET_MESSAGE', payload: '撤销失败：' + (result.message || '未知错误') })
+      }
+    } catch (e) {
+      dispatch({ type: 'SET_MESSAGE', payload: '撤销失败：' + String(e) })
+    } finally {
+      setUndoLoading(false)
+    }
+  }
+
+  const onRestoreFile = (version: string, filePath: string) => {
+    setConfirmRestore({ version, filePath })
+  }
+
+  const confirmRestoreFile = async () => {
+    if (!confirmRestore || !state.repoPath || !state.projectPath) return
+    const { version, filePath } = confirmRestore
+    setConfirmRestore(null)
+    setRestoringFile(filePath)
+    try {
+      const result = await window.electronAPI.rollbackFile(state.repoPath, state.projectPath, version, filePath)
+      if (result.success) {
+        dispatch({ type: 'SET_MESSAGE', payload: result.message || `已恢复 ${filePath}` })
+      } else {
+        dispatch({ type: 'SET_MESSAGE', payload: '恢复失败：' + (result.message || '未知错误') })
+      }
+    } catch (e) {
+      dispatch({ type: 'SET_MESSAGE', payload: '恢复失败：' + String(e) })
+    } finally {
+      setRestoringFile(null)
+    }
+  }
+
+  const formatTime = (iso: string) => {
+    try { return new Date(iso).toLocaleString() } catch { return iso }
+  }
+
+  const formatSize = (bytes: number) => {
+    if (bytes > 1048576) return `${(bytes / 1048576).toFixed(1)}MB`
+    if (bytes > 1024) return `${(bytes / 1024).toFixed(1)}KB`
+    return `${bytes}B`
+  }
+
+  const getExt = (filePath: string) => {
+    const parts = filePath.split('.')
+    return parts.length > 1 ? parts.pop()!.toLowerCase() : ''
+  }
+
+  // 过滤 + 排序后的文件列表
+  const displayFiles = useMemo(() => {
+    if (!commitDetail) return []
+    let files = commitDetail.files
+
+    // 默认只显示变更文件
+    if (!showAllFiles) {
+      files = files.filter(f => getFileStatus(f.path).label !== '未变')
+    }
+
+    // 排序
+    const sorted = [...files]
+    if (sortBy === 'path') {
+      sorted.sort((a, b) => a.path.localeCompare(b.path))
+    } else {
+      sorted.sort((a, b) => {
+        const extA = getExt(a.path)
+        const extB = getExt(b.path)
+        if (extA !== extB) return extA.localeCompare(extB)
+        return a.path.localeCompare(b.path)
+      })
+    }
+    return sorted
+  }, [commitDetail, showAllFiles, sortBy, parentDetail])
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{
+        background: 'white', borderRadius: '12px', padding: '20px',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)', border: '1px solid #e5e7eb',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <h3 style={{ margin: 0 }}>提交历史</h3>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {undoAvailable && (
+              <button
+                className="warning-button"
+                style={{ fontSize: '12px', padding: '4px 12px' }}
+                onClick={onUndoRollback}
+                disabled={undoLoading}
+              >
+                {undoLoading ? '恢复中...' : '撤销上次回滚'}
+              </button>
+            )}
+            <button onClick={loadHistory} disabled={loading}>
+              {loading ? '加载中...' : '刷新'}
+            </button>
+          </div>
+        </div>
+
+        {commits.length === 0 ? (
+          <p style={{ color: '#6b7280' }}>暂无提交记录</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {commits.map(commit => (
+              <div key={commit.id} style={{
+                border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden',
+                background: expandedCommit === commit.id ? '#f8fafc' : '#fff'
+              }}>
+                <div
+                  style={{ padding: '10px 14px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                  onClick={() => toggleCommitDetail(commit.id)}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontWeight: 600, fontSize: '14px' }}>{commit.message}</span>
+                      {commit.author ? (
+                        <span style={{
+                          fontSize: '10px', padding: '1px 6px', borderRadius: '3px',
+                          background: '#dbeafe', color: '#1d4ed8', fontWeight: 600
+                        }}>AI: {commit.author}</span>
+                      ) : (
+                        <span style={{
+                          fontSize: '10px', padding: '1px 6px', borderRadius: '3px',
+                          background: '#f3f4f6', color: '#6b7280', fontWeight: 500
+                        }}>手动</span>
+                      )}
+                    </div>
+                    {commit.summary && (
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px', fontStyle: 'italic' }}>
+                        {commit.summary}
+                      </div>
+                    )}
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+                      <code style={{ background: '#f3f4f6', padding: '1px 6px', borderRadius: '3px', fontSize: '11px' }}>{commit.id}</code>
+                      <span style={{ marginLeft: '10px' }}>{formatTime(commit.timestamp)}</span>
+                      <span style={{ marginLeft: '10px' }}>{commit.fileCount} 文件, {formatSize(commit.totalSize)}</span>
+                      {commit.changedFiles && (
+                        <>
+                          {commit.changedFiles.added.length > 0 && <span style={{ marginLeft: '8px', color: '#16a34a', fontSize: '11px' }}>+{commit.changedFiles.added.length}</span>}
+                          {commit.changedFiles.modified.length > 0 && <span style={{ marginLeft: '4px', color: '#d97706', fontSize: '11px' }}>~{commit.changedFiles.modified.length}</span>}
+                          {commit.changedFiles.deleted.length > 0 && <span style={{ marginLeft: '4px', color: '#dc2626', fontSize: '11px' }}>-{commit.changedFiles.deleted.length}</span>}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    {confirmVersion === commit.id ? (
+                      <>
+                        <button className="warning-button" style={{ fontSize: '12px', padding: '3px 10px' }}
+                          onClick={e => { e.stopPropagation(); onRollback(commit.id) }}>确认回滚</button>
+                        <button className="secondary-button" style={{ fontSize: '12px', padding: '3px 10px' }}
+                          onClick={e => { e.stopPropagation(); setConfirmVersion(null) }}>取消</button>
+                      </>
+                    ) : (
+                      <button className="secondary-button" style={{ fontSize: '12px', padding: '3px 10px' }}
+                        onClick={e => { e.stopPropagation(); setConfirmVersion(commit.id) }}>回滚到此版本</button>
+                    )}
+                    <span style={{ fontSize: '16px', color: '#9ca3af', transition: 'transform 0.2s',
+                      transform: expandedCommit === commit.id ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+                  </div>
+                </div>
+
+                {expandedCommit === commit.id && (
+                  <div style={{ borderTop: '1px solid #e5e7eb', padding: '10px 14px', background: '#fafbfc' }}>
+                    {!commitDetail ? (
+                      <p style={{ color: '#9ca3af', fontSize: '13px' }}>加载中...</p>
+                    ) : commitDetail.files.length === 0 ? (
+                      <p style={{ color: '#9ca3af', fontSize: '13px' }}>此版本无文件记录</p>
+                    ) : (
+                      <>
+                        {/* 工具栏：显示全部 + 排序 */}
+                        <div style={{
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          marginBottom: '8px', padding: '4px 0',
+                        }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#6b7280', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={showAllFiles}
+                              onChange={e => setShowAllFiles(e.target.checked)}
+                              style={{ cursor: 'pointer' }}
+                            />
+                            显示全部文件 ({commitDetail.files.length})
+                          </label>
+                          <div style={{ display: 'flex', gap: '4px', fontSize: '12px' }}>
+                            <span style={{ color: '#9ca3af' }}>排序：</span>
+                            <button style={{
+                              padding: '1px 8px', fontSize: '11px', borderRadius: '3px',
+                              border: `1px solid ${sortBy === 'path' ? '#4f46e5' : '#d1d5db'}`,
+                              background: sortBy === 'path' ? '#eef2ff' : '#fff',
+                              color: sortBy === 'path' ? '#4f46e5' : '#6b7280',
+                              cursor: 'pointer',
+                            }} onClick={() => setSortBy('path')}>路径</button>
+                            <button style={{
+                              padding: '1px 8px', fontSize: '11px', borderRadius: '3px',
+                              border: `1px solid ${sortBy === 'type' ? '#4f46e5' : '#d1d5db'}`,
+                              background: sortBy === 'type' ? '#eef2ff' : '#fff',
+                              color: sortBy === 'type' ? '#4f46e5' : '#6b7280',
+                              cursor: 'pointer',
+                            }} onClick={() => setSortBy('type')}>类型</button>
+                          </div>
+                        </div>
+                        {!showAllFiles && (
+                          <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '6px' }}>
+                            显示 {displayFiles.length} 个变更文件（共 {commitDetail.files.length} 个）
+                          </div>
+                        )}
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                          <thead>
+                            <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+                              <th style={{ textAlign: 'left', padding: '4px 8px', color: '#6b7280', fontWeight: 500 }}>状态</th>
+                              <th style={{ textAlign: 'left', padding: '4px 8px', color: '#6b7280', fontWeight: 500 }}>文件路径</th>
+                              <th style={{ textAlign: 'right', padding: '4px 8px', color: '#6b7280', fontWeight: 500 }}>大小</th>
+                              <th style={{ textAlign: 'center', padding: '4px 8px', color: '#6b7280', fontWeight: 500 }}>对比</th>
+                              <th style={{ textAlign: 'center', padding: '4px 8px', color: '#6b7280', fontWeight: 500 }}>恢复</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {displayFiles.map(file => {
+                              const status = getFileStatus(file.path)
+                              return (
+                                <tr key={file.path} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                  <td style={{ padding: '4px 8px' }}>
+                                    <span style={{ color: status.color, fontWeight: 500, fontSize: '12px' }}>[{status.label}]</span>
+                                  </td>
+                                  <td style={{ padding: '4px 8px', fontFamily: 'monospace', fontSize: '12px' }}>{file.path}</td>
+                                  <td style={{ padding: '4px 8px', textAlign: 'right', color: '#6b7280', fontSize: '12px' }}>{formatSize(file.size)}</td>
+                                  <td style={{ padding: '4px 8px', textAlign: 'center' }}>
+                                    <button style={{
+                                      fontSize: '12px', padding: '2px 8px', border: '1px solid #d1d5db',
+                                      borderRadius: '4px', background: '#fff', cursor: 'pointer', color: '#374151'
+                                    }} onClick={() => showDiff(file.path)}>
+                                      对比
+                                    </button>
+                                  </td>
+                                  <td style={{ padding: '4px 8px', textAlign: 'center' }}>
+                                    {status.label !== '未变' && (
+                                      <button style={{
+                                        fontSize: '12px', padding: '2px 8px', border: '1px solid #fca5a5',
+                                        borderRadius: '4px', background: '#fef2f2', cursor: 'pointer', color: '#dc2626'
+                                      }} onClick={() => onRestoreFile(commitDetail.id, file.path)}
+                                        disabled={restoringFile === file.path}
+                                      >
+                                        {restoringFile === file.path ? '恢复中...' : '恢复'}
+                                      </button>
+                                    )}
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Restore file confirmation */}
+      {confirmRestore && (
+        <div className="modal-overlay" style={{ zIndex: 2500 }}>
+          <div style={{
+            background: '#fff', borderRadius: '10px', padding: '24px', maxWidth: '420px', width: '90%',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+          }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: '15px', color: '#1f2937' }}>确认恢复文件</h3>
+            <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.6', margin: '0 0 8px' }}>
+              即将将以下文件恢复到版本 <code style={{ background: '#f3f4f6', padding: '1px 6px', borderRadius: '3px', fontSize: '12px' }}>{confirmRestore.version}</code> 的状态：
+            </p>
+            <div style={{
+              padding: '8px 12px', background: '#f8fafc', borderRadius: '6px',
+              border: '1px solid #e5e7eb', fontFamily: 'Consolas, monospace',
+              fontSize: '12px', color: '#374151', marginBottom: '16px',
+            }}>
+              {confirmRestore.filePath}
+            </div>
+            <p style={{ fontSize: '12px', color: '#9ca3af', margin: '0 0 16px' }}>
+              当前工作副本中该文件的内容将被替换为目标版本的快照内容。
+            </p>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button style={{
+                padding: '6px 16px', fontSize: '13px', border: '1px solid #d1d5db',
+                borderRadius: '6px', background: '#fff', cursor: 'pointer', color: '#374151',
+              }} onClick={() => setConfirmRestore(null)}>取消</button>
+              <button className="warning-button" style={{ padding: '6px 16px', fontSize: '13px' }}
+                onClick={confirmRestoreFile}>确认恢复</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Diff popup — SourceTree 风格 unified diff */}
+      {(diffFile || diffLoading || diffError) && (
+        <div
+          className="modal-overlay"
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', zIndex: 2000
+          }}
+          onClick={() => { setDiffFile(null); setDiffError('') }
+        }>
+          <div style={{
+            width: '92vw', maxWidth: '1300px', height: '85vh', background: '#fff',
+            borderRadius: '10px', overflow: 'hidden', display: 'flex', flexDirection: 'column'
+          }} onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div style={{
+              padding: '10px 16px', borderBottom: '1px solid #e5e7eb',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <h3 style={{ margin: 0, fontSize: '14px' }}>
+                  文件对比 — {diffFile?.path || ''}
+                </h3>
+                {diffFile && (diffStats.added > 0 || diffStats.removed > 0) && (
+                  <div style={{ display: 'flex', gap: '12px', fontSize: '12px' }}>
+                    <span style={{ color: '#16a34a', fontWeight: 500 }}>+{diffStats.added} 行</span>
+                    <span style={{ color: '#dc2626', fontWeight: 500 }}>-{diffStats.removed} 行</span>
+                  </div>
+                )}
+              </div>
+              <button style={{
+                border: 'none', background: 'none', fontSize: '20px', cursor: 'pointer',
+                color: '#6b7280', padding: '4px 8px', lineHeight: 1
+              }} onClick={(e) => { e.stopPropagation(); setDiffFile(null); setDiffError('') }}>✕</button>
+            </div>
+
+            {/* Content */}
+            {diffError ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#dc2626' }}>{diffError}</div>
+            ) : diffLoading ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#9ca3af' }}>加载对比内容...</div>
+            ) : diffFile ? (
+              <div style={{ flex: 1, overflow: 'auto', background: '#fafbfc' }}>
+                <table style={{
+                  width: '100%', borderCollapse: 'collapse',
+                  fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                  fontSize: '13px', lineHeight: '1.6'
+                }}>
+                  <tbody>
+                    {diffLines.map((line, idx) => {
+                      let bg = 'transparent'
+                      let lineColor = '#374151'
+                      let prefix = ' '
+                      let gutterBg = '#fafbfc'
+                      let gutterColor = '#9ca3af'
+
+                      if (line.type === 'added') {
+                        bg = '#dcfce7'
+                        lineColor = '#166534'
+                        prefix = '+'
+                        gutterBg = '#bbf7d0'
+                        gutterColor = '#16a34a'
+                      } else if (line.type === 'removed') {
+                        bg = '#fee2e2'
+                        lineColor = '#991b1b'
+                        prefix = '-'
+                        gutterBg = '#fecaca'
+                        gutterColor = '#dc2626'
+                      }
+
+                      return (
+                        <tr key={idx} style={{ background: bg }}>
+                          <td style={{
+                            padding: '0 8px', textAlign: 'right', color: gutterColor,
+                            background: gutterBg, borderRight: '1px solid #e5e7eb',
+                            userSelect: 'none', minWidth: '40px', fontSize: '12px',
+                            verticalAlign: 'top', lineHeight: '1.6',
+                          }}>
+                            {line.oldLineNo ?? ''}
+                          </td>
+                          <td style={{
+                            padding: '0 8px', textAlign: 'right', color: gutterColor,
+                            background: gutterBg, borderRight: '1px solid #e5e7eb',
+                            userSelect: 'none', minWidth: '40px', fontSize: '12px',
+                            verticalAlign: 'top', lineHeight: '1.6',
+                          }}>
+                            {line.newLineNo ?? ''}
+                          </td>
+                          <td style={{
+                            padding: '0 4px', textAlign: 'center', color: lineColor,
+                            userSelect: 'none', fontWeight: 700, fontSize: '13px',
+                            verticalAlign: 'top', lineHeight: '1.6',
+                          }}>
+                            {prefix}
+                          </td>
+                          <td style={{
+                            padding: '0 8px', color: lineColor,
+                            whiteSpace: 'pre-wrap', wordBreak: 'break-all',
+                            lineHeight: '1.6',
+                          }}>
+                            {line.content || '\u00A0'}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

@@ -1,0 +1,290 @@
+import { contextBridge, ipcRenderer } from 'electron'
+
+// 向渲染进程暴露API
+contextBridge.exposeInMainWorld('electronAPI', {
+  // 窗口控制
+  minimizeWindow: () => ipcRenderer.invoke('window:minimize'),
+  maximizeWindow: () => ipcRenderer.invoke('window:maximize'),
+  closeWindow: () => ipcRenderer.invoke('window:close'),
+  isMaximized: () => ipcRenderer.invoke('window:is-maximized'),
+
+  // 对话框
+  selectFolder: () => ipcRenderer.invoke('dialog:select-folder'),
+
+  // 文件系统
+  isEmptyFolder: (path: string) => ipcRenderer.invoke('fs:is-empty-folder', path),
+  readFile: (path: string) => ipcRenderer.invoke('fs:read-file', path),
+  createFile: (path: string) => ipcRenderer.invoke('fs:create-file', path),
+  writeFile: (path: string, content: string) => ipcRenderer.invoke('fs:write-file', path, content),
+  deleteFile: (path: string) => ipcRenderer.invoke('fs:delete-file', path),
+  listFiles: (path: string) => ipcRenderer.invoke('fs:list-files', path),
+  copyDir: (src: string, dest: string) => ipcRenderer.invoke('fs:copy-dir', src, dest),
+  pathJoin: (...paths: string[]) => ipcRenderer.invoke('fs:path-join', ...paths),
+  pathBasename: (filePath: string) => ipcRenderer.invoke('fs:path-basename', filePath),
+
+  // DBVS操作（SVN 风格：repoPath = 集中仓库, workingCopyPath = 工作副本）
+  isDBVSRepository: (path: string) => ipcRenderer.invoke('dbvs:is-repository', path),
+  createRepository: (repoPath: string, name: string) => ipcRenderer.invoke('dbvs:create-repository', repoPath, name),
+  createProject: (rootPath: string, projectName: string, customPath?: string) => ipcRenderer.invoke('dbvs:create-project', rootPath, projectName, customPath),
+  getProjects: (rootPath: string) => ipcRenderer.invoke('dbvs:get-projects', rootPath),
+  registerProject: (rootPath: string, projectPath: string, projectName?: string, initWithCommit?: boolean) => ipcRenderer.invoke('dbvs:register-project', rootPath, projectPath, projectName, initWithCommit),
+  checkoutProject: (rootPath: string, repoPath: string) => ipcRenderer.invoke('dbvs:checkout-project', rootPath, repoPath),
+  initRepository: (repoPath: string) => ipcRenderer.invoke('dbvs:init-repository', repoPath),
+  getStatus: (repoPath: string, workingCopyPath: string) => ipcRenderer.invoke('dbvs:get-status', repoPath, workingCopyPath),
+  getFileTree: (workingCopyPath: string) => ipcRenderer.invoke('dbvs:get-file-tree', workingCopyPath),
+  commit: (repoPath: string, workingCopyPath: string, message: string, files: string[], options?: { summary?: string; author?: string; sessionId?: string }) =>
+    ipcRenderer.invoke('dbvs:commit', repoPath, workingCopyPath, message, files, options),
+  getHistory: (repoPath: string) => ipcRenderer.invoke('dbvs:get-history', repoPath),
+  rollback: (repoPath: string, workingCopyPath: string, version: string) =>
+    ipcRenderer.invoke('dbvs:rollback', repoPath, workingCopyPath, version),
+  rollbackFile: (repoPath: string, workingCopyPath: string, version: string, filePath: string) =>
+    ipcRenderer.invoke('dbvs:rollback-file', repoPath, workingCopyPath, version, filePath),
+  undoRollback: (repoPath: string, workingCopyPath: string) =>
+    ipcRenderer.invoke('dbvs:undo-rollback', repoPath, workingCopyPath),
+  rollbackAI: (repoPath: string, workingCopyPath: string, sessionId: string) =>
+    ipcRenderer.invoke('dbvs:rollback-ai', repoPath, workingCopyPath, sessionId),
+  revertFiles: (repoPath: string, workingCopyPath: string, filePaths: string[]) =>
+    ipcRenderer.invoke('dbvs:revert-files', repoPath, workingCopyPath, filePaths),
+  autoSnapshotStart: (repoPath: string, workingCopyPath: string, intervalMinutes: number) =>
+    ipcRenderer.invoke('dbvs:auto-snapshot-start', repoPath, workingCopyPath, intervalMinutes),
+  autoSnapshotStop: () =>
+    ipcRenderer.invoke('dbvs:auto-snapshot-stop'),
+  onAutoSnapshotResult: (callback: (result: { success: boolean; message?: string }) => void) => {
+    ipcRenderer.on('auto-snapshot:result', (_, result) => callback(result))
+    return () => ipcRenderer.removeAllListeners('auto-snapshot:result')
+  },
+  update: (repoPath: string, workingCopyPath: string) =>
+    ipcRenderer.invoke('dbvs:update', repoPath, workingCopyPath),
+  getDiff: (repoPath: string, workingCopyPath: string, filePath: string, versionA?: string, versionB?: string) =>
+    ipcRenderer.invoke('dbvs:get-diff', repoPath, workingCopyPath, filePath, versionA, versionB),
+  getDiffSummary: (repoPath: string, workingCopyPath: string) =>
+    ipcRenderer.invoke('dbvs:get-diff-summary', repoPath, workingCopyPath),
+  getDiffContent: (repoPath: string, workingCopyPath: string, filePath: string, versionA?: string, versionB?: string) =>
+    ipcRenderer.invoke('dbvs:get-diff-content', repoPath, workingCopyPath, filePath, versionA, versionB),
+  deleteRepository: (repoPath: string) => ipcRenderer.invoke('dbvs:delete-repository', repoPath),
+  deleteRepositoryFull: (rootPath: string, repoPath: string, deleteWorkingCopies: boolean) =>
+    ipcRenderer.invoke('dbvs:delete-repository-full', rootPath, repoPath, deleteWorkingCopies),
+  verify: (repoPath: string) => ipcRenderer.invoke('dbvs:verify', repoPath),
+  getHistoryStructured: (repoPath: string) => ipcRenderer.invoke('dbvs:get-history-structured', repoPath),
+  getRepositoryInfo: (repoPath: string) => ipcRenderer.invoke('dbvs:get-repository-info', repoPath),
+  getCommitDetail: (repoPath: string, commitId: string) => ipcRenderer.invoke('dbvs:get-commit-detail', repoPath, commitId),
+  getBlobContent: (repoPath: string, hash: string) => ipcRenderer.invoke('dbvs:get-blob-content', repoPath, hash),
+  resolvePaths: (inputPath: string) => ipcRenderer.invoke('dbvs:resolve-paths', inputPath),
+  listRepositories: (rootPath: string) => ipcRenderer.invoke('dbvs:list-repositories', rootPath),
+  createRootRepository: (path: string) => ipcRenderer.invoke('dbvs:create-root-repository', path),
+  getRootRepository: () => ipcRenderer.invoke('dbvs:get-root-repository'),
+  saveRootRepository: (path: string) => ipcRenderer.invoke('dbvs:save-root-repository', path),
+  registerCLI: () => ipcRenderer.invoke('dbvs:register-cli'),
+  isCLIRegistered: () => ipcRenderer.invoke('dbvs:is-cli-registered'),
+
+  // Shell
+  openFolder: (path: string) => ipcRenderer.invoke('shell:open-folder', path),
+
+  // 系统
+  checkAdmin: () => ipcRenderer.invoke('system:check-admin'),
+
+  // 菜单事件
+  onMenuNewProject: (callback: () => void) => {
+    ipcRenderer.on('menu:new-project', callback)
+    return () => ipcRenderer.removeListener('menu:new-project', callback)
+  },
+  onMenuOpenProject: (callback: () => void) => {
+    ipcRenderer.on('menu:open-project', callback)
+    return () => ipcRenderer.removeListener('menu:open-project', callback)
+  },
+  onMenuAbout: (callback: () => void) => {
+    ipcRenderer.on('menu:about', callback)
+    return () => ipcRenderer.removeListener('menu:about', callback)
+  },
+
+  // Git Remote Sync
+  gitConnect: (workingCopyPath: string, remoteUrl: string, branch: string, username: string, token: string) =>
+    ipcRenderer.invoke('git:connect', workingCopyPath, remoteUrl, branch, username, token),
+  gitDisconnect: (workingCopyPath: string) =>
+    ipcRenderer.invoke('git:disconnect', workingCopyPath),
+  gitSyncStatus: (workingCopyPath: string) =>
+    ipcRenderer.invoke('git:sync-status', workingCopyPath),
+  gitPull: (workingCopyPath: string, username: string, token: string) =>
+    ipcRenderer.invoke('git:pull', workingCopyPath, username, token),
+  gitPush: (workingCopyPath: string, commitMessage: string, authorName: string, authorEmail: string, username: string, token: string) =>
+    ipcRenderer.invoke('git:push', workingCopyPath, commitMessage, authorName, authorEmail, username, token),
+  gitResolveConflict: (workingCopyPath: string, filePath: string, resolution: 'ours' | 'theirs') =>
+    ipcRenderer.invoke('git:resolve-conflict', workingCopyPath, filePath, resolution),
+  gitCommitMerge: (workingCopyPath: string, authorName: string, authorEmail: string) =>
+    ipcRenderer.invoke('git:commit-merge', workingCopyPath, authorName, authorEmail),
+  gitGetCredentials: () =>
+    ipcRenderer.invoke('git:get-credentials'),
+  gitSaveCredential: (host: string, username: string, token: string) =>
+    ipcRenderer.invoke('git:save-credential', host, username, token),
+  gitDeleteCredential: (host: string) =>
+    ipcRenderer.invoke('git:delete-credential', host),
+  onGitProgress: (callback: (msg: string) => void) => {
+    ipcRenderer.on('git:progress', (_, msg) => callback(msg))
+    return () => ipcRenderer.removeAllListeners('git:progress')
+  },
+
+  // LAN Server
+  lanStart: (rootPath: string, port?: number) => ipcRenderer.invoke('lan:start', rootPath, port),
+  lanStop: () => ipcRenderer.invoke('lan:stop'),
+  lanStatus: () => ipcRenderer.invoke('lan:status'),
+
+  // 右键菜单
+  registerContextMenu: () => ipcRenderer.invoke('context-menu:register'),
+  unregisterContextMenu: () => ipcRenderer.invoke('context-menu:unregister'),
+  isContextMenuRegistered: () => ipcRenderer.invoke('context-menu:is-registered'),
+
+  // CLI 参数事件（右键菜单触发）
+  onCliAction: (callback: (data: { action: string; path: string }) => void) => {
+    ipcRenderer.on('cli:action', (_, data) => callback(data))
+    return () => ipcRenderer.removeAllListeners('cli:action')
+  },
+
+  // Checkout 到指定目录
+  checkoutTo: (rootPath: string, repoPath: string, targetParentDir: string, folderName: string) =>
+    ipcRenderer.invoke('dbvs:checkout-to', rootPath, repoPath, targetParentDir, folderName),
+
+  // 注册已有工作副本
+  registerWorkingCopy: (rootPath: string, workingCopyPath: string) =>
+    ipcRenderer.invoke('dbvs:register-working-copy', rootPath, workingCopyPath),
+
+  // 从项目列表移除工作副本（仅断开关联）
+  unregisterProject: (rootPath: string, workingCopyPath: string) =>
+    ipcRenderer.invoke('dbvs:unregister-project', rootPath, workingCopyPath),
+
+  // 启动检查：补全项目 DBVS-GUIDE.md
+  ensureProjectDocs: (rootPath: string) =>
+    ipcRenderer.invoke('dbvs:ensure-project-docs', rootPath),
+
+  // 新手引导
+  getOnboardingStatus: () =>
+    ipcRenderer.invoke('dbvs:get-onboarding-status'),
+  setOnboardingCompleted: (completed: boolean) =>
+    ipcRenderer.invoke('dbvs:set-onboarding-completed', completed),
+})
+
+// 类型声明
+export interface ElectronAPI {
+  minimizeWindow: () => Promise<void>
+  maximizeWindow: () => Promise<void>
+  closeWindow: () => Promise<void>
+  isMaximized: () => Promise<boolean>
+  selectFolder: () => Promise<string | null>
+  isEmptyFolder: (path: string) => Promise<boolean>
+  readFile: (path: string) => Promise<{ success: boolean; content?: string; error?: string }>
+  createFile: (path: string) => Promise<{ success: boolean; message?: string }>
+  writeFile: (path: string, content: string) => Promise<{ success: boolean; message?: string }>
+  deleteFile: (path: string) => Promise<{ success: boolean; message?: string }>
+  listFiles: (path: string) => Promise<{ success: boolean; files?: Array<{ name: string; path: string; isDirectory: boolean }>; message?: string }>
+  copyDir: (src: string, dest: string) => Promise<{ success: boolean; message?: string }>
+  pathJoin: (...paths: string[]) => Promise<{ result: string }>
+  pathBasename: (filePath: string) => Promise<{ result: string }>
+  isDBVSRepository: (path: string) => Promise<boolean>
+  createRepository: (repoPath: string, name: string) => Promise<{ success: boolean; message?: string }>
+  createProject: (rootPath: string, projectName: string, customPath?: string) => Promise<{ success: boolean; message?: string }>
+  getProjects: (rootPath: string) => Promise<{ success: boolean; projects?: Array<{
+    name: string; path: string; repoPath: string; status: string; lastUpdate?: string; hasChanges?: boolean
+  }>; message?: string }>
+  registerProject: (rootPath: string, projectPath: string, projectName?: string, initWithCommit?: boolean) => Promise<{ success: boolean; message?: string }>
+  checkoutProject: (rootPath: string, repoPath: string) => Promise<{ success: boolean; message?: string; targetPath?: string }>
+  initRepository: (repoPath: string) => Promise<{ success: boolean; message?: string }>
+  getStatus: (repoPath: string, workingCopyPath: string) => Promise<{ success: boolean; status?: string[]; message?: string }>
+  getFileTree: (workingCopyPath: string) => Promise<{ success: boolean; files?: Array<{ name: string; path: string }>; message?: string }>
+  commit: (repoPath: string, workingCopyPath: string, message: string, files: string[]) => Promise<{ success: boolean; message?: string }>
+  getHistory: (repoPath: string) => Promise<{ success: boolean; history?: string; message?: string }>
+  rollback: (repoPath: string, workingCopyPath: string, version: string) => Promise<{ success: boolean; message?: string }>
+  rollbackFile: (repoPath: string, workingCopyPath: string, version: string, filePath: string) => Promise<{ success: boolean; message?: string }>
+  undoRollback: (repoPath: string, workingCopyPath: string) => Promise<{ success: boolean; message?: string }>
+  rollbackAI: (repoPath: string, workingCopyPath: string, sessionId: string) => Promise<{ success: boolean; message?: string; targetVersion?: string }>
+  revertFiles: (repoPath: string, workingCopyPath: string, filePaths: string[]) => Promise<{ success: boolean; message: string; reverted: string[] }>
+  autoSnapshotStart: (repoPath: string, workingCopyPath: string, intervalMinutes: number) => Promise<{ success: boolean; message: string }>
+  autoSnapshotStop: () => Promise<{ success: boolean; message: string }>
+  onAutoSnapshotResult: (callback: (result: { success: boolean; message?: string }) => void) => () => void
+  update: (repoPath: string, workingCopyPath: string) => Promise<{ success: boolean; message?: string }>
+  getDiff: (repoPath: string, workingCopyPath: string, filePath: string, versionA?: string, versionB?: string) => Promise<{ success: boolean; diff?: string; message?: string }>
+  getDiffSummary: (repoPath: string, workingCopyPath: string) => Promise<{
+    success: boolean
+    files?: Array<{ path: string; status: string; added: number; removed: number }>
+    totalAdded?: number
+    totalRemoved?: number
+    message?: string
+  }>
+  getDiffContent: (repoPath: string, workingCopyPath: string, filePath: string, versionA?: string, versionB?: string) => Promise<{ success: boolean; oldContent?: string; newContent?: string; message?: string }>
+  deleteRepository: (repoPath: string) => Promise<{ success: boolean; message?: string }>
+  deleteRepositoryFull: (rootPath: string, repoPath: string, deleteWorkingCopies: boolean) => Promise<{ success: boolean; message: string; deletedCopies?: string[] }>
+  verify: (repoPath: string) => Promise<{ success: boolean; valid: boolean; errors: string[]; message?: string }>
+  getHistoryStructured: (repoPath: string) => Promise<{ success: boolean; commits?: Array<{ id: string; message: string; timestamp: string; fileCount: number; totalSize: number }>; message?: string }>
+  getRepositoryInfo: (repoPath: string) => Promise<{ success: boolean; info?: string; message?: string }>
+  getCommitDetail: (repoPath: string, commitId: string) => Promise<{ id: string; message: string; timestamp: string; files: Array<{ path: string; hash: string; size: number }>; parentVersion: string | null; totalSize: number } | null>
+  getBlobContent: (repoPath: string, hash: string) => Promise<{ success: boolean; content?: string }>
+  resolvePaths: (inputPath: string) => Promise<{ repoPath: string; workingCopyPath: string } | null>
+  listRepositories: (rootPath: string) => Promise<{ success: boolean; repos: Array<{
+    name: string; path: string; created: string; currentVersion: string | null;
+    totalCommits: number; totalSize: number; blobCount: number; workingCopies: string[]
+  }> }>
+  createRootRepository: (path: string) => Promise<{ success: boolean; message?: string }>
+  getRootRepository: () => Promise<{ success: boolean; rootPath?: string | null }>
+  saveRootRepository: (path: string) => Promise<{ success: boolean; message?: string }>
+  openFolder: (path: string) => Promise<void>
+  checkAdmin: () => Promise<boolean>
+  onMenuNewProject: (callback: () => void) => () => void
+  onMenuOpenProject: (callback: () => void) => () => void
+  onMenuAbout: (callback: () => void) => () => void
+  registerContextMenu: () => Promise<{ success: boolean; message: string }>
+  unregisterContextMenu: () => Promise<{ success: boolean; message: string }>
+  isContextMenuRegistered: () => Promise<boolean>
+  onCliAction: (callback: (data: { action: string; path: string }) => void) => () => void
+  checkoutTo: (rootPath: string, repoPath: string, targetParentDir: string, folderName: string) => Promise<{ success: boolean; message: string; targetPath?: string; projectName?: string }>
+  registerWorkingCopy: (rootPath: string, workingCopyPath: string) => Promise<{ success: boolean; message: string; projectName?: string; repoPath?: string }>
+  unregisterProject: (rootPath: string, workingCopyPath: string) => Promise<{ success: boolean; message: string }>
+
+  // 新手引导
+  getOnboardingStatus: () => Promise<{ completed: boolean }>
+  setOnboardingCompleted: (completed: boolean) => Promise<{ success: boolean; message?: string }>
+}
+
+export interface FileStatus {
+  path: string
+  status: 'unchanged' | 'added' | 'modified' | 'deleted' | 'conflict'
+  isDirectory: boolean
+}
+
+export interface FileTreeNode {
+  name: string
+  path: string
+  isDirectory: boolean
+  status: 'unchanged' | 'added' | 'modified' | 'deleted' | 'conflict'
+  children?: FileTreeNode[]
+}
+
+export interface VersionInfo {
+  version: string
+  timestamp: string
+  message: string
+  files: string[]
+  size: number
+}
+
+export interface DiffResult {
+  filePath: string
+  diff: DiffBlock[]
+  canDisplay: boolean
+}
+
+export interface DiffBlock {
+  type: 'add' | 'delete' | 'modify' | 'equal'
+  content: string
+  oldStart?: number
+  oldEnd?: number
+  newStart?: number
+  newEnd?: number
+}
+
+export interface RepositoryInfo {
+  name: string
+  path: string
+  currentVersion: string
+  createdAt: string
+  totalFiles: number
+  totalVersions: number
+  totalSize: number
+}

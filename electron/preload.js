@@ -1,0 +1,120 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const electron_1 = require("electron");
+// 向渲染进程暴露API
+electron_1.contextBridge.exposeInMainWorld('electronAPI', {
+    // 窗口控制
+    minimizeWindow: () => electron_1.ipcRenderer.invoke('window:minimize'),
+    maximizeWindow: () => electron_1.ipcRenderer.invoke('window:maximize'),
+    closeWindow: () => electron_1.ipcRenderer.invoke('window:close'),
+    isMaximized: () => electron_1.ipcRenderer.invoke('window:is-maximized'),
+    // 对话框
+    selectFolder: () => electron_1.ipcRenderer.invoke('dialog:select-folder'),
+    // 文件系统
+    isEmptyFolder: (path) => electron_1.ipcRenderer.invoke('fs:is-empty-folder', path),
+    readFile: (path) => electron_1.ipcRenderer.invoke('fs:read-file', path),
+    createFile: (path) => electron_1.ipcRenderer.invoke('fs:create-file', path),
+    writeFile: (path, content) => electron_1.ipcRenderer.invoke('fs:write-file', path, content),
+    deleteFile: (path) => electron_1.ipcRenderer.invoke('fs:delete-file', path),
+    listFiles: (path) => electron_1.ipcRenderer.invoke('fs:list-files', path),
+    copyDir: (src, dest) => electron_1.ipcRenderer.invoke('fs:copy-dir', src, dest),
+    pathJoin: (...paths) => electron_1.ipcRenderer.invoke('fs:path-join', ...paths),
+    pathBasename: (filePath) => electron_1.ipcRenderer.invoke('fs:path-basename', filePath),
+    // DBVS操作（SVN 风格：repoPath = 集中仓库, workingCopyPath = 工作副本）
+    isDBVSRepository: (path) => electron_1.ipcRenderer.invoke('dbvs:is-repository', path),
+    createRepository: (repoPath, name) => electron_1.ipcRenderer.invoke('dbvs:create-repository', repoPath, name),
+    createProject: (rootPath, projectName, customPath) => electron_1.ipcRenderer.invoke('dbvs:create-project', rootPath, projectName, customPath),
+    getProjects: (rootPath) => electron_1.ipcRenderer.invoke('dbvs:get-projects', rootPath),
+    registerProject: (rootPath, projectPath, projectName, initWithCommit) => electron_1.ipcRenderer.invoke('dbvs:register-project', rootPath, projectPath, projectName, initWithCommit),
+    checkoutProject: (rootPath, repoPath) => electron_1.ipcRenderer.invoke('dbvs:checkout-project', rootPath, repoPath),
+    initRepository: (repoPath) => electron_1.ipcRenderer.invoke('dbvs:init-repository', repoPath),
+    getStatus: (repoPath, workingCopyPath) => electron_1.ipcRenderer.invoke('dbvs:get-status', repoPath, workingCopyPath),
+    getFileTree: (workingCopyPath) => electron_1.ipcRenderer.invoke('dbvs:get-file-tree', workingCopyPath),
+    commit: (repoPath, workingCopyPath, message, files, options) => electron_1.ipcRenderer.invoke('dbvs:commit', repoPath, workingCopyPath, message, files, options),
+    getHistory: (repoPath) => electron_1.ipcRenderer.invoke('dbvs:get-history', repoPath),
+    rollback: (repoPath, workingCopyPath, version) => electron_1.ipcRenderer.invoke('dbvs:rollback', repoPath, workingCopyPath, version),
+    rollbackFile: (repoPath, workingCopyPath, version, filePath) => electron_1.ipcRenderer.invoke('dbvs:rollback-file', repoPath, workingCopyPath, version, filePath),
+    undoRollback: (repoPath, workingCopyPath) => electron_1.ipcRenderer.invoke('dbvs:undo-rollback', repoPath, workingCopyPath),
+    rollbackAI: (repoPath, workingCopyPath, sessionId) => electron_1.ipcRenderer.invoke('dbvs:rollback-ai', repoPath, workingCopyPath, sessionId),
+    revertFiles: (repoPath, workingCopyPath, filePaths) => electron_1.ipcRenderer.invoke('dbvs:revert-files', repoPath, workingCopyPath, filePaths),
+    autoSnapshotStart: (repoPath, workingCopyPath, intervalMinutes) => electron_1.ipcRenderer.invoke('dbvs:auto-snapshot-start', repoPath, workingCopyPath, intervalMinutes),
+    autoSnapshotStop: () => electron_1.ipcRenderer.invoke('dbvs:auto-snapshot-stop'),
+    onAutoSnapshotResult: (callback) => {
+        electron_1.ipcRenderer.on('auto-snapshot:result', (_, result) => callback(result));
+        return () => electron_1.ipcRenderer.removeAllListeners('auto-snapshot:result');
+    },
+    update: (repoPath, workingCopyPath) => electron_1.ipcRenderer.invoke('dbvs:update', repoPath, workingCopyPath),
+    getDiff: (repoPath, workingCopyPath, filePath, versionA, versionB) => electron_1.ipcRenderer.invoke('dbvs:get-diff', repoPath, workingCopyPath, filePath, versionA, versionB),
+    getDiffSummary: (repoPath, workingCopyPath) => electron_1.ipcRenderer.invoke('dbvs:get-diff-summary', repoPath, workingCopyPath),
+    getDiffContent: (repoPath, workingCopyPath, filePath, versionA, versionB) => electron_1.ipcRenderer.invoke('dbvs:get-diff-content', repoPath, workingCopyPath, filePath, versionA, versionB),
+    deleteRepository: (repoPath) => electron_1.ipcRenderer.invoke('dbvs:delete-repository', repoPath),
+    deleteRepositoryFull: (rootPath, repoPath, deleteWorkingCopies) => electron_1.ipcRenderer.invoke('dbvs:delete-repository-full', rootPath, repoPath, deleteWorkingCopies),
+    verify: (repoPath) => electron_1.ipcRenderer.invoke('dbvs:verify', repoPath),
+    getHistoryStructured: (repoPath) => electron_1.ipcRenderer.invoke('dbvs:get-history-structured', repoPath),
+    getRepositoryInfo: (repoPath) => electron_1.ipcRenderer.invoke('dbvs:get-repository-info', repoPath),
+    getCommitDetail: (repoPath, commitId) => electron_1.ipcRenderer.invoke('dbvs:get-commit-detail', repoPath, commitId),
+    getBlobContent: (repoPath, hash) => electron_1.ipcRenderer.invoke('dbvs:get-blob-content', repoPath, hash),
+    resolvePaths: (inputPath) => electron_1.ipcRenderer.invoke('dbvs:resolve-paths', inputPath),
+    listRepositories: (rootPath) => electron_1.ipcRenderer.invoke('dbvs:list-repositories', rootPath),
+    createRootRepository: (path) => electron_1.ipcRenderer.invoke('dbvs:create-root-repository', path),
+    getRootRepository: () => electron_1.ipcRenderer.invoke('dbvs:get-root-repository'),
+    saveRootRepository: (path) => electron_1.ipcRenderer.invoke('dbvs:save-root-repository', path),
+    registerCLI: () => electron_1.ipcRenderer.invoke('dbvs:register-cli'),
+    isCLIRegistered: () => electron_1.ipcRenderer.invoke('dbvs:is-cli-registered'),
+    // Shell
+    openFolder: (path) => electron_1.ipcRenderer.invoke('shell:open-folder', path),
+    // 系统
+    checkAdmin: () => electron_1.ipcRenderer.invoke('system:check-admin'),
+    // 菜单事件
+    onMenuNewProject: (callback) => {
+        electron_1.ipcRenderer.on('menu:new-project', callback);
+        return () => electron_1.ipcRenderer.removeListener('menu:new-project', callback);
+    },
+    onMenuOpenProject: (callback) => {
+        electron_1.ipcRenderer.on('menu:open-project', callback);
+        return () => electron_1.ipcRenderer.removeListener('menu:open-project', callback);
+    },
+    onMenuAbout: (callback) => {
+        electron_1.ipcRenderer.on('menu:about', callback);
+        return () => electron_1.ipcRenderer.removeListener('menu:about', callback);
+    },
+    // Git Remote Sync
+    gitConnect: (workingCopyPath, remoteUrl, branch, username, token) => electron_1.ipcRenderer.invoke('git:connect', workingCopyPath, remoteUrl, branch, username, token),
+    gitDisconnect: (workingCopyPath) => electron_1.ipcRenderer.invoke('git:disconnect', workingCopyPath),
+    gitSyncStatus: (workingCopyPath) => electron_1.ipcRenderer.invoke('git:sync-status', workingCopyPath),
+    gitPull: (workingCopyPath, username, token) => electron_1.ipcRenderer.invoke('git:pull', workingCopyPath, username, token),
+    gitPush: (workingCopyPath, commitMessage, authorName, authorEmail, username, token) => electron_1.ipcRenderer.invoke('git:push', workingCopyPath, commitMessage, authorName, authorEmail, username, token),
+    gitResolveConflict: (workingCopyPath, filePath, resolution) => electron_1.ipcRenderer.invoke('git:resolve-conflict', workingCopyPath, filePath, resolution),
+    gitCommitMerge: (workingCopyPath, authorName, authorEmail) => electron_1.ipcRenderer.invoke('git:commit-merge', workingCopyPath, authorName, authorEmail),
+    gitGetCredentials: () => electron_1.ipcRenderer.invoke('git:get-credentials'),
+    gitSaveCredential: (host, username, token) => electron_1.ipcRenderer.invoke('git:save-credential', host, username, token),
+    gitDeleteCredential: (host) => electron_1.ipcRenderer.invoke('git:delete-credential', host),
+    onGitProgress: (callback) => {
+        electron_1.ipcRenderer.on('git:progress', (_, msg) => callback(msg));
+        return () => electron_1.ipcRenderer.removeAllListeners('git:progress');
+    },
+    // LAN Server
+    lanStart: (rootPath, port) => electron_1.ipcRenderer.invoke('lan:start', rootPath, port),
+    lanStop: () => electron_1.ipcRenderer.invoke('lan:stop'),
+    lanStatus: () => electron_1.ipcRenderer.invoke('lan:status'),
+    // 右键菜单
+    registerContextMenu: () => electron_1.ipcRenderer.invoke('context-menu:register'),
+    unregisterContextMenu: () => electron_1.ipcRenderer.invoke('context-menu:unregister'),
+    isContextMenuRegistered: () => electron_1.ipcRenderer.invoke('context-menu:is-registered'),
+    // CLI 参数事件（右键菜单触发）
+    onCliAction: (callback) => {
+        electron_1.ipcRenderer.on('cli:action', (_, data) => callback(data));
+        return () => electron_1.ipcRenderer.removeAllListeners('cli:action');
+    },
+    // Checkout 到指定目录
+    checkoutTo: (rootPath, repoPath, targetParentDir, folderName) => electron_1.ipcRenderer.invoke('dbvs:checkout-to', rootPath, repoPath, targetParentDir, folderName),
+    // 注册已有工作副本
+    registerWorkingCopy: (rootPath, workingCopyPath) => electron_1.ipcRenderer.invoke('dbvs:register-working-copy', rootPath, workingCopyPath),
+    // 从项目列表移除工作副本（仅断开关联）
+    unregisterProject: (rootPath, workingCopyPath) => electron_1.ipcRenderer.invoke('dbvs:unregister-project', rootPath, workingCopyPath),
+    // 启动检查：补全项目 DBVS-GUIDE.md
+    ensureProjectDocs: (rootPath) => electron_1.ipcRenderer.invoke('dbvs:ensure-project-docs', rootPath),
+    // 新手引导
+    getOnboardingStatus: () => electron_1.ipcRenderer.invoke('dbvs:get-onboarding-status'),
+    setOnboardingCompleted: (completed) => electron_1.ipcRenderer.invoke('dbvs:set-onboarding-completed', completed),
+});
