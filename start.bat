@@ -3,14 +3,16 @@ set PORT=3005
 echo Starting DBVS...
 
 echo Checking dependencies...
-call npm install
+echo.
+call npm install --foreground-scripts --no-audit --no-fund
 if %errorlevel% neq 0 (
     echo.
     echo Install failed. Please check your network and try again.
     pause
     exit /b 1
 )
-echo Dependencies ready.
+echo.
+echo Dependencies ready!
 echo.
 
 echo Checking port %PORT%...
