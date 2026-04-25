@@ -648,22 +648,23 @@ export default function RepoList() {
 
         <div className="projects-section">
           <div className="section-header">
-            <h2>项目列表</h2>
-            <button
-              onClick={() => setShowHelpModal(true)}
-              title="功能说明"
-              style={{
-                border: '1px solid #d1d5db', borderRadius: '50%',
-                width: '22px', height: '22px', display: 'flex',
-                alignItems: 'center', justifyContent: 'center',
-                background: '#fff', cursor: 'pointer', color: '#9ca3af',
-                fontSize: '13px', fontWeight: 700, lineHeight: 1,
-                transition: 'all 0.15s',
-                marginLeft: '6px', flexShrink: 0,
-              }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = '#4f46e5'; e.currentTarget.style.color = '#4f46e5' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.color = '#9ca3af' }}
-            >?</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <h2 style={{ margin: 0 }}>项目列表</h2>
+              <button
+                onClick={() => setShowHelpModal(true)}
+                title="功能说明"
+                style={{
+                  border: '1px solid #d1d5db', borderRadius: '50%',
+                  width: '20px', height: '20px', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  background: '#fff', cursor: 'pointer', color: '#9ca3af',
+                  fontSize: '12px', fontWeight: 700, lineHeight: 1,
+                  transition: 'all 0.15s', padding: 0,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#4f46e5'; e.currentTarget.style.color = '#4f46e5' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.color = '#9ca3af' }}
+              >?</button>
+            </div>
             <div className="section-actions">
               <button onClick={() => dispatch({ type: 'SET_SHOW_CREATE_PROJECT_MODAL', payload: true })}>
                 创建项目

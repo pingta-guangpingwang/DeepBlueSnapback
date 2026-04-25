@@ -32,19 +32,23 @@ function App() {
         try {
           await window.electronAPI.ensureProjectDocs(result.rootPath)
         } catch { /* ignore */ }
-        // Check onboarding status
-        try {
-          const obResult = await window.electronAPI.getOnboardingStatus()
-          if (!obResult.completed) {
-            dispatch({ type: 'SET_SHOW_ONBOARDING', payload: true })
-          }
-        } catch { /* ignore */ }
       } else {
         dispatch({ type: 'SET_CURRENT_VIEW', payload: 'repositories' })
       }
     }
     initApp()
   }, [dispatch])
+
+  // Check onboarding when entering repositories view (covers both fresh start and after root setup)
+  useEffect(() => {
+    if (state.isRootRepoConfigured && state.currentView === 'repositories' && !state.showOnboarding) {
+      window.electronAPI.getOnboardingStatus().then(obResult => {
+        if (!obResult.completed) {
+          dispatch({ type: 'SET_SHOW_ONBOARDING', payload: true })
+        }
+      }).catch(() => {})
+    }
+  }, [state.isRootRepoConfigured, state.currentView, dispatch])
 
   // Register menu shortcuts
   useEffect(() => {

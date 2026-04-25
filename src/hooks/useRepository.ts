@@ -160,7 +160,10 @@ export function useRepository() {
     const project = state.projects.find(p => p.path === projectPath)
     const repoPath = project?.repoPath || state.repoPath
     const workingCopyPath = project?.path || state.projectPath
-    if (!repoPath || !workingCopyPath) return
+    if (!repoPath || !workingCopyPath) {
+      dispatch({ type: 'SET_MESSAGE', payload: '该项目尚未关联版本仓库，请先进入项目初始化仓库。' })
+      return
+    }
 
     dispatch({ type: 'SET_IS_LOADING', payload: true })
     try {
@@ -176,12 +179,17 @@ export function useRepository() {
           })
           .filter((item): item is { path: string; status: string } => item !== null && !!item.path)
 
+        if (files.length === 0) {
+          dispatch({ type: 'SET_MESSAGE', payload: '当前没有可提交的变更文件。' })
+          return
+        }
+
         dispatch({ type: 'SET_COMMIT_PANEL_FILES', payload: files })
         dispatch({ type: 'SET_COMMIT_PANEL_PROJECT', payload: projectPath })
         dispatch({ type: 'SET_SELECTED_FILES', payload: [] })
         dispatch({ type: 'SET_COMMIT_MESSAGE', payload: '' })
       } else {
-        dispatch({ type: 'SET_MESSAGE', payload: '获取项目状态失败' })
+        dispatch({ type: 'SET_MESSAGE', payload: '该项目尚未初始化版本仓库，请先进入项目完成初始化。' })
       }
     } catch {
       dispatch({ type: 'SET_MESSAGE', payload: '打开提交面板失败' })
