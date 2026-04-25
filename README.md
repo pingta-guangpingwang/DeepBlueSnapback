@@ -164,6 +164,27 @@ netstat -ano | findstr :3005
 taskkill /PID <pid> /F
 ```
 
+## 联系与支持
+
+DBVS 是一款完全免费的开源软件，如果你觉得它对你有帮助，欢迎打赏支持，你的鼓励是我持续更新的动力。
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="f9e661730d92fb35985a8d0dffcfb624.jpg" width="180" /><br/>
+      <b>微信支付</b>
+    </td>
+    <td align="center">
+      <img src="cd5741cc158ccc6be0b524f0444cc22c.jpg" width="180" /><br/>
+      <b>支付宝</b>
+    </td>
+    <td align="center">
+      <img src="94407fbdd42a797af5a902bc107d72e8.jpg" width="180" /><br/>
+      <b>微信交流群</b>
+    </td>
+  </tr>
+</table>
+
 ## 许可
 
 MIT
