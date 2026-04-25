@@ -1,7 +1,7 @@
-# DeepBlueSnapback
+# DBGODVS
 Your code's local vault. Version control without the cloud, without the complexity
 
-# DBVS — DeepBlue Version System
+# DBGODVS — 深蓝主神版本管理系统
 
 基于 Electron + React 的本地版本控制系统，采用 SVN 风格的集中仓库 + 分布式工作副本架构。
 
@@ -22,30 +22,30 @@ npm run build && npm run start
 ### CLI 模式
 ```bash
 # 设置根仓库
-dbvs set-root D:/DBVS-Root
+dbgvs set-root D:/DBGODVS-Root
 
 # 创建项目
-dbvs create-project my-app
+dbgvs create-project my-app
 
 # 查看状态
-dbvs status /path/to/project
+dbgvs status /path/to/project
 
 # 提交变更
-dbvs commit /path/to/project --message "修复登录 bug"
+dbgvs commit /path/to/project --message "修复登录 bug"
 ```
 
 ## 技术栈
 
 - **前端**: React 19 + TypeScript + Vite 8 (端口 3005)
 - **桌面**: Electron 28
-- **版本控制**: DBVS 自研引擎 (集中仓库 + 工作副本)
+- **版本控制**: DBGODVS 自研引擎 (集中仓库 + 工作副本)
 - **Git 远程同步**: isomorphic-git (pull/push/冲突解决)
 - **CLI**: Commander.js (独立运行，不依赖 Electron GUI)
 
 ## 架构
 
 ```
-DBVS-Root/                    ← 根仓库
+DBGODVS-Root/                    ← 根仓库
 ├── repositories/             ← 集中版本仓库
 │   ├── project-a/           ← 每个项目的版本数据
 │   │   ├── config.json      ← 仓库配置
@@ -59,7 +59,7 @@ DBVS-Root/                    ← 根仓库
 
 工作副本 (任意位置)/
 ├── .dbvs-link.json           ← 指向集中仓库的链接
-├── DBVS-GUIDE.md             ← 版本管理说明文档
+├── DBGODVS-GUIDE.md             ← 版本管理说明文档
 ├── .git/                     ← (可选) Git 远程同步
 └── ...项目文件...
 ```
@@ -85,63 +85,63 @@ DBVS-Root/                    ← 根仓库
 
 ### 根仓库管理
 ```bash
-dbvs set-root <path>          # 设置根仓库路径
-dbvs get-root                 # 获取当前根仓库路径
+dbgvs set-root <path>          # 设置根仓库路径
+dbgvs get-root                 # 获取当前根仓库路径
 ```
 
 ### 项目管理
 ```bash
-dbvs create-project <name>    # 创建新项目
-dbvs import-project <src>     # 导入外部文件夹为项目
-dbvs delete-project <name>    # 删除项目
-dbvs delete-project <name> --keep-files  # 仅删除版本历史，保留文件
-dbvs list-projects            # 列出所有项目
-dbvs list-repos               # 列出所有仓库
-dbvs unregister <path>        # 从项目列表移除
-dbvs unregister <path> --delete-files  # 移除并删除文件
+dbgvs create-project <name>    # 创建新项目
+dbgvs import-project <src>     # 导入外部文件夹为项目
+dbgvs delete-project <name>    # 删除项目
+dbgvs delete-project <name> --keep-files  # 仅删除版本历史，保留文件
+dbgvs list-projects            # 列出所有项目
+dbgvs list-repos               # 列出所有仓库
+dbgvs unregister <path>        # 从项目列表移除
+dbgvs unregister <path> --delete-files  # 移除并删除文件
 ```
 
 ### 版本控制操作
 ```bash
-dbvs status [path]            # 查看工作区状态
-dbvs commit <path> -m "msg"   # 提交变更
-dbvs commit <path> -m "msg" -f file1,file2  # 提交指定文件
-dbvs update <path>            # 更新到最新版本
-dbvs rollback <path> -v v3    # 回滚到指定版本
-dbvs history <path>           # 查看提交历史
-dbvs log [path] -n 10         # 查看最近 N 条提交日志
-dbvs diff <path> -f file.ts   # 查看文件差异
-dbvs diff <path> -f file.ts -a v1 -b v2  # 比较两个版本
-dbvs info <path>              # 查看仓库信息
-dbvs init <path>              # 初始化仓库
-dbvs verify <path>            # 验证仓库完整性
-dbvs file-tree <path>         # 列出项目文件树
-dbvs version [path]           # 查看当前版本
-dbvs pull <repoPath> <dir>    # 从仓库拉取项目到目标目录
+dbgvs status [path]            # 查看工作区状态
+dbgvs commit <path> -m "msg"   # 提交变更
+dbgvs commit <path> -m "msg" -f file1,file2  # 提交指定文件
+dbgvs update <path>            # 更新到最新版本
+dbgvs rollback <path> -v v3    # 回滚到指定版本
+dbgvs history <path>           # 查看提交历史
+dbgvs log [path] -n 10         # 查看最近 N 条提交日志
+dbgvs diff <path> -f file.ts   # 查看文件差异
+dbgvs diff <path> -f file.ts -a v1 -b v2  # 比较两个版本
+dbgvs info <path>              # 查看仓库信息
+dbgvs init <path>              # 初始化仓库
+dbgvs verify <path>            # 验证仓库完整性
+dbgvs file-tree <path>         # 列出项目文件树
+dbgvs version [path]           # 查看当前版本
+dbgvs pull <repoPath> <dir>    # 从仓库拉取项目到目标目录
 ```
 
 ### Git 远程同步
 ```bash
-dbvs git-connect <path> <url>              # 连接远程仓库
-dbvs git-connect <path> <url> -b main -u user -t TOKEN
+dbgvs git-connect <path> <url>              # 连接远程仓库
+dbgvs git-connect <path> <url> -b main -u user -t TOKEN
 
-dbvs git-pull <path>                       # 拉取远程更新
-dbvs git-pull <path> -u user -t TOKEN
+dbgvs git-pull <path>                       # 拉取远程更新
+dbgvs git-pull <path> -u user -t TOKEN
 
-dbvs git-push <path> -m "sync message"     # 推送到远程
-dbvs git-push <path> -m "msg" -u user -t TOKEN
+dbgvs git-push <path> -m "sync message"     # 推送到远程
+dbgvs git-push <path> -m "msg" -u user -t TOKEN
 ```
 
 ## AI 智能体接入
 
-每个由 DBVS 管理的项目目录下都会自动生成 `DBVS-GUIDE.md`，其中包含：
+每个由 DBGODVS 管理的项目目录下都会自动生成 `DBGODVS-GUIDE.md`，其中包含：
 - 项目基本信息（名称、路径、仓库路径）
 - 常用 CLI 命令速查
 - 版本管理操作指引
 
 ### AI 智能体推荐工作流
 
-1. **了解项目**: 读取项目目录下的 `DBVS-GUIDE.md`
+1. **了解项目**: 读取项目目录下的 `DBGODVS-GUIDE.md`
 2. **开始工作前**: `dbvs status <path>` 检查当前变更
 3. **修改文件后**: `dbvs commit <path> -m "描述变更内容"`
 4. **查看差异**: `dbvs diff <path> -f <file>` 查看具体变更
@@ -150,8 +150,8 @@ dbvs git-push <path> -m "msg" -u user -t TOKEN
 
 ## 忽略规则
 
-DBVS 自动忽略以下文件/目录（不纳入版本管理）：
-- `.dbvs/` `.dbvs-link.json` — DBVS 内部文件
+DBGODVS 自动忽略以下文件/目录（不纳入版本管理）：
+- `.dbvs/` `.dbvs-link.json` — DBGODVS 内部文件
 - `.git/` — Git 远程同步数据
 - `node_modules/` — 依赖目录
 - `.DS_Store` `Thumbs.db` — 系统文件
@@ -166,7 +166,7 @@ taskkill /PID <pid> /F
 
 ## 联系与支持
 
-DBVS 是一款完全免费的开源软件，如果你觉得它对你有帮助，欢迎打赏支持，你的鼓励是我持续更新的动力。
+DBGODVS 是一款完全免费的开源软件，如果你觉得它对你有帮助，欢迎打赏支持，你的鼓励是我持续更新的动力。
 
 <table>
   <tr>

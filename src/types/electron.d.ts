@@ -14,8 +14,8 @@ export interface ElectronAPI {
   pathJoin: (...paths: string[]) => Promise<{ result: string }>
   pathBasename: (filePath: string) => Promise<{ result: string }>
 
-  // DBVS 操作（SVN 风格）
-  isDBVSRepository: (path: string) => Promise<boolean>
+  // DBGODVS 操作（SVN 风格）
+  isDBGODVSRepository: (path: string) => Promise<boolean>
   createRepository: (repoPath: string, name: string) => Promise<{ success: boolean; message?: string }>
   createProject: (rootPath: string, projectName: string, customPath?: string) => Promise<{ success: boolean; message?: string }>
   getProjects: (rootPath: string) => Promise<{ success: boolean; projects?: Array<{
@@ -86,7 +86,7 @@ export interface ElectronAPI {
   // 从项目列表移除工作副本
   unregisterProject: (rootPath: string, workingCopyPath: string) => Promise<{ success: boolean; message: string }>
 
-  // 启动检查：补全项目 DBVS-GUIDE.md
+  // 启动检查：补全项目 DBGODVS-GUIDE.md
   ensureProjectDocs: (rootPath: string) => Promise<{ success: boolean; added: number; total: number; message?: string }>
 
   // Git Remote Sync

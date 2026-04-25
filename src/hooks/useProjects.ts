@@ -151,9 +151,9 @@ export function useProjects() {
     dispatch({ type: 'SET_CURRENT_VIEW', payload: 'dashboard' })
 
     try {
-      const result = await window.electronAPI.isDBVSRepository(project.repoPath)
+      const result = await window.electronAPI.isDBGODVSRepository(project.repoPath)
       dispatch({ type: 'SET_REPO_STATUS', payload: result })
-      dispatch({ type: 'SET_MESSAGE', payload: result ? '当前目录是一个DBVS仓库。' : '当前目录不是DBVS仓库，可以初始化或创建仓库。' })
+      dispatch({ type: 'SET_MESSAGE', payload: result ? '当前目录是一个DBGODVS仓库。' : '当前目录不是DBGODVS仓库，可以初始化或创建仓库。' })
     } catch {
       dispatch({ type: 'SET_REPO_STATUS', payload: false })
     }

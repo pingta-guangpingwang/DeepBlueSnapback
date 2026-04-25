@@ -1,10 +1,10 @@
-# DBVS (DeepBlue Version System) 重构技术方案
+# DBGODVS (深蓝主神版本管理系统) 重构技术方案
 
 > 版本：2.0 | 日期：2026-04-10
 
 ## 一、项目定位
 
-DBVS 是一个**本地优先的版本管理系统**，集 SVN 服务器 + 客户端于一体，核心价值：
+DBGODVS 是一个**本地优先的版本管理系统**，集 SVN 服务器 + 客户端于一体，核心价值：
 
 - **零依赖**：无需安装 SVN/Git 客户端或服务器，开箱即用
 - **可视化**：所有操作通过图形界面完成，支持代码比对、语法高亮、左右对照
@@ -90,12 +90,12 @@ DBVS 是一个**本地优先的版本管理系统**，集 SVN 服务器 + 客户
 
 ### 3.2 GitHub/GitLab 远程拉取
 
-**目标**：从 GitHub/GitLab 等平台拉取项目到本地 DBVS 仓库。
+**目标**：从 GitHub/GitLab 等平台拉取项目到本地 DBGODVS 仓库。
 
 **技术方案**：使用 isomorphic-git 实现 Git 协议支持。
 
 **功能**：
-- 输入远程仓库 URL → 拉取到本地 → 自动创建 DBVS 仓库
+- 输入远程仓库 URL → 拉取到本地 → 自动创建 DBGODVS 仓库
 - 支持选择分支/标签
 - 增量拉取更新（fetch + merge）
 - 暂不支持推送到远程（未来扩展）
@@ -131,26 +131,26 @@ WS     /ws/notifications          -- 实时变更通知
 
 **命令设计**：
 ```
-dbvs init <path>                      -- 初始化仓库
-dbvs status [path]                    -- 查看状态
-dbvs commit <path> -m "message" [-f file1,file2]  -- 提交
-dbvs history <path> [-n 10]           -- 查看历史
-dbvs rollback <path> -v <version>     -- 回滚
-dbvs update <path>                    -- 更新到最新
-dbvs diff <path> [-f file] [-v v1 v2]-- 差异对比
-dbvs info <path>                      -- 仓库信息
+dbgvs init <path>                      -- 初始化仓库
+dbgvs status [path]                    -- 查看状态
+dbgvs commit <path> -m "message" [-f file1,file2]  -- 提交
+dbgvs history <path> [-n 10]           -- 查看历史
+dbgvs rollback <path> -v <version>     -- 回滚
+dbgvs update <path>                    -- 更新到最新
+dbgvs diff <path> [-f file] [-v v1 v2]-- 差异对比
+dbgvs info <path>                      -- 仓库信息
 
-dbvs project list                     -- 列出项目
-dbvs project create <name>            -- 创建项目
-dbvs project import <src-path>        -- 导入项目
-dbvs project clone <git-url>          -- 从 Git 拉取
+dbgvs project list                     -- 列出项目
+dbgvs project create <name>            -- 创建项目
+dbgvs project import <src-path>        -- 导入项目
+dbgvs project clone <git-url>          -- 从 Git 拉取
 
-dbvs server start [--port 3280]       -- 启动 LAN 服务器
-dbvs server connect <address>         -- 连接 LAN 服务器
-dbvs server status                    -- 服务器状态
+dbgvs server start [--port 3280]       -- 启动 LAN 服务器
+dbgvs server connect <address>         -- 连接 LAN 服务器
+dbgvs server status                    -- 服务器状态
 
-dbvs root set <path>                  -- 设置根仓库
-dbvs root get                         -- 获取根仓库路径
+dbgvs root set <path>                  -- 设置根仓库
+dbgvs root get                         -- 获取根仓库路径
 ```
 
 **输出格式**：默认 JSON（便于 AI 解析），可选 `--format table` 或 `--format text`。

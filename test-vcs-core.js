@@ -1,7 +1,7 @@
 /**
- * DBVS 核心 VCS 引擎自动化测试
+ * DBGODVS 核心 VCS 引擎自动化测试
  *
- * 直接通过 Node.js 调用 DBVSRepository 类，验证：
+ * 直接通过 Node.js 调用 DBGODVSRepository 类，验证：
  * 1. 创建仓库
  * 2. 提交文件（保存内容到 objects）
  * 3. 获取状态（检测新增/修改/删除）
@@ -12,9 +12,9 @@
 
 const path = require('path')
 const fs = require('fs-extra')
-const { DBVSRepository } = require('./electron/dbvs-repository')
+const { DBGODVSRepository } = require('./electron/dbvs-repository')
 
-const repo = new DBVSRepository()
+const repo = new DBGODVSRepository()
 
 // 测试根目录
 const TEST_ROOT = path.join(require('os').tmpdir(), 'dbvs-test-' + Date.now())
@@ -63,7 +63,7 @@ async function testCommit() {
   console.log('\n--- 测试 2：提交文件（保存内容快照）---')
 
   // 创建测试文件
-  await fs.writeFile(path.join(PROJECT_DIR, 'hello.txt'), 'Hello DBVS!')
+  await fs.writeFile(path.join(PROJECT_DIR, 'hello.txt'), 'Hello DBGODVS!')
   await fs.writeFile(path.join(PROJECT_DIR, 'readme.md'), '# Test Project')
   await fs.ensureDir(path.join(PROJECT_DIR, 'src'))
   await fs.writeFile(path.join(PROJECT_DIR, 'src', 'index.ts'), 'console.log("test")')
@@ -105,7 +105,7 @@ async function testGetStatus() {
   assert(result.status.length === 0, '初始状态无变更')
 
   // 修改文件
-  await fs.writeFile(path.join(PROJECT_DIR, 'hello.txt'), 'Hello DBVS! Modified!')
+  await fs.writeFile(path.join(PROJECT_DIR, 'hello.txt'), 'Hello DBGODVS! Modified!')
 
   result = await repo.getStatus(PROJECT_DIR)
   assert(result.status.some(s => s.startsWith('M ')), '检测到修改文件 (M)')
@@ -129,7 +129,7 @@ async function testGetDiff() {
 
   // 先恢复文件以便测试
   await fs.writeFile(path.join(PROJECT_DIR, 'readme.md'), '# Test Project')
-  await fs.writeFile(path.join(PROJECT_DIR, 'hello.txt'), 'Hello DBVS! Modified!')
+  await fs.writeFile(path.join(PROJECT_DIR, 'hello.txt'), 'Hello DBGODVS! Modified!')
 
   const result = await repo.getDiff(PROJECT_DIR, 'hello.txt')
   assert(result.success === true, '获取差异成功')
@@ -137,7 +137,7 @@ async function testGetDiff() {
   assert(result.diff.includes('-') || result.diff.includes('+'), '差异包含增删标记')
 
   // 验证差异内容包含旧内容和新内容
-  assert(result.diff.includes('Hello DBVS!'), '差异包含旧内容')
+  assert(result.diff.includes('Hello DBGODVS!'), '差异包含旧内容')
   assert(result.diff.includes('Modified'), '差异包含新内容')
 }
 
@@ -163,7 +163,7 @@ async function testRollback(firstVersion, secondVersion) {
 
   // 验证文件内容已恢复
   const helloContent = await fs.readFile(path.join(PROJECT_DIR, 'hello.txt'), 'utf-8')
-  assert(helloContent === 'Hello DBVS!', `hello.txt 内容已恢复: "${helloContent}"`)
+  assert(helloContent === 'Hello DBGODVS!', `hello.txt 内容已恢复: "${helloContent}"`)
 
   // 验证第二次提交新增的文件已删除
   assert(!(await fs.pathExists(path.join(PROJECT_DIR, 'new-file.txt'))), 'new-file.txt 已被删除（不在第一版本中）')
@@ -177,16 +177,16 @@ async function testRollback(firstVersion, secondVersion) {
 async function testUpdate() {
   console.log('\n--- 测试 7：更新（恢复到 HEAD 版本，丢弃工作区修改）---')
 
-  // 回滚后 HEAD 指向第一版本，hello.txt 内容是 "Hello DBVS!"
+  // 回滚后 HEAD 指向第一版本，hello.txt 内容是 "Hello DBGODVS!"
   // 先修改文件制造差异
   await fs.writeFile(path.join(PROJECT_DIR, 'hello.txt'), 'Some random change')
 
   const result = await repo.update(PROJECT_DIR)
   assert(result.success === true, '更新成功')
 
-  // update 恢复到 HEAD 版本（第一版本），所以应该是 "Hello DBVS!"
+  // update 恢复到 HEAD 版本（第一版本），所以应该是 "Hello DBGODVS!"
   const helloContent = await fs.readFile(path.join(PROJECT_DIR, 'hello.txt'), 'utf-8')
-  assert(helloContent === 'Hello DBVS!', `hello.txt 已恢复到 HEAD 版本: "${helloContent}"`)
+  assert(helloContent === 'Hello DBGODVS!', `hello.txt 已恢复到 HEAD 版本: "${helloContent}"`)
 }
 
 // ==================== 测试 8：历史记录 ====================
@@ -222,7 +222,7 @@ async function testDeleteRepository() {
 // ==================== 主流程 ====================
 async function main() {
   console.log('========================================')
-  console.log('  DBVS 核心 VCS 引擎自动化测试')
+  console.log('  DBGODVS 核心 VCS 引擎自动化测试')
   console.log('========================================')
   console.log(`测试目录: ${TEST_ROOT}`)
 

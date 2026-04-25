@@ -22,60 +22,60 @@ contextBridge.exposeInMainWorld('electronAPI', {
   pathJoin: (...paths: string[]) => ipcRenderer.invoke('fs:path-join', ...paths),
   pathBasename: (filePath: string) => ipcRenderer.invoke('fs:path-basename', filePath),
 
-  // DBVS操作（SVN 风格：repoPath = 集中仓库, workingCopyPath = 工作副本）
-  isDBVSRepository: (path: string) => ipcRenderer.invoke('dbvs:is-repository', path),
-  createRepository: (repoPath: string, name: string) => ipcRenderer.invoke('dbvs:create-repository', repoPath, name),
-  createProject: (rootPath: string, projectName: string, customPath?: string) => ipcRenderer.invoke('dbvs:create-project', rootPath, projectName, customPath),
-  getProjects: (rootPath: string) => ipcRenderer.invoke('dbvs:get-projects', rootPath),
-  registerProject: (rootPath: string, projectPath: string, projectName?: string, initWithCommit?: boolean) => ipcRenderer.invoke('dbvs:register-project', rootPath, projectPath, projectName, initWithCommit),
-  checkoutProject: (rootPath: string, repoPath: string) => ipcRenderer.invoke('dbvs:checkout-project', rootPath, repoPath),
-  initRepository: (repoPath: string) => ipcRenderer.invoke('dbvs:init-repository', repoPath),
-  getStatus: (repoPath: string, workingCopyPath: string) => ipcRenderer.invoke('dbvs:get-status', repoPath, workingCopyPath),
-  getFileTree: (workingCopyPath: string) => ipcRenderer.invoke('dbvs:get-file-tree', workingCopyPath),
+  // DBGODVS操作（SVN 风格：repoPath = 集中仓库, workingCopyPath = 工作副本）
+  isDBGODVSRepository: (path: string) => ipcRenderer.invoke('dbgvs:is-repository', path),
+  createRepository: (repoPath: string, name: string) => ipcRenderer.invoke('dbgvs:create-repository', repoPath, name),
+  createProject: (rootPath: string, projectName: string, customPath?: string) => ipcRenderer.invoke('dbgvs:create-project', rootPath, projectName, customPath),
+  getProjects: (rootPath: string) => ipcRenderer.invoke('dbgvs:get-projects', rootPath),
+  registerProject: (rootPath: string, projectPath: string, projectName?: string, initWithCommit?: boolean) => ipcRenderer.invoke('dbgvs:register-project', rootPath, projectPath, projectName, initWithCommit),
+  checkoutProject: (rootPath: string, repoPath: string) => ipcRenderer.invoke('dbgvs:checkout-project', rootPath, repoPath),
+  initRepository: (repoPath: string) => ipcRenderer.invoke('dbgvs:init-repository', repoPath),
+  getStatus: (repoPath: string, workingCopyPath: string) => ipcRenderer.invoke('dbgvs:get-status', repoPath, workingCopyPath),
+  getFileTree: (workingCopyPath: string) => ipcRenderer.invoke('dbgvs:get-file-tree', workingCopyPath),
   commit: (repoPath: string, workingCopyPath: string, message: string, files: string[], options?: { summary?: string; author?: string; sessionId?: string }) =>
-    ipcRenderer.invoke('dbvs:commit', repoPath, workingCopyPath, message, files, options),
-  getHistory: (repoPath: string) => ipcRenderer.invoke('dbvs:get-history', repoPath),
+    ipcRenderer.invoke('dbgvs:commit', repoPath, workingCopyPath, message, files, options),
+  getHistory: (repoPath: string) => ipcRenderer.invoke('dbgvs:get-history', repoPath),
   rollback: (repoPath: string, workingCopyPath: string, version: string) =>
-    ipcRenderer.invoke('dbvs:rollback', repoPath, workingCopyPath, version),
+    ipcRenderer.invoke('dbgvs:rollback', repoPath, workingCopyPath, version),
   rollbackFile: (repoPath: string, workingCopyPath: string, version: string, filePath: string) =>
-    ipcRenderer.invoke('dbvs:rollback-file', repoPath, workingCopyPath, version, filePath),
+    ipcRenderer.invoke('dbgvs:rollback-file', repoPath, workingCopyPath, version, filePath),
   undoRollback: (repoPath: string, workingCopyPath: string) =>
-    ipcRenderer.invoke('dbvs:undo-rollback', repoPath, workingCopyPath),
+    ipcRenderer.invoke('dbgvs:undo-rollback', repoPath, workingCopyPath),
   rollbackAI: (repoPath: string, workingCopyPath: string, sessionId: string) =>
-    ipcRenderer.invoke('dbvs:rollback-ai', repoPath, workingCopyPath, sessionId),
+    ipcRenderer.invoke('dbgvs:rollback-ai', repoPath, workingCopyPath, sessionId),
   revertFiles: (repoPath: string, workingCopyPath: string, filePaths: string[]) =>
-    ipcRenderer.invoke('dbvs:revert-files', repoPath, workingCopyPath, filePaths),
+    ipcRenderer.invoke('dbgvs:revert-files', repoPath, workingCopyPath, filePaths),
   autoSnapshotStart: (repoPath: string, workingCopyPath: string, intervalMinutes: number) =>
-    ipcRenderer.invoke('dbvs:auto-snapshot-start', repoPath, workingCopyPath, intervalMinutes),
+    ipcRenderer.invoke('dbgvs:auto-snapshot-start', repoPath, workingCopyPath, intervalMinutes),
   autoSnapshotStop: () =>
-    ipcRenderer.invoke('dbvs:auto-snapshot-stop'),
+    ipcRenderer.invoke('dbgvs:auto-snapshot-stop'),
   onAutoSnapshotResult: (callback: (result: { success: boolean; message?: string }) => void) => {
     ipcRenderer.on('auto-snapshot:result', (_, result) => callback(result))
     return () => ipcRenderer.removeAllListeners('auto-snapshot:result')
   },
   update: (repoPath: string, workingCopyPath: string) =>
-    ipcRenderer.invoke('dbvs:update', repoPath, workingCopyPath),
+    ipcRenderer.invoke('dbgvs:update', repoPath, workingCopyPath),
   getDiff: (repoPath: string, workingCopyPath: string, filePath: string, versionA?: string, versionB?: string) =>
-    ipcRenderer.invoke('dbvs:get-diff', repoPath, workingCopyPath, filePath, versionA, versionB),
+    ipcRenderer.invoke('dbgvs:get-diff', repoPath, workingCopyPath, filePath, versionA, versionB),
   getDiffSummary: (repoPath: string, workingCopyPath: string) =>
-    ipcRenderer.invoke('dbvs:get-diff-summary', repoPath, workingCopyPath),
+    ipcRenderer.invoke('dbgvs:get-diff-summary', repoPath, workingCopyPath),
   getDiffContent: (repoPath: string, workingCopyPath: string, filePath: string, versionA?: string, versionB?: string) =>
-    ipcRenderer.invoke('dbvs:get-diff-content', repoPath, workingCopyPath, filePath, versionA, versionB),
-  deleteRepository: (repoPath: string) => ipcRenderer.invoke('dbvs:delete-repository', repoPath),
+    ipcRenderer.invoke('dbgvs:get-diff-content', repoPath, workingCopyPath, filePath, versionA, versionB),
+  deleteRepository: (repoPath: string) => ipcRenderer.invoke('dbgvs:delete-repository', repoPath),
   deleteRepositoryFull: (rootPath: string, repoPath: string, deleteWorkingCopies: boolean) =>
-    ipcRenderer.invoke('dbvs:delete-repository-full', rootPath, repoPath, deleteWorkingCopies),
-  verify: (repoPath: string) => ipcRenderer.invoke('dbvs:verify', repoPath),
-  getHistoryStructured: (repoPath: string) => ipcRenderer.invoke('dbvs:get-history-structured', repoPath),
-  getRepositoryInfo: (repoPath: string) => ipcRenderer.invoke('dbvs:get-repository-info', repoPath),
-  getCommitDetail: (repoPath: string, commitId: string) => ipcRenderer.invoke('dbvs:get-commit-detail', repoPath, commitId),
-  getBlobContent: (repoPath: string, hash: string) => ipcRenderer.invoke('dbvs:get-blob-content', repoPath, hash),
-  resolvePaths: (inputPath: string) => ipcRenderer.invoke('dbvs:resolve-paths', inputPath),
-  listRepositories: (rootPath: string) => ipcRenderer.invoke('dbvs:list-repositories', rootPath),
-  createRootRepository: (path: string) => ipcRenderer.invoke('dbvs:create-root-repository', path),
-  getRootRepository: () => ipcRenderer.invoke('dbvs:get-root-repository'),
-  saveRootRepository: (path: string) => ipcRenderer.invoke('dbvs:save-root-repository', path),
-  registerCLI: () => ipcRenderer.invoke('dbvs:register-cli'),
-  isCLIRegistered: () => ipcRenderer.invoke('dbvs:is-cli-registered'),
+    ipcRenderer.invoke('dbgvs:delete-repository-full', rootPath, repoPath, deleteWorkingCopies),
+  verify: (repoPath: string) => ipcRenderer.invoke('dbgvs:verify', repoPath),
+  getHistoryStructured: (repoPath: string) => ipcRenderer.invoke('dbgvs:get-history-structured', repoPath),
+  getRepositoryInfo: (repoPath: string) => ipcRenderer.invoke('dbgvs:get-repository-info', repoPath),
+  getCommitDetail: (repoPath: string, commitId: string) => ipcRenderer.invoke('dbgvs:get-commit-detail', repoPath, commitId),
+  getBlobContent: (repoPath: string, hash: string) => ipcRenderer.invoke('dbgvs:get-blob-content', repoPath, hash),
+  resolvePaths: (inputPath: string) => ipcRenderer.invoke('dbgvs:resolve-paths', inputPath),
+  listRepositories: (rootPath: string) => ipcRenderer.invoke('dbgvs:list-repositories', rootPath),
+  createRootRepository: (path: string) => ipcRenderer.invoke('dbgvs:create-root-repository', path),
+  getRootRepository: () => ipcRenderer.invoke('dbgvs:get-root-repository'),
+  saveRootRepository: (path: string) => ipcRenderer.invoke('dbgvs:save-root-repository', path),
+  registerCLI: () => ipcRenderer.invoke('dbgvs:register-cli'),
+  isCLIRegistered: () => ipcRenderer.invoke('dbgvs:is-cli-registered'),
 
   // Shell
   openFolder: (path: string) => ipcRenderer.invoke('shell:open-folder', path),
@@ -141,25 +141,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Checkout 到指定目录
   checkoutTo: (rootPath: string, repoPath: string, targetParentDir: string, folderName: string) =>
-    ipcRenderer.invoke('dbvs:checkout-to', rootPath, repoPath, targetParentDir, folderName),
+    ipcRenderer.invoke('dbgvs:checkout-to', rootPath, repoPath, targetParentDir, folderName),
 
   // 注册已有工作副本
   registerWorkingCopy: (rootPath: string, workingCopyPath: string) =>
-    ipcRenderer.invoke('dbvs:register-working-copy', rootPath, workingCopyPath),
+    ipcRenderer.invoke('dbgvs:register-working-copy', rootPath, workingCopyPath),
 
   // 从项目列表移除工作副本（仅断开关联）
   unregisterProject: (rootPath: string, workingCopyPath: string) =>
-    ipcRenderer.invoke('dbvs:unregister-project', rootPath, workingCopyPath),
+    ipcRenderer.invoke('dbgvs:unregister-project', rootPath, workingCopyPath),
 
-  // 启动检查：补全项目 DBVS-GUIDE.md
+  // 启动检查：补全项目 DBGODVS-GUIDE.md
   ensureProjectDocs: (rootPath: string) =>
-    ipcRenderer.invoke('dbvs:ensure-project-docs', rootPath),
+    ipcRenderer.invoke('dbgvs:ensure-project-docs', rootPath),
 
   // 新手引导
   getOnboardingStatus: () =>
-    ipcRenderer.invoke('dbvs:get-onboarding-status'),
+    ipcRenderer.invoke('dbgvs:get-onboarding-status'),
   setOnboardingCompleted: (completed: boolean) =>
-    ipcRenderer.invoke('dbvs:set-onboarding-completed', completed),
+    ipcRenderer.invoke('dbgvs:set-onboarding-completed', completed),
 })
 
 // 类型声明
@@ -178,7 +178,7 @@ export interface ElectronAPI {
   copyDir: (src: string, dest: string) => Promise<{ success: boolean; message?: string }>
   pathJoin: (...paths: string[]) => Promise<{ result: string }>
   pathBasename: (filePath: string) => Promise<{ result: string }>
-  isDBVSRepository: (path: string) => Promise<boolean>
+  isDBGODVSRepository: (path: string) => Promise<boolean>
   createRepository: (repoPath: string, name: string) => Promise<{ success: boolean; message?: string }>
   createProject: (rootPath: string, projectName: string, customPath?: string) => Promise<{ success: boolean; message?: string }>
   getProjects: (rootPath: string) => Promise<{ success: boolean; projects?: Array<{

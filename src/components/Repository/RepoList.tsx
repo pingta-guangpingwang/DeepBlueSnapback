@@ -14,25 +14,25 @@ const CONTEXT_MENU_ITEMS = [
     icon: '📥',
     action: 'pull',
     label: '拉取文件',
-    desc: '在非版本管理的文件夹空白处右键，打开深蓝并自动跳转到拉取界面，将仓库项目拉取到该文件夹。',
+    desc: '在非版本管理的文件夹空白处右键，打开深蓝主神并自动跳转到拉取界面，将仓库项目拉取到该文件夹。',
   },
   {
     icon: '🔄',
     action: 'update',
     label: '更新到最新版本',
-    desc: '在版本管理的项目文件夹内右键，打开深蓝并自动更新工作副本到仓库最新版本。',
+    desc: '在版本管理的项目文件夹内右键，打开深蓝主神并自动更新工作副本到仓库最新版本。',
   },
   {
     icon: '📋',
     action: 'update-to',
     label: '更新到指定版本',
-    desc: '在版本管理的项目文件夹内右键，打开深蓝并进入历史版本列表，选择目标版本进行更新。',
+    desc: '在版本管理的项目文件夹内右键，打开深蓝主神并进入历史版本列表，选择目标版本进行更新。',
   },
   {
     icon: '📤',
     action: 'commit',
     label: '推送到仓库',
-    desc: '在版本管理的项目文件夹内右键，打开深蓝并自动打开提交面板，查看变更并提交新版本。',
+    desc: '在版本管理的项目文件夹内右键，打开深蓝主神并自动打开提交面板，查看变更并提交新版本。',
   },
 ]
 
@@ -157,7 +157,7 @@ function ContextMenuSettings() {
 
       {/* 说明文字 */}
       <p style={{ marginTop: '12px', fontSize: '12px', color: '#9ca3af', lineHeight: '1.6' }}>
-        注册后，在 Windows 资源管理器中右键点击任意文件夹即可看到 DBVS 操作选项。<br/>
+        注册后，在 Windows 资源管理器中右键点击任意文件夹即可看到 DBGODVS 操作选项。<br/>
         注销后，右键菜单项将被移除。可随时重新注册。
       </p>
 
@@ -621,7 +621,7 @@ export default function RepoList() {
 
       <main className="repositories-content">
         {/* 消息提示 */}
-        {state.message && state.message !== '欢迎使用 DBVS 版本管理系统' && (
+        {state.message && state.message !== '欢迎使用 DBGODVS 版本管理系统' && (
           <div style={{
             padding: '8px 16px', marginBottom: '12px', borderRadius: '6px',
             background: state.message.includes('失败') || state.message.includes('错误') ? '#fef2f2' : '#f0fdf4',
@@ -754,7 +754,7 @@ export default function RepoList() {
                   <div className="setting-item" style={{ marginTop: '24px' }}>
                     <label style={{ fontWeight: 500, color: '#1f2937' }}>新手引导</label>
                     <p style={{ color: '#6b7280', fontSize: '13px', margin: '6px 0 12px', lineHeight: '1.6' }}>
-                      重新查看 DBVS 基础功能的引导教程。
+                      重新查看 DBGODVS 基础功能的引导教程。
                     </p>
                     <button
                       style={{
@@ -777,7 +777,7 @@ export default function RepoList() {
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '16px', fontWeight: 700, color: '#1f2937' }}>DBVS</span>
+                        <span style={{ fontSize: '16px', fontWeight: 700, color: '#1f2937' }}>DBGODVS</span>
                         <span style={{
                           fontSize: '11px', fontWeight: 600, color: '#fff',
                           background: '#4f46e5', padding: '1px 8px', borderRadius: '10px',
@@ -786,7 +786,7 @@ export default function RepoList() {
                       <span style={{ fontSize: '11px', color: '#9ca3af' }}>MIT License</span>
                     </div>
                     <p style={{ margin: '8px 0 10px', fontSize: '12px', color: '#6b7280', lineHeight: 1.5 }}>
-                      DeepBlue Version System — 本地版本管理工具<br />
+                      深蓝主神版本管理系统 — 本地版本管理工具<br />
                       给 AI 套上缰绳，让每一次代码生成都有迹可循
                     </p>
                     <div style={{ display: 'flex', gap: '16px', fontSize: '11px', color: '#9ca3af', flexWrap: 'wrap' }}>
@@ -808,11 +808,11 @@ export default function RepoList() {
               {settingsTab === 'context-menu' && (
                 <div>
                   <h4 style={{ margin: '0 0 8px', fontSize: '14px', color: '#1f2937' }}>
-                    在 Windows 资源管理器中集成 DBVS 右键菜单
+                    在 Windows 资源管理器中集成 DBGODVS 右键菜单
                   </h4>
                   <p style={{ color: '#6b7280', fontSize: '13px', margin: '0 0 16px', lineHeight: '1.6' }}>
-                    注册后，在资源管理器中右键点击任意文件夹，即可看到以下 DBVS 操作选项。
-                    无需手动打开 DBVS，直接从文件夹操作版本管理。
+                    注册后，在资源管理器中右键点击任意文件夹，即可看到以下 DBGODVS 操作选项。
+                    无需手动打开 DBGODVS，直接从文件夹操作版本管理。
                   </p>
                   <ContextMenuSettings />
                 </div>
@@ -889,7 +889,7 @@ export default function RepoList() {
                   icon: '📥',
                   title: '导入项目',
                   color: '#16a34a',
-                  desc: '将本地已有的文件夹导入到 DBVS 版本管理中。DBVS 会自动扫描文件并创建首次提交快照。',
+                  desc: '将本地已有的文件夹导入到 DBGODVS 版本管理中。DBGODVS 会自动扫描文件并创建首次提交快照。',
                 },
                 {
                   icon: '📂',
@@ -901,7 +901,7 @@ export default function RepoList() {
                   icon: '🔗',
                   title: '从 Git 克隆',
                   color: '#7c3aed',
-                  desc: '连接远程 Git 仓库（如 GitHub、Gitee），将代码克隆到本地并自动纳入 DBVS 管理。后续可通过 Git 同步保持远程更新。',
+                  desc: '连接远程 Git 仓库（如 GitHub、Gitee），将代码克隆到本地并自动纳入 DBGODVS 管理。后续可通过 Git 同步保持远程更新。',
                 },
               ]).map(item => (
                 <div key={item.title} style={{
@@ -921,7 +921,7 @@ export default function RepoList() {
                 background: '#f0f9ff', border: '1px solid #bae6fd',
                 fontSize: '13px', color: '#0369a1', lineHeight: 1.6,
               }}>
-                💡 提示：进入任意项目后，可在「设置 → 关于」标签页中重新查看新手引导，了解 DBVS 的完整功能介绍。
+                💡 提示：进入任意项目后，可在「设置 → 关于」标签页中重新查看新手引导，了解 DBGODVS 的完整功能介绍。
               </div>
             </div>
           </div>

@@ -11,9 +11,9 @@ interface StepData {
 
 const STEPS: StepData[] = [
   {
-    title: '欢迎使用 DBVS',
-    description: 'DeepBlue Version System — 本地版本管理工具',
-    icon: 'DBVS',
+    title: '欢迎使用 DBGODVS',
+    description: '深蓝主神版本管理系统 — 本地版本管理工具',
+    icon: 'DBGODVS',
     color: '#4f46e5',
     details: [
       'SVN 风格的集中仓库 + 工作副本架构',
@@ -79,13 +79,13 @@ const STEPS: StepData[] = [
       'dbvs status — 查看变更',
       'dbvs commit -m "说明" --ai claude-code',
       'dbvs rollback --version <ID>',
-      'dbvs diff / dbvs history / dbvs info',
-      'AI 智能体可直接在项目内调用 dbvs 命令',
+      'dbvs diff / dbgvs history / dbgvs info',
+      'AI 智能体可直接在项目内调用 dbgvs 命令',
     ],
   },
   {
     title: '关于作者',
-    description: '感谢你使用 DBVS，期待你的反馈与支持',
+    description: '感谢你使用 DBGODVS，期待你的反馈与支持',
     icon: '❤',
     color: '#e11d48',
     details: [],
@@ -156,7 +156,7 @@ export default function OnboardingGuide() {
               </div>
               <div style={{ borderTop: '1px solid #e5e7eb', marginTop: '14px', paddingTop: '14px' }}>
                 <p style={{ margin: 0, fontSize: '13px', color: '#6b7280', lineHeight: 1.6 }}>
-                  DBVS 是一款完全免费的开源软件。如果你觉得它对你有帮助，欢迎打赏支持，你的鼓励是我持续更新的动力。
+                  DBGODVS 是一款完全免费的开源软件。如果你觉得它对你有帮助，欢迎打赏支持，你的鼓励是我持续更新的动力。
                 </p>
               </div>
             </div>

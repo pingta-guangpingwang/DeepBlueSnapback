@@ -1,9 +1,9 @@
 "use strict";
 /**
- * DBVS CLI - 命令行接口
+ * DBGODVS CLI - 命令行接口
  *
  * 用法：
- *   dbvs <command> [options]
+ *   dbgvs <command> [options]
  *
  * 所有命令默认输出 JSON 格式，便于 AI Agent 解析。
  * 可选 --format table 或 --format text 切换输出格式。
@@ -48,11 +48,11 @@ const fs = __importStar(require("fs-extra"));
 const path = __importStar(require("path"));
 const dbvs_repository_1 = require("./dbvs-repository");
 const electron_1 = require("electron");
-const repo = new dbvs_repository_1.DBVSRepository();
+const repo = new dbvs_repository_1.DBGODVSRepository();
 const program = new commander_1.Command();
 program
-    .name('dbvs')
-    .description('DeepBlue Version System - 本地版本管理工具')
+    .name('dbgvs')
+    .description('深蓝主神版本管理系统 - 本地版本管理工具')
     .version('2.0.0')
     .option('--format <type>', '输出格式: json, table, text', 'json')
     .option('--root <path>', '根仓库路径');
@@ -101,7 +101,7 @@ function getRootPath(opts) {
         const config = fs.readJsonSync(configPath);
         return config.rootPath;
     }
-    throw new Error('根仓库未配置。使用 dbvs root set <path> 设置，或使用 --root 指定。');
+    throw new Error('根仓库未配置。使用 dbgvs root set <path> 设置，或使用 --root 指定。');
 }
 // ==================== 根仓库管理 ====================
 program
@@ -328,7 +328,7 @@ program
 });
 program
     .command('init <projectPath>')
-    .description('在指定目录初始化 DBVS 仓库')
+    .description('在指定目录初始化 DBGODVS 仓库')
     .action(async (projectPath) => {
     const opts = program.opts();
     try {

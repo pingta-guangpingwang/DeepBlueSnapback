@@ -2,7 +2,7 @@
 set PORT=3005
 set ELECTRON_CACHE=%LOCALAPPDATA%\electron\Cache
 set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
-echo Starting DBVS...
+echo Starting DBGODVS...
 
 echo Checking dependencies...
 echo.
@@ -28,10 +28,10 @@ if %errorlevel% equ 0 (
     timeout /t 3 /nobreak >nul
 )
 
-echo Launching DBVS...
+echo Launching DBGODVS...
 call npm run dev-electron
 if %errorlevel% neq 0 (
     echo.
-    echo DBVS exited with an error.
+    echo DBGODVS exited with an error.
     pause
 )

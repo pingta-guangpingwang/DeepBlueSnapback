@@ -1,10 +1,10 @@
 const { app } = require('electron')
-const { DBVSRepository } = require('./electron/dbvs-repository')
+const { DBGODVSRepository } = require('./electron/dbvs-repository')
 
 async function testCreateRootRepository() {
   console.log('Testing createRootRepository API...')
 
-  const testPath = 'C:\\Temp\\DBVS_Root_Test'
+  const testPath = 'C:\\Temp\\DBGODVS_Root_Test'
 
   try {
     // 模拟IPC调用

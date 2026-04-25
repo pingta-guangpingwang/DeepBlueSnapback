@@ -36,14 +36,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DBVSRepository = void 0;
+exports.DBGODVSRepository = void 0;
 const fs = __importStar(require("fs-extra"));
 const path = __importStar(require("path"));
 const crypto = __importStar(require("crypto"));
 const diff_match_patch_1 = __importDefault(require("diff-match-patch"));
 const dmp = new diff_match_patch_1.default.diff_match_patch();
 /** 忽略的目录/文件模式（内置） */
-const IGNORE_PATTERNS = ['.dbvs', '.dbvs-link.json', 'node_modules', '.git', '.DS_Store', 'Thumbs.db', 'DBVS-GUIDE.md'];
+const IGNORE_PATTERNS = ['.dbvs', '.dbvs-link.json', 'node_modules', '.git', '.DS_Store', 'Thumbs.db', 'DBGODVS-GUIDE.md'];
 function shouldIgnoreBuiltin(name) {
     return IGNORE_PATTERNS.includes(name) || name.startsWith('.');
 }
@@ -137,7 +137,7 @@ async function scanFiles(dir, baseDir = dir, customPatterns) {
     }
     return results;
 }
-class DBVSRepository {
+class DBGODVSRepository {
     // ==================== 路径解析 ====================
     /**
      * 从工作副本目录读取链接文件，获取对应的仓库路径
@@ -198,7 +198,7 @@ class DBVSRepository {
         try {
             await fs.ensureDir(repoPath);
             if (await fs.pathExists(path.join(repoPath, 'config.json'))) {
-                return { success: false, message: '该目录已经是 DBVS 仓库' };
+                return { success: false, message: '该目录已经是 DBGODVS 仓库' };
             }
             await fs.writeJson(path.join(repoPath, 'config.json'), {
                 name: projectName,
@@ -232,7 +232,7 @@ class DBVSRepository {
     async getStatus(repoPath, workingCopyPath) {
         try {
             if (!(await fs.pathExists(path.join(repoPath, 'HEAD.json')))) {
-                return { success: false, status: [], message: '不是 DBVS 仓库' };
+                return { success: false, status: [], message: '不是 DBGODVS 仓库' };
             }
             // 从仓库读取 HEAD 获取上一版本文件列表
             const headPath = path.join(repoPath, 'HEAD.json');
@@ -1005,4 +1005,4 @@ class DBVSRepository {
         }
     }
 }
-exports.DBVSRepository = DBVSRepository;
+exports.DBGODVSRepository = DBGODVSRepository;

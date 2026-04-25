@@ -318,7 +318,7 @@ export default function Overview() {
               style={{ fontSize: '12px', padding: '3px 12px' }}
               disabled={state.isLoading}
               onClick={() => {
-                const msg = pushMsg || state.commitMessage || 'DBVS sync'
+                const msg = pushMsg || state.commitMessage || 'DBGODVS sync'
                 gitPush(msg, gitAuth.username, gitAuth.token)
               }}
             >

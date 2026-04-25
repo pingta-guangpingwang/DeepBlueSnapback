@@ -1,8 +1,8 @@
-# DBVS — DeepBlue Version System
+# DBGODVS — 深蓝主神版本管理系统
 
 Your code's local vault. Version control without the cloud, without the complexity.
 
-DBVS is a local version control system built with Electron + React, featuring an SVN-style centralized repository and distributed working copy architecture.
+DBGODVS is a local version control system built with Electron + React, featuring an SVN-style centralized repository and distributed working copy architecture.
 
 **Put a leash on AI — make every line of generated code traceable.**
 
@@ -32,30 +32,30 @@ npm run build && npm run start
 
 ```bash
 # Set root repository
-dbvs set-root D:/DBVS-Root
+dbgvs set-root D:/DBGODVS-Root
 
 # Create a project
-dbvs create-project my-app
+dbgvs create-project my-app
 
 # Check status
-dbvs status /path/to/project
+dbgvs status /path/to/project
 
 # Commit changes
-dbvs commit /path/to/project --message "Fix login bug"
+dbgvs commit /path/to/project --message "Fix login bug"
 ```
 
 ## Tech Stack
 
 - **Frontend**: React 19 + TypeScript + Vite 8 (port 3005)
 - **Desktop**: Electron 28
-- **Version Control**: Custom DBVS engine (centralized repo + working copy)
+- **Version Control**: Custom DBGODVS engine (centralized repo + working copy)
 - **Git Remote Sync**: isomorphic-git (pull/push/conflict resolution)
 - **CLI**: Commander.js (standalone, no Electron GUI required)
 
 ## Architecture
 
 ```
-DBVS-Root/                       ← Root repository
+DBGODVS-Root/                       ← Root repository
 ├── repositories/                ← Central version stores
 │   ├── project-a/               ← Per-project version data
 │   │   ├── config.json          ← Repository config
@@ -69,7 +69,7 @@ DBVS-Root/                       ← Root repository
 
 Working Copy (any location)/
 ├── .dbvs-link.json              ← Link to central repository
-├── DBVS-GUIDE.md                ← Version control guide (auto-generated)
+├── DBGODVS-GUIDE.md                ← Version control guide (auto-generated)
 ├── .git/                        ← (Optional) Git remote sync
 └── ...project files...
 ```
@@ -95,63 +95,63 @@ Working Copy (any location)/
 
 ### Root Repository Management
 ```bash
-dbvs set-root <path>          # Set root repository path
-dbvs get-root                 # Get current root repository path
+dbgvs set-root <path>          # Set root repository path
+dbgvs get-root                 # Get current root repository path
 ```
 
 ### Project Management
 ```bash
-dbvs create-project <name>    # Create a new project
-dbvs import-project <src>     # Import an existing folder as a project
-dbvs delete-project <name>    # Delete a project
-dbvs delete-project <name> --keep-files  # Delete version history only, keep files
-dbvs list-projects            # List all projects
-dbvs list-repos               # List all repositories
-dbvs unregister <path>        # Remove from project list
-dbvs unregister <path> --delete-files  # Remove and delete files
+dbgvs create-project <name>    # Create a new project
+dbgvs import-project <src>     # Import an existing folder as a project
+dbgvs delete-project <name>    # Delete a project
+dbgvs delete-project <name> --keep-files  # Delete version history only, keep files
+dbgvs list-projects            # List all projects
+dbgvs list-repos               # List all repositories
+dbgvs unregister <path>        # Remove from project list
+dbgvs unregister <path> --delete-files  # Remove and delete files
 ```
 
 ### Version Control Operations
 ```bash
-dbvs status [path]            # Show working copy status
-dbvs commit <path> -m "msg"   # Commit changes
-dbvs commit <path> -m "msg" -f file1,file2  # Commit specific files
-dbvs update <path>            # Update to latest version
-dbvs rollback <path> -v v3    # Roll back to specified version
-dbvs history <path>           # View commit history
-dbvs log [path] -n 10         # Show recent N commits
-dbvs diff <path> -f file.ts   # View file diff
-dbvs diff <path> -f file.ts -a v1 -b v2  # Compare two versions
-dbvs info <path>              # Show repository info
-dbvs init <path>              # Initialize repository
-dbvs verify <path>            # Verify repository integrity
-dbvs file-tree <path>         # List project file tree
-dbvs version [path]           # Show current version
-dbvs pull <repoPath> <dir>    # Pull project to target directory
+dbgvs status [path]            # Show working copy status
+dbgvs commit <path> -m "msg"   # Commit changes
+dbgvs commit <path> -m "msg" -f file1,file2  # Commit specific files
+dbgvs update <path>            # Update to latest version
+dbgvs rollback <path> -v v3    # Roll back to specified version
+dbgvs history <path>           # View commit history
+dbgvs log [path] -n 10         # Show recent N commits
+dbgvs diff <path> -f file.ts   # View file diff
+dbgvs diff <path> -f file.ts -a v1 -b v2  # Compare two versions
+dbgvs info <path>              # Show repository info
+dbgvs init <path>              # Initialize repository
+dbgvs verify <path>            # Verify repository integrity
+dbgvs file-tree <path>         # List project file tree
+dbgvs version [path]           # Show current version
+dbgvs pull <repoPath> <dir>    # Pull project to target directory
 ```
 
 ### Git Remote Sync
 ```bash
-dbvs git-connect <path> <url>              # Connect to remote repo
-dbvs git-connect <path> <url> -b main -u user -t TOKEN
+dbgvs git-connect <path> <url>              # Connect to remote repo
+dbgvs git-connect <path> <url> -b main -u user -t TOKEN
 
-dbvs git-pull <path>                       # Pull remote updates
-dbvs git-pull <path> -u user -t TOKEN
+dbgvs git-pull <path>                       # Pull remote updates
+dbgvs git-pull <path> -u user -t TOKEN
 
-dbvs git-push <path> -m "sync message"     # Push to remote
-dbvs git-push <path> -m "msg" -u user -t TOKEN
+dbgvs git-push <path> -m "sync message"     # Push to remote
+dbgvs git-push <path> -m "msg" -u user -t TOKEN
 ```
 
 ## AI Agent Integration
 
-Every project managed by DBVS automatically generates a `DBVS-GUIDE.md` containing:
+Every project managed by DBGODVS automatically generates a `DBGODVS-GUIDE.md` containing:
 - Project metadata (name, path, repository path)
 - CLI command quick reference
 - Version control operation guidelines
 
 ### Recommended AI Agent Workflow
 
-1. **Understand the project**: Read `DBVS-GUIDE.md` in the project directory
+1. **Understand the project**: Read `DBGODVS-GUIDE.md` in the project directory
 2. **Before starting work**: `dbvs status <path>` to check current changes
 3. **After modifying files**: `dbvs commit <path> -m "Describe changes"`
 4. **View diffs**: `dbvs diff <path> -f <file>` to inspect specific changes
@@ -160,8 +160,8 @@ Every project managed by DBVS automatically generates a `DBVS-GUIDE.md` containi
 
 ## Ignore Rules
 
-DBVS automatically ignores the following (excluded from version control):
-- `.dbvs/` `.dbvs-link.json` — DBVS internal files
+DBGODVS automatically ignores the following (excluded from version control):
+- `.dbvs/` `.dbvs-link.json` — DBGODVS internal files
 - `.git/` — Git remote sync data
 - `node_modules/` — Dependency directories
 - `.DS_Store` `Thumbs.db` — System files
@@ -176,7 +176,7 @@ taskkill /PID <pid> /F
 
 ## Contact & Support
 
-DBVS is free and open-source software. If you find it helpful, your support is greatly appreciated!
+DBGODVS is free and open-source software. If you find it helpful, your support is greatly appreciated!
 
 <table>
   <tr>

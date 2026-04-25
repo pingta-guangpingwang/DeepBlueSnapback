@@ -5,7 +5,7 @@ const fs = require('fs-extra')
 async function testCreateProjectAndGetProjects() {
   console.log('Testing createProject and getProjects APIs...')
 
-  const testRootPath = 'C:\\Temp\\DBVS_Test_Full'
+  const testRootPath = 'C:\\Temp\\DBGODVS_Test_Full'
   const projectName = 'TestProjectFull'
 
   try {
@@ -36,7 +36,7 @@ async function testCreateProjectAndGetProjects() {
     await fs.ensureDir(dbvsPath)
     console.log('✓ Created repository directory:', repoDir)
 
-    // 创建基本的DBVS结构
+    // 创建基本的DBGODVS结构
     await fs.writeJson(path.join(dbvsPath, 'config.json'), {
       name: projectName,
       version: '1.0.0',
@@ -44,7 +44,7 @@ async function testCreateProjectAndGetProjects() {
     })
     await fs.ensureDir(path.join(dbvsPath, 'objects'))
     await fs.ensureDir(path.join(dbvsPath, 'refs'))
-    console.log('✓ Created DBVS structure')
+    console.log('✓ Created DBGODVS structure')
 
     // 创建项目配置文件
     const projectConfig = {
@@ -113,7 +113,7 @@ async function testCreateProjectAndGetProjects() {
     console.log('✓ Repositories dir exists:', fs.existsSync(repositoriesDir))
     console.log('✓ Project dir exists:', fs.existsSync(projectDir))
     console.log('✓ Repo dir exists:', fs.existsSync(repoDir))
-    console.log('✓ DBVS config exists:', fs.existsSync(path.join(dbvsPath, 'config.json')))
+    console.log('✓ DBGODVS config exists:', fs.existsSync(path.join(dbvsPath, 'config.json')))
     console.log('✓ Project config exists:', fs.existsSync(path.join(projectDir, 'dbvs-project.json')))
     console.log('✓ Objects dir exists:', fs.existsSync(path.join(dbvsPath, 'objects')))
     console.log('✓ Refs dir exists:', fs.existsSync(path.join(dbvsPath, 'refs')))

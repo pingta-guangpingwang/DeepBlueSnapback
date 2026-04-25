@@ -101,7 +101,7 @@ export default function GitCloneModal({ onClose }: Props) {
 
       setProgressLines(prev => [...prev, '正在注册项目...'])
 
-      // Register as DBVS project
+      // Register as DBGODVS project
       if (state.rootRepositoryPath) {
         const regResult = await window.electronAPI.registerProject(
           state.rootRepositoryPath, fullTargetPath, folderName.trim(), true

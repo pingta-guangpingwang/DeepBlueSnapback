@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * DBVS Launcher — Windows 右键菜单启动器
+ * DBGODVS Launcher — Windows 右键菜单启动器
  *
  * 功能：
- *   1. 检查 DBVS 主程序是否正在运行（通过端口文件）
+ *   1. 检查 DBGODVS 主程序是否正在运行（通过端口文件）
  *   2. 如果运行中 → 通过 TCP 发送命令到主程序
  *   3. 如果没运行 → 启动主程序，等待就绪后发送命令
  *
@@ -19,14 +19,14 @@ import * as path from 'path'
 import * as fs from 'fs'
 import { execFile } from 'child_process'
 
-// DBVS 主程序写入端口文件的路径（用户数据目录）
+// DBGODVS 主程序写入端口文件的路径（用户数据目录）
 const PORT_FILE = path.join(
   process.env.APPDATA || process.env.LOCALAPPDATA || path.join(require('os').homedir(), '.config'),
-  'DBVS',
+  'DBGODVS',
   'ipc-port'
 )
 
-/** 读取 DBVS 主进程监听的端口 */
+/** 读取 DBGODVS 主进程监听的端口 */
 function readPort(): number | null {
   try {
     if (!fs.existsSync(PORT_FILE)) return null
@@ -38,7 +38,7 @@ function readPort(): number | null {
   }
 }
 
-/** 通过 TCP 发送命令到 DBVS 主进程 */
+/** 通过 TCP 发送命令到 DBGODVS 主进程 */
 function sendCommand(port: number, action: string, targetPath: string): Promise<boolean> {
   return new Promise((resolve) => {
     const socket = new net.Socket()
@@ -72,11 +72,11 @@ function sendCommand(port: number, action: string, targetPath: string): Promise<
   })
 }
 
-/** 启动 DBVS 主程序 */
-function startDBVS(): Promise<void> {
+/** 启动 DBGODVS 主程序 */
+function startDBGODVS(): Promise<void> {
   return new Promise((resolve, reject) => {
     // 判断是开发模式还是打包模式
-    const isDev = !process.execPath.includes('dbvs') && !process.execPath.includes('DBVS')
+    const isDev = !process.execPath.includes('dbgvs') && !process.execPath.includes('DBGODVS')
 
     let cmd: string
     let args: string[]
@@ -93,7 +93,7 @@ function startDBVS(): Promise<void> {
     } else {
       // 打包模式：直接运行 dbvs.exe
       const exeDir = path.dirname(process.execPath)
-      const dbvsExe = path.join(exeDir, 'DBVS.exe')
+      const dbvsExe = path.join(exeDir, 'DBGODVS.exe')
       cmd = dbvsExe
       const proc = execFile(cmd, { detached: true, stdio: 'ignore' } as any)
       proc.unref()
@@ -103,7 +103,7 @@ function startDBVS(): Promise<void> {
   })
 }
 
-/** 等待 DBVS 主进程就绪（端口文件出现） */
+/** 等待 DBGODVS 主进程就绪（端口文件出现） */
 function waitForReady(maxWaitMs: number = 15000): Promise<number | null> {
   return new Promise((resolve) => {
     const start = Date.now()
@@ -155,14 +155,14 @@ async function main() {
     // 连接失败，可能端口文件过期，继续尝试启动
   }
 
-  // 2. 启动 DBVS
-  console.log('Starting DBVS...')
-  await startDBVS()
+  // 2. 启动 DBGODVS
+  console.log('Starting DBGODVS...')
+  await startDBGODVS()
 
   // 3. 等待就绪
   port = await waitForReady()
   if (!port) {
-    console.error('DBVS 启动超时')
+    console.error('DBGODVS 启动超时')
     process.exit(1)
   }
 

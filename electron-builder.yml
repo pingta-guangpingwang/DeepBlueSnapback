@@ -1,6 +1,6 @@
-appId: com.deepblue.dbvs
-productName: DBVS
-copyright: Copyright © 2026 DeepBlue
+appId: com.deepblue.dbgodvs
+productName: DBGODVS
+copyright: Copyright © 2026 深蓝主神
 
 directories:
   output: release
@@ -22,13 +22,13 @@ win:
     - target: nsis
       arch: [x64]
   icon: assets/icon.ico
-  artifactName: DBVS-Setup-${version}.${ext}
+  artifactName: DBGODVS-Setup-${version}.${ext}
 
 nsis:
   oneClick: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: DBVS
+  shortcutName: DBGODVS
   installerIcon: assets/icon.ico
   uninstallerIcon: assets/icon.ico
   installerHeaderIcon: assets/icon.ico

@@ -22,7 +22,7 @@ export default function Settings() {
     const result = await window.electronAPI.initRepository(state.repoPath)
     if (result?.success) {
       dispatch({ type: 'SET_MESSAGE', payload: '仓库初始化成功！' })
-      const isRepo = await window.electronAPI.isDBVSRepository(state.repoPath)
+      const isRepo = await window.electronAPI.isDBGODVSRepository(state.repoPath)
       dispatch({ type: 'SET_REPO_STATUS', payload: isRepo })
     } else {
       dispatch({ type: 'SET_MESSAGE', payload: '仓库初始化失败：' + (result?.message ?? '未知错误') })
@@ -140,7 +140,7 @@ export default function Settings() {
       <div className="settings-section">
         <h3>初始化仓库</h3>
         <p style={{ color: '#6b7280', margin: '0 0 16px', fontSize: '13px' }}>
-          将当前项目目录初始化为 DBVS 仓库。
+          将当前项目目录初始化为 DBGODVS 仓库。
         </p>
         <button onClick={handleCreateRepository}>初始化仓库</button>
       </div>

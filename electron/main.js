@@ -45,7 +45,7 @@ const git_bridge_1 = require("./git-bridge");
 const lan_server_1 = require("./lan-server");
 const context_menu_1 = require("./context-menu");
 let mainWindow = null;
-const dbvsRepo = new dbvs_repository_1.DBVSRepository();
+const dbvsRepo = new dbvs_repository_1.DBGODVSRepository();
 const cliCommand = (0, context_menu_1.parseCommandLine)(process.argv);
 function createWindow() {
     mainWindow = new electron_1.BrowserWindow({
@@ -246,8 +246,8 @@ function registerIPCHandlers() {
             return false;
         }
     });
-    // 检查是否是DBVS仓库（新格式：config.json+HEAD.json，或旧格式：.dbvs/，或工作副本：.dbvs-link.json）
-    electron_1.ipcMain.handle('dbvs:is-repository', async (_, inputPath) => {
+    // 检查是否是DBGODVS仓库（新格式：config.json+HEAD.json，或旧格式：.dbvs/，或工作副本：.dbvs-link.json）
+    electron_1.ipcMain.handle('dbgvs:is-repository', async (_, inputPath) => {
         // 新格式：集中仓库
         if (await fs.pathExists(path.join(inputPath, 'config.json')) &&
             await fs.pathExists(path.join(inputPath, 'HEAD.json'))) {
@@ -260,53 +260,53 @@ function registerIPCHandlers() {
         // 旧格式：.dbvs/ 子目录
         return fs.pathExists(path.join(inputPath, '.dbvs'));
     });
-    // 创建DBVS仓库（在集中存储位置）
-    electron_1.ipcMain.handle('dbvs:create-repository', async (_, repoPath, projectName) => {
+    // 创建DBGODVS仓库（在集中存储位置）
+    electron_1.ipcMain.handle('dbgvs:create-repository', async (_, repoPath, projectName) => {
         return await dbvsRepo.createRepository(repoPath, projectName);
     });
     // 初始化已有项目
-    electron_1.ipcMain.handle('dbvs:init-repository', async (_, repoPath) => {
+    electron_1.ipcMain.handle('dbgvs:init-repository', async (_, repoPath) => {
         return await dbvsRepo.initExistingProject(repoPath);
     });
     // 获取工作副本状态（需要 repoPath + workingCopyPath）
-    electron_1.ipcMain.handle('dbvs:get-status', async (_, repoPath, workingCopyPath) => {
+    electron_1.ipcMain.handle('dbgvs:get-status', async (_, repoPath, workingCopyPath) => {
         return await dbvsRepo.getStatus(repoPath, workingCopyPath);
     });
     // 获取文件树（扫描工作副本目录）
-    electron_1.ipcMain.handle('dbvs:get-file-tree', async (_, workingCopyPath) => {
+    electron_1.ipcMain.handle('dbgvs:get-file-tree', async (_, workingCopyPath) => {
         return await dbvsRepo.getFileTree(workingCopyPath);
     });
     // 提交变更（repoPath + workingCopyPath）
-    electron_1.ipcMain.handle('dbvs:commit', async (_, repoPath, workingCopyPath, message, selectedFiles, options) => {
+    electron_1.ipcMain.handle('dbgvs:commit', async (_, repoPath, workingCopyPath, message, selectedFiles, options) => {
         return await dbvsRepo.commit(repoPath, workingCopyPath, message, selectedFiles, options);
     });
     // 获取版本历史（只读仓库）
-    electron_1.ipcMain.handle('dbvs:get-history', async (_, repoPath) => {
+    electron_1.ipcMain.handle('dbgvs:get-history', async (_, repoPath) => {
         return await dbvsRepo.getHistory(repoPath);
     });
     // 回滚到指定版本（repoPath + workingCopyPath）
-    electron_1.ipcMain.handle('dbvs:rollback', async (_, repoPath, workingCopyPath, version) => {
+    electron_1.ipcMain.handle('dbgvs:rollback', async (_, repoPath, workingCopyPath, version) => {
         return await dbvsRepo.rollback(repoPath, workingCopyPath, version);
     });
     // 文件级回滚
-    electron_1.ipcMain.handle('dbvs:rollback-file', async (_, repoPath, workingCopyPath, version, filePath) => {
+    electron_1.ipcMain.handle('dbgvs:rollback-file', async (_, repoPath, workingCopyPath, version, filePath) => {
         return await dbvsRepo.rollbackFile(repoPath, workingCopyPath, version, filePath);
     });
     // 撤销回滚
-    electron_1.ipcMain.handle('dbvs:undo-rollback', async (_, repoPath, workingCopyPath) => {
+    electron_1.ipcMain.handle('dbgvs:undo-rollback', async (_, repoPath, workingCopyPath) => {
         return await dbvsRepo.undoRollback(repoPath, workingCopyPath);
     });
     // 按 AI 会话回滚
-    electron_1.ipcMain.handle('dbvs:rollback-ai', async (_, repoPath, workingCopyPath, sessionId) => {
+    electron_1.ipcMain.handle('dbgvs:rollback-ai', async (_, repoPath, workingCopyPath, sessionId) => {
         return await dbvsRepo.rollbackBySession(repoPath, workingCopyPath, sessionId);
     });
     // 还原工作副本文件到 HEAD 版本
-    electron_1.ipcMain.handle('dbvs:revert-files', async (_, repoPath, workingCopyPath, filePaths) => {
+    electron_1.ipcMain.handle('dbgvs:revert-files', async (_, repoPath, workingCopyPath, filePaths) => {
         return await dbvsRepo.revertFiles(repoPath, workingCopyPath, filePaths);
     });
     // 自动快照定时器
     let autoSnapshotTimer = null;
-    electron_1.ipcMain.handle('dbvs:auto-snapshot-start', async (_, repoPath, workingCopyPath, intervalMinutes) => {
+    electron_1.ipcMain.handle('dbgvs:auto-snapshot-start', async (_, repoPath, workingCopyPath, intervalMinutes) => {
         if (autoSnapshotTimer) {
             clearInterval(autoSnapshotTimer);
         }
@@ -338,7 +338,7 @@ function registerIPCHandlers() {
         autoSnapshotTimer = setInterval(tick, intervalMs);
         return { success: true, message: `自动快照已启动，间隔 ${intervalMinutes} 分钟` };
     });
-    electron_1.ipcMain.handle('dbvs:auto-snapshot-stop', async () => {
+    electron_1.ipcMain.handle('dbgvs:auto-snapshot-stop', async () => {
         if (autoSnapshotTimer) {
             clearInterval(autoSnapshotTimer);
             autoSnapshotTimer = null;
@@ -347,23 +347,23 @@ function registerIPCHandlers() {
         return { success: true, message: '自动快照未在运行' };
     });
     // 更新到最新版本（repoPath + workingCopyPath）
-    electron_1.ipcMain.handle('dbvs:update', async (_, repoPath, workingCopyPath) => {
+    electron_1.ipcMain.handle('dbgvs:update', async (_, repoPath, workingCopyPath) => {
         return await dbvsRepo.update(repoPath, workingCopyPath);
     });
     // 文件差异比对（repoPath + workingCopyPath）
-    electron_1.ipcMain.handle('dbvs:get-diff', async (_, repoPath, workingCopyPath, filePath, versionA, versionB) => {
+    electron_1.ipcMain.handle('dbgvs:get-diff', async (_, repoPath, workingCopyPath, filePath, versionA, versionB) => {
         return await dbvsRepo.getDiff(repoPath, workingCopyPath, filePath, versionA, versionB);
     });
     // 全局 Diff 统计
-    electron_1.ipcMain.handle('dbvs:get-diff-summary', async (_, repoPath, workingCopyPath) => {
+    electron_1.ipcMain.handle('dbgvs:get-diff-summary', async (_, repoPath, workingCopyPath) => {
         return await dbvsRepo.getDiffSummary(repoPath, workingCopyPath);
     });
     // 获取文件的两个版本内容（repoPath + workingCopyPath）
-    electron_1.ipcMain.handle('dbvs:get-diff-content', async (_, repoPath, workingCopyPath, filePath, versionA, versionB) => {
+    electron_1.ipcMain.handle('dbgvs:get-diff-content', async (_, repoPath, workingCopyPath, filePath, versionA, versionB) => {
         return await dbvsRepo.getDiffContent(repoPath, workingCopyPath, filePath, versionA, versionB);
     });
     // 获取仓库信息（只读仓库）
-    electron_1.ipcMain.handle('dbvs:get-repository-info', async (_, repoPath) => {
+    electron_1.ipcMain.handle('dbgvs:get-repository-info', async (_, repoPath) => {
         return await dbvsRepo.getRepositoryInfo(repoPath);
     });
     // 打开本地文件夹
@@ -475,11 +475,11 @@ function registerIPCHandlers() {
         }
     });
     // 删除仓库（只删集中仓库）
-    electron_1.ipcMain.handle('dbvs:delete-repository', async (_, repoPath) => {
+    electron_1.ipcMain.handle('dbgvs:delete-repository', async (_, repoPath) => {
         return await dbvsRepo.deleteRepository(repoPath);
     });
     // 删除仓库（可选同时删除关联的工作副本文件）
-    electron_1.ipcMain.handle('dbvs:delete-repository-full', async (_, rootPath, repoPath, deleteWorkingCopies) => {
+    electron_1.ipcMain.handle('dbgvs:delete-repository-full', async (_, rootPath, repoPath, deleteWorkingCopies) => {
         try {
             // 收集关联的工作副本路径
             const registry = await readProjectRegistry(rootPath);
@@ -518,28 +518,28 @@ function registerIPCHandlers() {
         }
     });
     // 验证仓库完整性
-    electron_1.ipcMain.handle('dbvs:verify', async (_, repoPath) => {
+    electron_1.ipcMain.handle('dbgvs:verify', async (_, repoPath) => {
         return await dbvsRepo.verify(repoPath);
     });
     // 获取结构化历史（只读仓库）
-    electron_1.ipcMain.handle('dbvs:get-history-structured', async (_, repoPath) => {
+    electron_1.ipcMain.handle('dbgvs:get-history-structured', async (_, repoPath) => {
         return await dbvsRepo.getHistoryStructured(repoPath);
     });
     // 获取单个提交详情（给 History 用）
-    electron_1.ipcMain.handle('dbvs:get-commit-detail', async (_, repoPath, commitId) => {
+    electron_1.ipcMain.handle('dbgvs:get-commit-detail', async (_, repoPath, commitId) => {
         return await dbvsRepo.getCommitDetail(repoPath, commitId);
     });
     // 获取 Blob 内容（给 History diff 用）
-    electron_1.ipcMain.handle('dbvs:get-blob-content', async (_, repoPath, hash) => {
+    electron_1.ipcMain.handle('dbgvs:get-blob-content', async (_, repoPath, hash) => {
         const content = await dbvsRepo.getBlobContent(repoPath, hash);
         return { success: content !== null, content };
     });
     // 解析路径（给定任意路径，返回 repoPath + workingCopyPath）
-    electron_1.ipcMain.handle('dbvs:resolve-paths', async (_, inputPath) => {
+    electron_1.ipcMain.handle('dbgvs:resolve-paths', async (_, inputPath) => {
         return await dbvsRepo.resolvePaths(inputPath);
     });
     // 列出根仓库下所有集中仓库的详细信息
-    electron_1.ipcMain.handle('dbvs:list-repositories', async (_, rootPath) => {
+    electron_1.ipcMain.handle('dbgvs:list-repositories', async (_, rootPath) => {
         try {
             const reposDir = path.join(rootPath, 'repositories');
             if (!(await fs.pathExists(reposDir)))
@@ -604,10 +604,10 @@ function registerIPCHandlers() {
         return await (0, context_menu_1.isContextMenuRegistered)();
     });
     // ==================== 项目文档生成 ====================
-    function generateDBVSGuide(projectName, projectPath, repoPath) {
-        return `# ${projectName} — DBVS 版本管理说明
+    function generateDBGODVSGuide(projectName, projectPath, repoPath) {
+        return `# ${projectName} — DBGODVS 版本管理说明
 
-> 本项目使用 **DBVS（DeepBlue Version System）** 进行版本控制。
+> 本项目使用 **DBGODVS（深蓝主神版本管理系统）** 进行版本控制。
 
 ## 项目信息
 
@@ -617,42 +617,42 @@ function registerIPCHandlers() {
 
 ## 常用命令
 
-以下命令需要在安装了 DBVS 的环境中执行。将 \`(projectPath)\` 替换为本项目的实际路径。
+以下命令需要在安装了 DBGODVS 的环境中执行。将 \`(projectPath)\` 替换为本项目的实际路径。
 
 ### 查看状态
 \`\`\`bash
-dbvs status "${projectPath}"
+dbgvs status "${projectPath}"
 \`\`\`
 
 ### 提交变更
 \`\`\`bash
-dbvs commit "${projectPath}" --message "提交说明"
+dbgvs commit "${projectPath}" --message "提交说明"
 \`\`\`
 
 ### 更新到最新版本
 \`\`\`bash
-dbvs update "${projectPath}"
+dbgvs update "${projectPath}"
 \`\`\`
 
 ### 查看历史记录
 \`\`\`bash
-dbvs history "${projectPath}"
-dbvs log "${projectPath}" --limit 10
+dbgvs history "${projectPath}"
+dbgvs log "${projectPath}" --limit 10
 \`\`\`
 
 ### 查看文件差异
 \`\`\`bash
-dbvs diff "${projectPath}" --file src/example.ts
+dbgvs diff "${projectPath}" --file src/example.ts
 \`\`\`
 
 ### 回滚到指定版本
 \`\`\`bash
-dbvs rollback "${projectPath}" --version v1
+dbgvs rollback "${projectPath}" --version v1
 \`\`\`
 
 ### 查看项目信息
 \`\`\`bash
-dbvs info "${projectPath}"
+dbgvs info "${projectPath}"
 \`\`\`
 
 ## AI 智能体提交规范
@@ -661,13 +661,13 @@ dbvs info "${projectPath}"
 
 \`\`\`bash
 # AI 工具提交
-dbvs commit "${projectPath}" --message "提交说明" \\
+dbgvs commit "${projectPath}" --message "提交说明" \\
   --ai claude-code \\
   --session <会话ID> \\
   --summary "简要描述本次变更的目的和范围"
 
 # 查看带 AI 标识的历史记录
-dbvs history "${projectPath}"
+dbgvs history "${projectPath}"
 \`\`\`
 
 参数说明：
@@ -690,9 +690,9 @@ dbvs history "${projectPath}"
 
 \`\`\`bash
 # 查看完整历史，找到问题版本
-dbvs history "${projectPath}"
+dbgvs history "${projectPath}"
 # 查看特定版本详情
-dbvs info "${projectPath}"
+dbgvs info "${projectPath}"
 \`\`\`
 
 ### 选择性恢复
@@ -700,7 +700,7 @@ dbvs info "${projectPath}"
 恢复单个文件到指定版本（不影响其他文件）：
 
 \`\`\`bash
-dbvs rollback-file "${projectPath}" --version <版本ID> --file src/example.ts
+dbgvs rollback-file "${projectPath}" --version <版本ID> --file src/example.ts
 \`\`\`
 
 ### 整体回滚
@@ -709,20 +709,20 @@ dbvs rollback-file "${projectPath}" --version <版本ID> --file src/example.ts
 
 \`\`\`bash
 # 执行回滚（自动创建快照）
-dbvs rollback "${projectPath}" --version <版本ID>
+dbgvs rollback "${projectPath}" --version <版本ID>
 
 # 如果回滚错误，撤销回滚恢复到回滚前状态
-dbvs undo-rollback "${projectPath}"
+dbgvs undo-rollback "${projectPath}"
 
 # 按 AI 会话回滚（撤销某次 AI 会话的所有提交）
-dbvs rollback-ai "${projectPath}" --session <会话ID>
+dbgvs rollback-ai "${projectPath}" --session <会话ID>
 \`\`\`
 
 ### 验证恢复结果
 
 \`\`\`bash
-dbvs verify "${projectPath}"
-dbvs status "${projectPath}"
+dbgvs verify "${projectPath}"
+dbgvs status "${projectPath}"
 \`\`\`
 
 ### 自定义忽略规则
@@ -743,12 +743,12 @@ temp_*
 
 \`\`\`bash
 # 每 15 分钟自动提交一次（仅在有变更时）
-dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
+dbgvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
 \`\`\`
 
-## DBVS 桌面应用
+## DBGODVS 桌面应用
 
-除了命令行，用户也可以打开 **DBVS 桌面应用** 进行可视化管理。启动应用后会自动检测并刷新所有项目。
+除了命令行，用户也可以打开 **DBGODVS 桌面应用** 进行可视化管理。启动应用后会自动检测并刷新所有项目。
 
 ### 桌面应用功能
 
@@ -757,25 +757,25 @@ dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
 - **历史面板**：浏览所有版本的提交历史，查看每次提交的文件清单和 diff 对比，支持一键回滚、恢复单个文件、撤销回滚
 - **设置面板**：Git 远程仓库连接、自动快照开关、数据验证、仓库初始化
 - **仓库管理**：创建/导入/删除项目、Checkout 工作副本、Git 远程克隆、Windows 右键菜单集成
-- **自动更新**：应用启动时自动检测所有项目的 DBVS-GUIDE.md 是否为最新版本，旧版自动刷新
+- **自动更新**：应用启动时自动检测所有项目的 DBGODVS-GUIDE.md 是否为最新版本，旧版自动刷新
 
 ### 提醒用户查看
 
 如果需要让用户确认变更内容或查看可视化 diff，可以提示用户：
 
-> "请打开 DBVS 桌面应用，在历史面板中查看版本对比详情。"
+> "请打开 DBGODVS 桌面应用，在历史面板中查看版本对比详情。"
 
 ## 更多信息
 
-- DBVS 技术文档：请参阅 DBVS 安装目录下的 README.md
+- DBGODVS 技术文档：请参阅 DBGODVS 安装目录下的 README.md
 - Git 远程同步：如项目已连接远程仓库，可通过 \`dbvs git-pull\` / \`dbvs git-push\` 同步
 - 完整 CLI 参考：\`dbvs --help\` 查看所有可用命令
 `;
     }
     async function ensureProjectGuide(projectPath, projectName, repoPath) {
-        const guidePath = path.join(projectPath, 'DBVS-GUIDE.md');
-        const newContent = generateDBVSGuide(projectName, projectPath, repoPath);
-        const versionTag = '<!-- DBVS-GUIDE-VERSION: 2 -->';
+        const guidePath = path.join(projectPath, 'DBGODVS-GUIDE.md');
+        const newContent = generateDBGODVSGuide(projectName, projectPath, repoPath);
+        const versionTag = '<!-- DBGODVS-GUIDE-VERSION: 2 -->';
         if (await fs.pathExists(guidePath)) {
             const existing = await fs.readFile(guidePath, 'utf-8');
             // 已是最新版本则跳过
@@ -786,7 +786,7 @@ dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
     }
     // ==================== 项目创建/列表 IPC（SVN 风格）====================
     // 创建新项目：在 repositories/<name> 创建集中仓库，创建工作副本
-    electron_1.ipcMain.handle('dbvs:create-project', async (_, rootPath, projectName, customPath) => {
+    electron_1.ipcMain.handle('dbgvs:create-project', async (_, rootPath, projectName, customPath) => {
         try {
             if (!projectName?.trim()) {
                 return { success: false, message: '请输入项目名称' };
@@ -812,9 +812,9 @@ dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
             // 创建 README
             const readmePath = path.join(workingCopyPath, 'README.md');
             if (!(await fs.pathExists(readmePath))) {
-                await fs.writeFile(readmePath, `# ${projectName}\n\n这是一个新的DBVS项目。\n`);
+                await fs.writeFile(readmePath, `# ${projectName}\n\n这是一个新的DBGODVS项目。\n`);
             }
-            // 创建 DBVS-GUIDE.md
+            // 创建 DBGODVS-GUIDE.md
             await ensureProjectGuide(workingCopyPath, projectName.trim(), repoPath);
             // 注册到项目表
             const registry = await readProjectRegistry(rootPath);
@@ -834,7 +834,7 @@ dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
         }
     });
     // 获取项目列表（从注册表读取，展开工作副本）
-    electron_1.ipcMain.handle('dbvs:get-projects', async (_, rootPath) => {
+    electron_1.ipcMain.handle('dbgvs:get-projects', async (_, rootPath) => {
         try {
             const registry = await readProjectRegistry(rootPath);
             const projectList = [];
@@ -889,7 +889,7 @@ dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
         }
     });
     // 注册已有目录为项目（导入：目录成为工作副本，仓库创建到 repositories/）
-    electron_1.ipcMain.handle('dbvs:register-project', async (_, rootPath, projectPath, projectName, initWithCommit = false) => {
+    electron_1.ipcMain.handle('dbgvs:register-project', async (_, rootPath, projectPath, projectName, initWithCommit = false) => {
         try {
             const name = projectName || path.basename(projectPath);
             const registry = await readProjectRegistry(rootPath);
@@ -930,7 +930,7 @@ dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
                     }
                 }
             }
-            // 创建 DBVS-GUIDE.md
+            // 创建 DBGODVS-GUIDE.md
             await ensureProjectGuide(normalizedProjectPath, name, repoPath);
             // 注册到项目表
             const existing = registry.find(e => path.resolve(e.repoPath) === repoPath);
@@ -954,7 +954,7 @@ dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
         }
     });
     // Checkout：从集中仓库创建工作副本
-    electron_1.ipcMain.handle('dbvs:checkout-project', async (_, rootPath, repoPath) => {
+    electron_1.ipcMain.handle('dbgvs:checkout-project', async (_, rootPath, repoPath) => {
         try {
             // 让用户选择目标文件夹
             const result = await electron_1.dialog.showOpenDialog(mainWindow, {
@@ -988,7 +988,7 @@ dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
                     await writeProjectRegistry(rootPath, registry);
                 }
             }
-            // 创建 DBVS-GUIDE.md
+            // 创建 DBGODVS-GUIDE.md
             await ensureProjectGuide(targetPath, projectName, normalizedRepoPath);
             return { success: true, message: `Checkout 成功: ${targetPath}`, targetPath };
         }
@@ -997,7 +997,7 @@ dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
         }
     });
     // Checkout 到指定位置（带自定义文件夹名称）
-    electron_1.ipcMain.handle('dbvs:checkout-to', async (_, rootPath, repoPath, targetParentDir, folderName) => {
+    electron_1.ipcMain.handle('dbgvs:checkout-to', async (_, rootPath, repoPath, targetParentDir, folderName) => {
         try {
             const targetPath = path.resolve(path.join(targetParentDir, folderName));
             // 检查目标是否已存在
@@ -1033,7 +1033,7 @@ dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
                 });
             }
             await writeProjectRegistry(rootPath, registry);
-            // 创建 DBVS-GUIDE.md
+            // 创建 DBGODVS-GUIDE.md
             await ensureProjectGuide(targetPath, projectName, normalizedRepoPath);
             return { success: true, message: `Checkout 成功: ${targetPath}`, targetPath, projectName };
         }
@@ -1042,13 +1042,13 @@ dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
         }
     });
     // 注册已有工作副本（文件夹内已有 .dbvs-link.json，直接加入项目列表）
-    electron_1.ipcMain.handle('dbvs:register-working-copy', async (_, rootPath, workingCopyPath) => {
+    electron_1.ipcMain.handle('dbgvs:register-working-copy', async (_, rootPath, workingCopyPath) => {
         try {
             const normalizedWCPath = path.resolve(workingCopyPath);
             // 读取链接文件获取 repoPath
             const link = await dbvsRepo.readWorkingCopyLink(normalizedWCPath);
             if (!link || !link.repoPath) {
-                return { success: false, message: '该目录不是有效的 DBVS 工作副本（缺少 .dbvs-link.json）' };
+                return { success: false, message: '该目录不是有效的 DBGODVS 工作副本（缺少 .dbvs-link.json）' };
             }
             // 检查仓库是否还存在
             if (!(await fs.pathExists(path.join(link.repoPath, 'config.json')))) {
@@ -1082,7 +1082,7 @@ dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
         }
     });
     // 从项目列表移除工作副本（仅断开关联，不删文件不删仓库）
-    electron_1.ipcMain.handle('dbvs:unregister-project', async (_, rootPath, workingCopyPath) => {
+    electron_1.ipcMain.handle('dbgvs:unregister-project', async (_, rootPath, workingCopyPath) => {
         try {
             const registry = await readProjectRegistry(rootPath);
             const normalized = path.resolve(workingCopyPath);
@@ -1102,21 +1102,21 @@ dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
             return { success: false, message: String(error) };
         }
     });
-    // 启动检查：为所有项目补全 DBVS-GUIDE.md
-    electron_1.ipcMain.handle('dbvs:ensure-project-docs', async (_, rootPath) => {
+    // 启动检查：为所有项目补全 DBGODVS-GUIDE.md
+    electron_1.ipcMain.handle('dbgvs:ensure-project-docs', async (_, rootPath) => {
         try {
             const registry = await readProjectRegistry(rootPath);
             let updated = 0;
             for (const entry of registry) {
                 for (const wc of entry.workingCopies) {
                     if (await fs.pathExists(wc.path)) {
-                        const beforeExists = await fs.pathExists(path.join(wc.path, 'DBVS-GUIDE.md'));
+                        const beforeExists = await fs.pathExists(path.join(wc.path, 'DBGODVS-GUIDE.md'));
                         await ensureProjectGuide(wc.path, entry.name, entry.repoPath);
                         if (!beforeExists)
                             updated++;
                         else {
-                            const content = await fs.readFile(path.join(wc.path, 'DBVS-GUIDE.md'), 'utf-8');
-                            if (content.includes('<!-- DBVS-GUIDE-VERSION: 2 -->'))
+                            const content = await fs.readFile(path.join(wc.path, 'DBGODVS-GUIDE.md'), 'utf-8');
+                            if (content.includes('<!-- DBGODVS-GUIDE-VERSION: 2 -->'))
                                 updated++;
                         }
                     }
@@ -1128,7 +1128,7 @@ dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
             return { success: false, message: String(error) };
         }
     });
-    electron_1.ipcMain.handle('dbvs:create-root-repository', async (_, rootPath) => {
+    electron_1.ipcMain.handle('dbgvs:create-root-repository', async (_, rootPath) => {
         try {
             const projectsDir = path.join(rootPath, 'projects');
             const repositoriesDir = path.join(rootPath, 'repositories');
@@ -1152,7 +1152,7 @@ dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
         }
     });
     // 获取根仓库配置（持久化到用户数据目录）
-    electron_1.ipcMain.handle('dbvs:get-root-repository', async () => {
+    electron_1.ipcMain.handle('dbgvs:get-root-repository', async () => {
         try {
             const configPath = path.join(electron_1.app.getPath('userData'), 'dbvs-root.json');
             if (await fs.pathExists(configPath)) {
@@ -1166,7 +1166,7 @@ dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
         }
     });
     // 保存根仓库配置
-    electron_1.ipcMain.handle('dbvs:save-root-repository', async (_, rootPath) => {
+    electron_1.ipcMain.handle('dbgvs:save-root-repository', async (_, rootPath) => {
         try {
             // 写入 GUI 配置
             const guiConfigPath = path.join(electron_1.app.getPath('userData'), 'dbvs-root.json');
@@ -1182,7 +1182,7 @@ dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
         }
     });
     // 注册 CLI 全局命令（npm link）
-    electron_1.ipcMain.handle('dbvs:register-cli', async () => {
+    electron_1.ipcMain.handle('dbgvs:register-cli', async () => {
         return new Promise((resolve) => {
             const projectDir = path.resolve(__dirname, '..');
             // 确保 electron 代码已编译
@@ -1196,20 +1196,20 @@ dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
                     resolve({ success: false, message: `注册失败: ${error.message}` });
                     return;
                 }
-                resolve({ success: true, message: 'CLI 已注册为全局命令，可在任意位置使用 dbvs 命令' });
+                resolve({ success: true, message: 'CLI 已注册为全局命令，可在任意位置使用 dbgvs 命令' });
             });
         });
     });
     // 检查 CLI 是否已全局注册
-    electron_1.ipcMain.handle('dbvs:is-cli-registered', async () => {
+    electron_1.ipcMain.handle('dbgvs:is-cli-registered', async () => {
         return new Promise((resolve) => {
-            (0, child_process_1.execFile)('dbvs', ['--version'], { shell: true, timeout: 5000 }, (error) => {
+            (0, child_process_1.execFile)('dbgvs', ['--version'], { shell: true, timeout: 5000 }, (error) => {
                 resolve({ registered: !error });
             });
         });
     });
     // 新手引导状态
-    electron_1.ipcMain.handle('dbvs:get-onboarding-status', async () => {
+    electron_1.ipcMain.handle('dbgvs:get-onboarding-status', async () => {
         try {
             const onboardingPath = path.join(electron_1.app.getPath('userData'), 'onboarding.json');
             if (await fs.pathExists(onboardingPath)) {
@@ -1222,7 +1222,7 @@ dbvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
             return { completed: false };
         }
     });
-    electron_1.ipcMain.handle('dbvs:set-onboarding-completed', async (_, completed) => {
+    electron_1.ipcMain.handle('dbgvs:set-onboarding-completed', async (_, completed) => {
         try {
             const onboardingPath = path.join(electron_1.app.getPath('userData'), 'onboarding.json');
             await fs.writeJson(onboardingPath, { completed }, { spaces: 2 });
@@ -1390,7 +1390,7 @@ async function getProjectsList(rootPath) {
 registerIPCHandlers();
 electron_1.app.whenReady().then(createWindow);
 // ==================== 本地 IPC Server（接收启动器命令）====================
-const IPC_PORT_FILE = path.join(process.env.APPDATA || process.env.LOCALAPPDATA || path.join(require('os').homedir(), '.config'), 'DBVS', 'ipc-port');
+const IPC_PORT_FILE = path.join(process.env.APPDATA || process.env.LOCALAPPDATA || path.join(require('os').homedir(), '.config'), 'DBGODVS', 'ipc-port');
 let ipcServer = null;
 /**
  * 启动本地 TCP 服务，监听启动器发来的右键菜单命令

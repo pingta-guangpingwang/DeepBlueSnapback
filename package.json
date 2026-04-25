@@ -1,10 +1,10 @@
 {
-  "name": "dbvs",
+  "name": "dbgvs",
   "version": "2.0.0",
-  "description": "DeepBlue Version System - 本地版本管理工具（SVN 服务器+客户端一体化）",
+  "description": "深蓝主神版本管理系统 - 本地版本管理工具（SVN 服务器+客户端一体化）",
   "main": "electron/main.js",
   "bin": {
-    "dbvs": "./bin/dbvs-cli.js"
+    "dbgvs": "./bin/dbvs-cli.js"
   },
   "scripts": {
     "dev": "vite",

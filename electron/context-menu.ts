@@ -6,16 +6,16 @@ import * as fs from 'fs-extra'
  * Windows 右键菜单管理
  *
  * 架构：
- *   注册表 → dbvs-launcher.exe → TCP 连接 → DBVS 主进程
+ *   注册表 → dbvs-launcher.exe → TCP 连接 → DBGODVS 主进程
  *
- * - dbvs-launcher.exe 是小型启动器，负责连接已运行的 DBVS 或启动新实例
- * - DBVS 主进程在启动时开启 TCP IPC Server，监听启动器命令
+ * - dbvs-launcher.exe 是小型启动器，负责连接已运行的 DBGODVS 或启动新实例
+ * - DBGODVS 主进程在启动时开启 TCP IPC Server，监听启动器命令
  */
 
 // 注册表项路径 — 对文件夹右键时显示
-const REG_KEY = 'Directory\\Background\\shell\\DBVS'
+const REG_KEY = 'Directory\\Background\\shell\\DBGODVS'
 // 对文件夹本身右键时显示
-const REG_KEY_DIR = 'Directory\\shell\\DBVS'
+const REG_KEY_DIR = 'Directory\\shell\\DBGODVS'
 
 /**
  * 获取启动器路径
@@ -23,7 +23,7 @@ const REG_KEY_DIR = 'Directory\\shell\\DBVS'
  * - 打包模式：dbvs-launcher.exe（或 dbvs-launcher.js 用 node 运行）
  */
 function getLauncherCommand(): { cmd: string; args: string[] } {
-  const isDev = !process.execPath.includes('dbvs') && !process.execPath.includes('DBVS')
+  const isDev = !process.execPath.includes('dbgvs') && !process.execPath.includes('DBGODVS')
 
   if (isDev) {
     // 开发模式：node electron/dbvs-launcher.js
@@ -94,10 +94,10 @@ export async function registerContextMenu(): Promise<{ success: boolean; message
   }
 
   // 先创建主菜单项
-  await runReg(['add', REG_KEY, '/ve', '/d', '深蓝管理工具', '/f'])
+  await runReg(['add', REG_KEY, '/ve', '/d', '深蓝主神管理工具', '/f'])
   await runReg(['add', REG_KEY, '/v', 'Icon', '/d', iconPath, '/f'])
   await runReg(['add', REG_KEY, '/v', 'Position', '/d', 'Middle', '/f'])
-  await runReg(['add', REG_KEY_DIR, '/ve', '/d', '深蓝管理工具', '/f'])
+  await runReg(['add', REG_KEY_DIR, '/ve', '/d', '深蓝主神管理工具', '/f'])
   await runReg(['add', REG_KEY_DIR, '/v', 'Icon', '/d', iconPath, '/f'])
   await runReg(['add', REG_KEY_DIR, '/v', 'Position', '/d', 'Middle', '/f'])
 
@@ -145,7 +145,7 @@ export async function isContextMenuRegistered(): Promise<boolean> {
 }
 
 /**
- * 解析命令行参数，提取 DBVS 操作
+ * 解析命令行参数，提取 DBGODVS 操作
  * （主进程直接启动时的备用解析，启动器不走这里）
  */
 export function parseCommandLine(argv: string[]): { action: string; path: string } | null {

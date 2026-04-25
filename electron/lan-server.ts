@@ -2,9 +2,9 @@ import express from 'express'
 import { createServer } from 'http'
 import * as fs from 'fs-extra'
 import * as path from 'path'
-import { DBVSRepository } from './dbvs-repository'
+import { DBGODVSRepository } from './dbvs-repository'
 
-const repo = new DBVSRepository()
+const repo = new DBGODVSRepository()
 
 export class LANServer {
   private app: express.Application
@@ -21,7 +21,7 @@ export class LANServer {
     // Get server info
     this.app.get('/api/info', (_req, res) => {
       res.json({
-        name: 'DBVS LAN Server',
+        name: 'DBGODVS LAN Server',
         version: '2.0.0',
         rootPath: this.rootPath
       })

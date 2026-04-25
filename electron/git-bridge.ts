@@ -24,7 +24,7 @@ interface GitAuthEntry {
   token: string
 }
 
-const DBVS_GITIGNORE = `.dbvs-link.json
+const DBGODVS_GITIGNORE = `.dbvs-link.json
 .dbvs/
 `
 
@@ -109,14 +109,14 @@ export class GitBridge {
       }
       await git.addRemote({ fs, dir, remote: 'origin', url: remoteUrl })
 
-      // Write .gitignore for DBVS files
+      // Write .gitignore for DBGODVS files
       const gitignorePath = path.join(dir, '.gitignore')
       if (!(await fs.pathExists(gitignorePath))) {
-        await fs.writeFile(gitignorePath, DBVS_GITIGNORE)
+        await fs.writeFile(gitignorePath, DBGODVS_GITIGNORE)
       } else {
         const content = await fs.readFile(gitignorePath, 'utf-8')
         if (!content.includes('.dbvs-link.json')) {
-          await fs.appendFile(gitignorePath, '\n' + DBVS_GITIGNORE)
+          await fs.appendFile(gitignorePath, '\n' + DBGODVS_GITIGNORE)
         }
       }
 
@@ -251,7 +251,7 @@ export class GitBridge {
           fs, dir,
           ours: branch,
           theirs: `origin/${branch}`,
-          author: { name: 'DBVS', email: 'dbvs@local' },
+          author: { name: 'DBGODVS', email: 'dbgvs@local' },
         })
       } catch (mergeError: any) {
         const msg = String(mergeError)

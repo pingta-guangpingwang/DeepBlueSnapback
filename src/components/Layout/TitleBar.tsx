@@ -18,14 +18,14 @@ export default function TitleBar() {
   }
 
   const titleMap: Record<string, string> = {
-    setup: 'DBVS - 设置',
-    repositories: 'DBVS - 仓库管理',
-    dashboard: `DBVS - ${state.currentProject ?? '仪表盘'}`,
+    setup: 'DBGODVS - 设置',
+    repositories: 'DBGODVS - 仓库管理',
+    dashboard: `DBGODVS - ${state.currentProject ?? '仪表盘'}`,
   }
 
   return (
     <div className="draggable-header" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', height: 32, background: '#fff', borderBottom: '1px solid #e5e7eb', userSelect: 'none' }}>
-      <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{titleMap[state.currentView] ?? 'DBVS'}</span>
+      <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{titleMap[state.currentView] ?? 'DBGODVS'}</span>
       <div className="header-spacer" />
       <a
         href="https://www.ssrgpt.com"

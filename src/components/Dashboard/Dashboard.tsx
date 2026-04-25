@@ -25,11 +25,11 @@ export default function Dashboard() {
       <header className="dashboard-header draggable-header">
         <div className="header-left">
           <button className="back-button" onClick={goBack}>← 返回</button>
-          <h1>{state.currentProject ?? 'DBVS Dashboard'}</h1>
+          <h1>{state.currentProject ?? 'DBGODVS Dashboard'}</h1>
           <div className="project-info">
             <span className="project-path">{state.projectPath}</span>
             <span className={`repo-status ${state.repoStatus === true ? 'active' : 'inactive'}`}>
-              {state.repoStatus === true ? '● DBVS 仓库' : '○ 非仓库目录'}
+              {state.repoStatus === true ? '● DBGODVS 仓库' : '○ 非仓库目录'}
             </span>
           </div>
         </div>

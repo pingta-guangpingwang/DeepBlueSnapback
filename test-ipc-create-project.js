@@ -2,13 +2,13 @@ const { ipcMain } = require('electron')
 const path = require('path')
 const fs = require('fs-extra')
 
-// 模拟DBVSRepository类
-class DBVSRepository {
+// 模拟DBGODVSRepository类
+class DBGODVSRepository {
   async createRepository(folderPath, projectName) {
     try {
       const dbvsPath = path.join(folderPath, '.dbvs')
       await fs.ensureDir(dbvsPath)
-      // 创建基本的DBVS结构
+      // 创建基本的DBGODVS结构
       await fs.writeJson(path.join(dbvsPath, 'config.json'), {
         name: projectName,
         version: '1.0.0',
@@ -16,18 +16,18 @@ class DBVSRepository {
       })
       await fs.ensureDir(path.join(dbvsPath, 'objects'))
       await fs.ensureDir(path.join(dbvsPath, 'refs'))
-      return { success: true, message: `DBVS repository created at ${folderPath}` }
+      return { success: true, message: `DBGODVS repository created at ${folderPath}` }
     } catch (error) {
       return { success: false, message: String(error) }
     }
   }
 }
 
-const dbvsRepo = new DBVSRepository()
+const dbvsRepo = new DBGODVSRepository()
 
 // 模拟create-project处理器
 async function testCreateProject() {
-  const rootPath = 'C:\\Temp\\DBVS_Test_IPC'
+  const rootPath = 'C:\\Temp\\DBGODVS_Test_IPC'
   const projectName = 'TestProjectIPC'
 
   console.log('Testing create-project IPC handler...')
@@ -53,7 +53,7 @@ async function testCreateProject() {
     await fs.ensureDir(projectPath)
     console.log('✓ Created project directory:', projectPath)
 
-    // 创建对应的仓库目录并初始化DBVS
+    // 创建对应的仓库目录并初始化DBGODVS
     await fs.ensureDir(repoPath)
     const result = await dbvsRepo.createRepository(repoPath, projectName)
     console.log('Repository creation result:', result)
@@ -61,7 +61,7 @@ async function testCreateProject() {
     if (result.success) {
       // 创建一个初始的README文件
       const readmePath = path.join(projectPath, 'README.md')
-      await fs.writeFile(readmePath, `# ${projectName}\n\n这是一个新的DBVS项目。\n`)
+      await fs.writeFile(readmePath, `# ${projectName}\n\n这是一个新的DBGODVS项目。\n`)
       console.log('✓ Created README file')
 
       return { success: true, message: `项目 "${projectName}" 创建成功` }

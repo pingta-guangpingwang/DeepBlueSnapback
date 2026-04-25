@@ -31,7 +31,7 @@ export default function RootSetup() {
         try {
           const cliResult = await window.electronAPI.registerCLI()
           if (cliResult?.success) {
-            dispatch({ type: 'SET_MESSAGE', payload: '根仓库设置成功！命令行工具已注册，可在任意位置使用 dbvs 命令。' })
+            dispatch({ type: 'SET_MESSAGE', payload: '根仓库设置成功！命令行工具已注册，可在任意位置使用 dbgvs 命令。' })
           } else {
             dispatch({ type: 'SET_MESSAGE', payload: '根仓库设置成功！（命令行注册失败，可在设置中手动注册）' })
           }
@@ -55,8 +55,8 @@ export default function RootSetup() {
       </div>
       <div className="setup-content">
         <div className="setup-logo">
-          <h1>DBVS</h1>
-          <p>DeepBlue Version System</p>
+          <h1>DBGODVS</h1>
+          <p>深蓝主神版本管理系统</p>
           <p className="setup-subtitle">SVN服务器 + 客户端一体化版本管理工具</p>
         </div>
 

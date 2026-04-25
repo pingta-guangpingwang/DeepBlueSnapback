@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 function testRootRepositoryCreation() {
-  const testRootPath = 'C:\\Temp\\DBVS_Test';
+  const testRootPath = 'C:\\Temp\\DBGODVS_Test';
 
   console.log('Testing root repository creation...');
   console.log('Test root path:', testRootPath);

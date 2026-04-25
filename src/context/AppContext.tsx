@@ -132,7 +132,7 @@ const initialState: AppState = {
   repoPath: '',
 
   isLoading: false,
-  message: '\u6B22\u8FCE\u4F7F\u7528 DBVS \u7248\u672C\u7BA1\u7406\u7CFB\u7EDF',
+  message: '\u6B22\u8FCE\u4F7F\u7528 DBGODVS \u7248\u672C\u7BA1\u7406\u7CFB\u7EDF',
   showSettingsModal: false,
   showCreateProjectModal: false,
   isMaximized: false,

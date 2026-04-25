@@ -1,5 +1,5 @@
 /**
- * DBVS CLI E2E Test Suite - 全面测试所有 CLI 命令
+ * DBGODVS CLI E2E Test Suite - 全面测试所有 CLI 命令
  */
 const { execSync } = require('child_process')
 const path = require('path')
@@ -12,7 +12,7 @@ let rootPath = ''
 let passed = 0, failed = 0
 
 function run(cmd) {
-  return execSync(cmd, { cwd: 'H:/YunSvn/webRes/DeepBlue', encoding: 'utf8', timeout: 15000 })
+  return execSync(cmd, { cwd: 'H:/YunSvn/webRes/深蓝主神', encoding: 'utf8', timeout: 15000 })
 }
 
 function test(name, fn) {
@@ -21,7 +21,7 @@ function test(name, fn) {
 }
 
 // ==================== Setup ====================
-console.log('\n=== DBVS CLI E2E Test Suite ===\n')
+console.log('\n=== DBGODVS CLI E2E Test Suite ===\n')
 
 const testRoot = path.join(os.tmpdir(), 'dbvs-e2e-test-' + Date.now())
 
