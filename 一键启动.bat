@@ -2,22 +2,16 @@
 set PORT=3005
 echo Starting DBVS...
 
-if not exist node_modules (
-    echo ============================================
-    echo   First launch - installing dependencies...
-    echo   Please wait, this may take a few minutes.
-    echo ============================================
-    call npm install
-    if %errorlevel% neq 0 (
-        echo.
-        echo Install failed. Please check your network and try again.
-        pause
-        exit /b 1
-    )
+echo Checking dependencies...
+call npm install
+if %errorlevel% neq 0 (
     echo.
-    echo Dependencies installed successfully!
-    echo.
+    echo Install failed. Please check your network and try again.
+    pause
+    exit /b 1
 )
+echo Dependencies ready.
+echo.
 
 echo Checking port %PORT%...
 
@@ -31,4 +25,9 @@ if %errorlevel% equ 0 (
 )
 
 echo Launching DBVS...
-npm run dev-electron
+call npm run dev-electron
+if %errorlevel% neq 0 (
+    echo.
+    echo DBVS exited with an error.
+    pause
+)
