@@ -1,5 +1,6 @@
 @echo off
 set PORT=3005
+set ELECTRON_CACHE=%LOCALAPPDATA%\electron\Cache
 echo Starting DBVS...
 
 echo Checking dependencies...
