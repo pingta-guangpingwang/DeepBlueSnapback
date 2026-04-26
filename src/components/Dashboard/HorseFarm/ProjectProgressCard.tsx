@@ -14,7 +14,6 @@ interface ProjectProgressCardProps {
   onSelect: () => void
   onRemove: () => void
   onOpen: () => void
-  onStartWorkflow: () => void
   onViewMindMap: () => void
   onViewKB: () => void
   onViewInitLog: () => void
@@ -40,7 +39,7 @@ const phaseLabels: Record<string, string> = {
 
 export default function ProjectProgressCard({
   hfProject, project, isActive, progress,
-  onSelect, onRemove, onOpen, onStartWorkflow, onViewMindMap, onViewKB, onViewInitLog, detailProjectPath, detailPanelType, initProgress,
+  onSelect, onRemove, onOpen, onViewMindMap, onViewKB, onViewInitLog, detailProjectPath, detailPanelType, initProgress,
   updateRequirements, updateSummary, setPhase, setMindmapPath, setKnowledgeBasePath,
   addSystemMessage, addTask, updateTask, removeTask,
 }: ProjectProgressCardProps) {
@@ -76,7 +75,7 @@ export default function ProjectProgressCard({
         {initProgress && (initProgress.status === 'running' || initProgress.status === 'queued') && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '2px 0' }}>
             <span style={{ fontSize: '11px', color: '#7c3aed', fontWeight: 500 }}>
-              {initProgress.status === 'queued' ? '⏳' : '🔄'} {initProgress.status === 'queued' ? '等待中' : '初始化中...'}
+              {initProgress.status === 'queued' ? '⏳' : '🔄'} {t.horseFarm[initProgress.status === 'queued' ? 'initQueued' : 'initRunning' as keyof typeof t.horseFarm]}
             </span>
             <div className="hf-progress-bar" style={{ flex: 1 }}>
               <div
@@ -90,10 +89,10 @@ export default function ProjectProgressCard({
           </div>
         )}
         {initProgress && initProgress.status === 'done' && (
-          <div style={{ fontSize: '11px', color: '#059669', fontWeight: 500 }}>✅ 初始化完成</div>
+          <div style={{ fontSize: '11px', color: '#059669', fontWeight: 500 }}>✅ {t.horseFarm.initDoneLabel}</div>
         )}
         {initProgress && initProgress.status === 'error' && (
-          <div style={{ fontSize: '11px', color: '#dc2626', fontWeight: 500 }}>❌ 初始化失败</div>
+          <div style={{ fontSize: '11px', color: '#dc2626', fontWeight: 500 }}>❌ {t.horseFarm.initFailedLabel}</div>
         )}
         {!initProgress && (
           <div className="hf-task-summary">
@@ -111,7 +110,7 @@ export default function ProjectProgressCard({
             </button>
           ) : (
             <button onClick={(e) => { e.stopPropagation(); setExpanded(!expanded) }}>
-              {expanded ? '收起' : '任务'}
+              {expanded ? t.horseFarm.collapseTasks : t.horseFarm.expandTasks}
             </button>
           )}
           {initProgress && (

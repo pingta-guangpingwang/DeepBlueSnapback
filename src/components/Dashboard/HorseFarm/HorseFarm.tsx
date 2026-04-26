@@ -163,6 +163,7 @@ export default function HorseFarm() {
         projectIds={state.horseFarmProjectIds}
         hfProjects={hf.hfProjects}
         onSend={(projectPath, content) => { hf.addCommand(projectPath, content) }}
+        onClear={hf.clearCommands}
       />
 
       <div className="hf-sub-tabs">
@@ -213,9 +214,6 @@ export default function HorseFarm() {
               onViewInitLog={(path) => setDetailPanel({ type: 'initLog', projectPath: path })}
               onSelectProject={(path) => dispatch({ type: 'SET_HORSE_FARM_ACTIVE_PROJECT', payload: path })}
               onRemoveProject={(path) => dispatch({ type: 'REMOVE_FROM_HORSE_FARM', payload: path })}
-              onStartWorkflow={(path) => {
-                dispatch({ type: 'SET_HORSE_FARM_ACTIVE_PROJECT', payload: path })
-              }}
               onOpenProject={(path) => {
                 const proj = state.projects.find(p => p.path === path)
                 if (proj) {

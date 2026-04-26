@@ -162,7 +162,7 @@ export default function MindMapViewer({ activeProject, hfProjects }: MindMapView
   const hfProj = activeProject ? hfProjects[activeProject] : undefined
 
   // Load mind map data
-  useEffect(() => {
+  const loadData = useCallback(() => {
     if (!hfProj) {
       setMindMapData(null)
       return
@@ -180,7 +180,11 @@ export default function MindMapViewer({ activeProject, hfProjects }: MindMapView
       })
       .catch(err => setError(String(err)))
       .finally(() => setLoading(false))
-  }, [activeProject, hfProj?.mindmapFilePath])
+  }, [hfProj?.projectPath, hfProj?.mindmapFilePath])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   // Reset view when project changes
   useEffect(() => {
@@ -193,7 +197,7 @@ export default function MindMapViewer({ activeProject, hfProjects }: MindMapView
   // Compute layout
   const layoutNodes = useMemo(() => {
     if (!mindMapData) return []
-
+    try {
     const measureCtx = document.createElement('canvas').getContext('2d')
     if (!measureCtx) return []
 
@@ -266,6 +270,7 @@ export default function MindMapViewer({ activeProject, hfProjects }: MindMapView
 
     doLayout(root, ROOT_X, ROOT_Y, true, BRANCH_COLORS[0], 0)
     return result
+    } catch { return [] }
   }, [mindMapData, collapsed])
 
   // Build connector lines
@@ -409,6 +414,12 @@ export default function MindMapViewer({ activeProject, hfProjects }: MindMapView
         <span className="mm-info-date">
           {new Date(mindMapData.generatedAt).toLocaleString('zh-CN')}
         </span>
+        <button
+          className="mm-refresh-btn"
+          onClick={(e) => { e.stopPropagation(); loadData() }}
+          disabled={loading}
+          title="刷新思维导图"
+        >🔄</button>
         <span className="mm-info-zoom">{Math.round(zoom * 100)}%</span>
       </div>
 

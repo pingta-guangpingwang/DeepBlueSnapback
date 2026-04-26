@@ -168,6 +168,17 @@ export function useHorseFarm() {
     return Math.round((completed / proj.tasks.length) * 100)
   }, [hfProjects])
 
+  const clearCommands = useCallback(() => {
+    setGlobalCommands([])
+    setHfProjects(prev => {
+      const next: Record<string, HorseFarmProject> = {}
+      for (const key of Object.keys(prev)) {
+        next[key] = { ...prev[key], commands: [] }
+      }
+      return next
+    })
+  }, [])
+
   return {
     hfProjects,
     globalCommands,
@@ -184,6 +195,7 @@ export function useHorseFarm() {
     removeTask,
     addCommand,
     addSystemMessage,
+    clearCommands,
     getActiveProject,
     getProjectProgress,
   }

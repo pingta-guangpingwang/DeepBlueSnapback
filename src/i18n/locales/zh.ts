@@ -624,6 +624,12 @@ const zh: Translations = {
     mindMapPreview: '思维导图预览',
     removeFromFarm: '移除',
     openProject: '打开',
+    expandTasks: '任务',
+    collapseTasks: '收起',
+    initQueued: '等待中',
+    initRunning: '初始化中...',
+    initDoneLabel: '初始化完成',
+    initFailedLabel: '初始化失败',
   },
 
   // App-level messages

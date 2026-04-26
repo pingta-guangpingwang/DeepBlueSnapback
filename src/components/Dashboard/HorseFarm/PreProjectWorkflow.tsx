@@ -23,9 +23,13 @@ export default function PreProjectWorkflow({
   addSystemMessage,
 }: PreProjectWorkflowProps) {
   const { t } = useI18n()
-  const [step, setStep] = useState<Step>(
-    hfProject.phase === 'active' ? 'done' : hfProject.phase === 'mindmap' ? 'done' : 'requirements'
-  )
+  const [step, setStep] = useState<Step>(() => {
+    switch (hfProject.phase) {
+      case 'active': case 'paused': case 'mindmap': return 'done'
+      case 'summarizing': return 'summarizing'
+      default: return 'requirements'
+    }
+  })
   const [requirements, setRequirements] = useState(hfProject.requirements || '')
   const [summary, setSummary] = useState(hfProject.summary || '')
   const [loading, setLoading] = useState(false)

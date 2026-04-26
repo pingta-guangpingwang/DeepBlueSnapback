@@ -15,7 +15,6 @@ interface ProjectListProps {
   initProgress: Record<string, InitProgress>
   onSelectProject: (path: string) => void
   onRemoveProject: (path: string) => void
-  onStartWorkflow: (path: string) => void
   onOpenProject: (path: string) => void
   onViewMindMap: (path: string) => void
   onViewKB: (path: string) => void
@@ -96,7 +95,6 @@ export default function ProjectList({
             onSelect={() => onSelectProject(id)}
             onRemove={() => onRemoveProject(id)}
             onOpen={() => onOpenProject(id)}
-            onStartWorkflow={() => onSelectProject(id)}
             onViewMindMap={() => onViewMindMap(id)}
             onViewKB={() => onViewKB(id)}
             onViewInitLog={() => onViewInitLog(id)}

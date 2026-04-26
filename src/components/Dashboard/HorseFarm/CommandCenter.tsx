@@ -7,9 +7,10 @@ interface CommandCenterProps {
   projectIds: string[]
   hfProjects: Record<string, HorseFarmProject>
   onSend: (projectPath: string | null, content: string) => void
+  onClear: () => void
 }
 
-export default function CommandCenter({ commands, projectIds, hfProjects, onSend }: CommandCenterProps) {
+export default function CommandCenter({ commands, projectIds, hfProjects, onSend, onClear }: CommandCenterProps) {
   const { t } = useI18n()
   const [input, setInput] = useState('')
   const [targetProject, setTargetProject] = useState<string | null>(null)
@@ -82,6 +83,12 @@ export default function CommandCenter({ commands, projectIds, hfProjects, onSend
           placeholder={t.horseFarm.commandPlaceholder}
         />
         <button onClick={handleSend}>{t.horseFarm.commandSend}</button>
+        {commands.length > 0 && (
+          <button
+            onClick={onClear}
+            style={{ padding: '6px 10px', background: '#1e293b', color: '#94a3b8', border: '1px solid #334155', borderRadius: '6px', fontSize: '11px', cursor: 'pointer' }}
+          >{t.horseFarm.commandClear}</button>
+        )}
       </div>
     </div>
   )

@@ -630,6 +630,12 @@ const en = {
     mindMapPreview: 'Mind Map Preview',
     removeFromFarm: 'Remove',
     openProject: 'Open',
+    expandTasks: 'Tasks',
+    collapseTasks: 'Collapse',
+    initQueued: 'Queued',
+    initRunning: 'Initializing...',
+    initDoneLabel: 'Init complete',
+    initFailedLabel: 'Init failed',
   },
 
   // App-level messages

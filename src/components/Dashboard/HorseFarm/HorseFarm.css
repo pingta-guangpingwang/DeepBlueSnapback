@@ -217,6 +217,19 @@
   border-bottom-color: #4f46e5;
 }
 
+/* Override global blue button gradient for close button in horsefarm page */
+.horsefarm-page .close-button {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 16px;
+  cursor: pointer;
+}
+.horsefarm-page .close-button:hover {
+  color: #374151;
+  background: #f3f4f6;
+}
+
 /* Sub Content */
 .hf-sub-content {
   flex: 1;
@@ -470,6 +483,25 @@
 
 .mm-info-title { font-weight: 600; color: #1f2937; }
 .mm-info-date { color: #9ca3af; }
+.mm-refresh-btn {
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  padding: 0;
+  color: #6b7280;
+  transition: all 0.15s;
+}
+.mm-refresh-btn:hover { background: #f3f4f6; color: #4f46e5; border-color: #4f46e5; }
+.mm-refresh-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
 .mm-info-zoom { margin-left: auto; color: #6b7280; font-weight: 600; font-size: 11px; }
 
 .mm-canvas {
