@@ -356,6 +356,7 @@
   cursor: pointer;
   border: 1px solid #d1d5db;
   background: #fff;
+  color: #374151;
 }
 
 .hf-workflow-footer button.primary {

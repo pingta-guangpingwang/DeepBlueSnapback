@@ -198,11 +198,11 @@ export default function HorseFarmSettings({ config, onConfigChange }: HorseFarmS
                 </div>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   <button onClick={() => handleToggle(k.id)}
-                    style={{ fontSize: '11px', padding: '3px 8px', border: '1px solid #d1d5db', borderRadius: '4px', background: '#fff', cursor: 'pointer' }}>
+                    style={{ fontSize: '11px', padding: '3px 8px', border: '1px solid #d1d5db', borderRadius: '4px', background: '#fff', color: '#374151', cursor: 'pointer' }}>
                     {k.enabled ? 'Disable' : 'Enable'}
                   </button>
                   <button onClick={() => startEdit(k)}
-                    style={{ fontSize: '11px', padding: '3px 8px', border: '1px solid #d1d5db', borderRadius: '4px', background: '#fff', cursor: 'pointer' }}>
+                    style={{ fontSize: '11px', padding: '3px 8px', border: '1px solid #d1d5db', borderRadius: '4px', background: '#fff', color: '#374151', cursor: 'pointer' }}>
                     Edit
                   </button>
                   <button onClick={() => handleDelete(k.id)}
@@ -293,7 +293,7 @@ export default function HorseFarmSettings({ config, onConfigChange }: HorseFarmS
           </div>
           <div style={{ display: 'flex', gap: '8px', marginTop: '14px', justifyContent: 'flex-end' }}>
             <button onClick={resetForm}
-              style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer', fontSize: '12px' }}>
+              style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #d1d5db', background: '#fff', color: '#374151', cursor: 'pointer', fontSize: '12px' }}>
               Cancel
             </button>
             <button onClick={editingKey ? handleUpdate : handleAdd}
