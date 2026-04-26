@@ -1,9 +1,11 @@
 import { useAppState } from '../../context/AppContext'
 import { useGit } from '../../hooks/useGit'
+import { useI18n } from '../../i18n'
 
 export default function ConflictModal() {
   const [state] = useAppState()
   const { resolveConflict, resolveAllConflicts } = useGit()
+  const { t } = useI18n()
 
   if (state.gitConflicts.length === 0) return null
 
@@ -11,7 +13,7 @@ export default function ConflictModal() {
     <div className="modal-overlay">
       <div className="modal-content" style={{ maxWidth: '640px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>冲突解决 ({state.gitConflicts.length} 个文件冲突)</h3>
+          <h3>{t.conflict.title} ({state.gitConflicts.length} {t.conflict.conflictCount})</h3>
         </div>
         <div className="modal-body" style={{ padding: '16px' }}>
           <div style={{
@@ -19,7 +21,7 @@ export default function ConflictModal() {
             border: '1px solid #fecaca', fontSize: '13px', color: '#991b1b',
             marginBottom: '16px', lineHeight: '1.5',
           }}>
-            拉取远程更新时检测到文件冲突。请为每个冲突文件选择保留本地版本或使用远程版本。
+            {t.conflict.description}
           </div>
 
           {/* Conflict file list */}
@@ -36,7 +38,7 @@ export default function ConflictModal() {
                     fontSize: '10px', fontWeight: 700, color: '#fff',
                     background: '#dc2626', padding: '1px 5px', borderRadius: '3px',
                     flexShrink: 0,
-                  }}>冲突</span>
+                  }}>{t.conflict.conflict}</span>
                   <span style={{
                     flex: 1, fontSize: '13px', fontFamily: 'Consolas, monospace',
                     color: '#374151', overflow: 'hidden', textOverflow: 'ellipsis',
@@ -45,21 +47,21 @@ export default function ConflictModal() {
                     {conflict.path}
                   </span>
                   {conflict.isBinary && (
-                    <span style={{ fontSize: '11px', color: '#92400e', flexShrink: 0 }}>二进制</span>
+                    <span style={{ fontSize: '11px', color: '#92400e', flexShrink: 0 }}>{t.conflict.binary}</span>
                   )}
                   <button
                     className="secondary-button"
                     style={{ fontSize: '11px', padding: '3px 10px', flexShrink: 0 }}
                     onClick={() => resolveConflict(conflict.path, 'ours')}
                   >
-                    保留本地
+                    {t.conflict.keepLocal}
                   </button>
                   <button
                     className="secondary-button"
                     style={{ fontSize: '11px', padding: '3px 10px', flexShrink: 0 }}
                     onClick={() => resolveConflict(conflict.path, 'theirs')}
                   >
-                    使用远程
+                    {t.conflict.useRemote}
                   </button>
                 </div>
               )
@@ -75,13 +77,13 @@ export default function ConflictModal() {
               style={{ fontSize: '12px', padding: '5px 14px' }}
               onClick={() => resolveAllConflicts('ours')}
             >
-              全部保留本地
+              {t.conflict.keepAllLocal}
             </button>
             <button
               style={{ fontSize: '12px', padding: '5px 14px' }}
               onClick={() => resolveAllConflicts('theirs')}
             >
-              全部使用远程
+              {t.conflict.useAllRemote}
             </button>
           </div>
         </div>

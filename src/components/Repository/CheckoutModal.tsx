@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAppState } from '../../context/AppContext'
+import { useI18n } from '../../i18n'
 
 interface RepoItem {
   name: string
@@ -20,6 +21,7 @@ interface Props {
 
 export default function CheckoutModal({ onConfirm, onCancel, defaultTargetDir }: Props) {
   const [state] = useAppState()
+  const { t } = useI18n()
   const [repos, setRepos] = useState<RepoItem[]>([])
   const [selectedRepo, setSelectedRepo] = useState<RepoItem | null>(null)
   const [targetDir, setTargetDir] = useState(() => {
@@ -94,22 +96,22 @@ export default function CheckoutModal({ onConfirm, onCancel, defaultTargetDir }:
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal-content" style={{ maxWidth: '560px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>拉取仓库项目</h3>
+          <h3>{t.checkout.title}</h3>
           <button className="close-button" onClick={onCancel}>✕</button>
         </div>
         <div className="modal-body">
           {/* 选择仓库 */}
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>
-              选择仓库
+              {t.checkout.selectRepo}
             </label>
             {loadingRepos ? (
               <div style={{ padding: '12px', textAlign: 'center', color: '#9ca3af', fontSize: '13px', border: '1px solid #e5e7eb', borderRadius: '6px' }}>
-                加载仓库列表...
+                {t.checkout.loadingRepos}
               </div>
             ) : repos.length === 0 ? (
               <div style={{ padding: '12px', textAlign: 'center', color: '#9ca3af', fontSize: '13px', border: '1px solid #e5e7eb', borderRadius: '6px' }}>
-                暂无可拉取的仓库。请先创建或导入项目。
+                {t.checkout.noRepos}
               </div>
             ) : (
               <div style={{
@@ -132,7 +134,7 @@ export default function CheckoutModal({ onConfirm, onCancel, defaultTargetDir }:
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600, fontSize: '13px', color: '#1f2937' }}>{repo.name}</div>
                       <div style={{ fontSize: '11px', color: '#9ca3af' }}>
-                        {repo.totalCommits} 提交 · {formatSize(repo.totalSize)} · {repo.workingCopies.length} 个工作副本
+                        {repo.totalCommits}{t.checkout.commits}{formatSize(repo.totalSize)} · {repo.workingCopies.length}{t.checkout.workingCopies}
                       </div>
                     </div>
                     {selectedRepo?.name === repo.name && (
@@ -147,34 +149,34 @@ export default function CheckoutModal({ onConfirm, onCancel, defaultTargetDir }:
           {/* 目标目录 */}
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#374151', marginBottom: '6px' }}>
-              拉取到目录
+              {t.checkout.targetDir}
             </label>
             <div style={{ display: 'flex', gap: '8px' }}>
               <input
                 type="text"
                 value={targetDir}
                 onChange={e => setTargetDir(e.target.value)}
-                placeholder="选择目标文件夹..."
+                placeholder={t.checkout.selectTarget}
                 style={{
                   flex: 1, padding: '8px 12px', fontSize: '13px',
                   borderRadius: '6px', border: '1px solid #d1d5db',
                   fontFamily: 'Consolas, monospace',
                 }}
               />
-              <button onClick={selectTargetDir} style={{ whiteSpace: 'nowrap' }}>浏览...</button>
+              <button onClick={selectTargetDir} style={{ whiteSpace: 'nowrap' }}>{t.common.browse}</button>
             </div>
           </div>
 
           {/* 文件夹名称 */}
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#374151', marginBottom: '6px' }}>
-              文件夹名称
+              {t.checkout.folderName}
             </label>
             <input
               type="text"
               value={folderName}
               onChange={e => setFolderName(e.target.value)}
-              placeholder={selectedRepo ? selectedRepo.name : '不输入则默认使用仓库名称'}
+              placeholder={selectedRepo ? selectedRepo.name : t.checkout.folderPlaceholder}
               style={{
                 width: '100%', padding: '8px 12px', fontSize: '13px',
                 borderRadius: '6px', border: '1px solid #d1d5db',
@@ -185,21 +187,21 @@ export default function CheckoutModal({ onConfirm, onCancel, defaultTargetDir }:
               {targetDir
                 ? folderName.trim()
                   ? `${targetDir}\\${folderName.trim()}`
-                  : `${targetDir}（直接拉取到此目录）`
-                : '请先选择目标目录'}
+                  : `${targetDir}${t.checkout.previewDirect}`
+                : t.checkout.previewSelect}
             </div>
           </div>
 
           {/* 操作按钮 */}
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-            <button onClick={onCancel} disabled={loading}>取消</button>
+            <button onClick={onCancel} disabled={loading}>{t.common.cancel}</button>
             <button
               className="primary-button"
               onClick={handleConfirm}
               disabled={!canConfirm}
               style={{ opacity: canConfirm ? 1 : 0.5 }}
             >
-              {loading ? '拉取中...' : '拉取项目'}
+              {loading ? t.checkout.pulling : t.checkout.pullProject}
             </button>
           </div>
         </div>

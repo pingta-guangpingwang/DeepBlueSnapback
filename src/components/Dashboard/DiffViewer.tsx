@@ -1,9 +1,11 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useAppState } from '../../context/AppContext'
 import { computeLineDiff, getDiffStats, type DiffLine } from './DiffView'
+import { useI18n } from '../../i18n'
 
 export default function DiffViewer() {
   const [state, dispatch] = useAppState()
+  const { t } = useI18n()
   const [oldContent, setOldContent] = useState('')
   const [newContent, setNewContent] = useState('')
   const [error, setError] = useState('')
@@ -27,7 +29,7 @@ export default function DiffViewer() {
         }
 
         if (!repoPath || !workingCopyPath) {
-          setError('无法确定项目路径')
+          setError(t.diffViewer.noProjectPath)
           return
         }
 
@@ -37,7 +39,7 @@ export default function DiffViewer() {
           setOldContent(result.oldContent || '')
           setNewContent(result.newContent || '')
         } else {
-          setError(result?.message || '获取对比内容失败')
+          setError(result?.message || t.diffViewer.loadFailed)
         }
       } catch (error) {
         setError(String(error))
@@ -83,18 +85,18 @@ export default function DiffViewer() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <h3 style={{ margin: 0, fontSize: '14px' }}>
-              文件对比 — {state.diffModalFile}
+              {t.diffViewer.title} {state.diffModalFile}
               <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '8px' }}>({ext})</span>
             </h3>
             {/* Diff stats */}
             {!error && (stats.added > 0 || stats.removed > 0) && (
               <div style={{ display: 'flex', gap: '12px', fontSize: '12px' }}>
-                <span style={{ color: '#16a34a', fontWeight: 500 }}>+{stats.added} 行</span>
-                <span style={{ color: '#dc2626', fontWeight: 500 }}>-{stats.removed} 行</span>
+                <span style={{ color: '#16a34a', fontWeight: 500 }}>+{stats.added} {t.diffViewer.lines}</span>
+                <span style={{ color: '#dc2626', fontWeight: 500 }}>-{stats.removed} {t.diffViewer.lines}</span>
               </div>
             )}
-            {isNewFile && <span style={{ color: '#16a34a', fontSize: '12px', fontWeight: 500 }}>[新文件]</span>}
-            {isDeletedFile && <span style={{ color: '#dc2626', fontSize: '12px', fontWeight: 500 }}>[已删除]</span>}
+            {isNewFile && <span style={{ color: '#16a34a', fontSize: '12px', fontWeight: 500 }}>[{t.diffViewer.newFile}]</span>}
+            {isDeletedFile && <span style={{ color: '#dc2626', fontSize: '12px', fontWeight: 500 }}>[{t.diffViewer.deletedFile}]</span>}
           </div>
           <button style={{
             border: 'none', background: 'none', fontSize: '20px', cursor: 'pointer',

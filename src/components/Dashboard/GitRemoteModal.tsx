@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useAppState } from '../../context/AppContext'
 import { useGit } from '../../hooks/useGit'
+import { useI18n } from '../../i18n'
 
 export default function GitRemoteModal() {
   const [state, dispatch] = useAppState()
   const { connectRemote, loadCredentials, saveCredential } = useGit()
+  const { t } = useI18n()
   const [remoteUrl, setRemoteUrl] = useState('')
   const [branch, setBranch] = useState('main')
   const [username, setUsername] = useState('')
@@ -51,13 +53,13 @@ export default function GitRemoteModal() {
     <div className="modal-overlay" onClick={close}>
       <div className="modal-content" style={{ maxWidth: '520px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>连接远程仓库</h3>
+          <h3>{t.gitRemote.title}</h3>
           <button className="close-button" onClick={close}>✕</button>
         </div>
         <div className="modal-body">
           <div className="project-creator">
             <div className="form-group">
-              <label>远程仓库地址</label>
+              <label>{t.gitRemote.remoteUrl}</label>
               <input
                 type="text"
                 value={remoteUrl}
@@ -67,12 +69,12 @@ export default function GitRemoteModal() {
                 autoFocus
               />
               <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
-                支持 GitHub、GitLab 等 Git 仓库地址
+                {t.gitRemote.remoteHint}
               </div>
             </div>
 
             <div className="form-group" style={{ marginTop: '16px' }}>
-              <label>分支</label>
+              <label>{t.gitRemote.branch}</label>
               <input
                 type="text"
                 value={branch}
@@ -83,23 +85,23 @@ export default function GitRemoteModal() {
             </div>
 
             <div className="form-group" style={{ marginTop: '16px' }}>
-              <label>用户名</label>
+              <label>{t.gitRemote.username}</label>
               <input
                 type="text"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                placeholder="GitHub / GitLab 用户名"
+                placeholder={t.gitRemote.usernamePlaceholder}
                 style={{ fontSize: '13px' }}
               />
             </div>
 
             <div className="form-group" style={{ marginTop: '16px' }}>
-              <label>Personal Access Token</label>
+              <label>{t.gitRemote.password}</label>
               <input
                 type="password"
                 value={token}
                 onChange={e => setToken(e.target.value)}
-                placeholder="ghp_xxxx..."
+                placeholder={t.gitRemote.passwordPlaceholder}
                 style={{ fontFamily: 'Consolas, monospace', fontSize: '13px' }}
               />
               <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
@@ -116,19 +118,19 @@ export default function GitRemoteModal() {
                 id="save-creds"
               />
               <label htmlFor="save-creds" style={{ cursor: 'pointer', fontSize: '13px', color: '#374151' }}>
-                保存凭证（下次免输入）
+                {t.gitRemote.saveCredentials}
               </label>
             </div>
 
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '20px' }}>
-              <button onClick={close}>取消</button>
+              <button onClick={close}>{t.common.cancel}</button>
               <button
                 className="primary-button"
                 onClick={handleConnect}
                 disabled={!canConnect}
                 style={{ opacity: canConnect ? 1 : 0.5 }}
               >
-                {loading ? '连接中...' : '连接'}
+                {loading ? t.gitRemote.connecting : t.gitRemote.connect}
               </button>
             </div>
           </div>

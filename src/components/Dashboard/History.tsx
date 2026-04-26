@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAppState } from '../../context/AppContext'
 import { useRepository } from '../../hooks/useRepository'
 import { computeLineDiff, getDiffStats, type DiffLine } from './DiffView'
+import { useI18n } from '../../i18n'
 
 interface CommitEntry {
   id: string
@@ -33,6 +34,7 @@ interface CommitDetail {
 export default function History() {
   const [state, dispatch] = useAppState()
   const { handleRollback } = useRepository()
+  const { t } = useI18n()
   const [commits, setCommits] = useState<CommitEntry[]>([])
   const [loading, setLoading] = useState(false)
   const [expandedCommit, setExpandedCommit] = useState<string | null>(null)
@@ -128,7 +130,7 @@ export default function History() {
 
       setDiffFile({ path: filePath, oldContent, newContent })
     } catch (e) {
-      setDiffError('加载对比内容失败: ' + String(e))
+      setDiffError(t.history.loadDiffFailed + ' ' + String(e))
     } finally {
       setDiffLoading(false)
     }
@@ -136,18 +138,18 @@ export default function History() {
 
   const getFileStatus = (filePath: string): { label: string; color: string } => {
     if (!commitDetail || !parentDetail) {
-      return { label: '新增', color: '#16a34a' }
+      return { label: t.history.added, color: '#16a34a' }
     }
     const inParent = parentDetail.files.some(f => f.path === filePath)
     const inCurrent = commitDetail.files.some(f => f.path === filePath)
-    if (!inParent && inCurrent) return { label: '新增', color: '#16a34a' }
-    if (inParent && !inCurrent) return { label: '删除', color: '#dc2626' }
+    if (!inParent && inCurrent) return { label: t.history.added, color: '#16a34a' }
+    if (inParent && !inCurrent) return { label: t.history.deleted, color: '#dc2626' }
     const parentFile = parentDetail.files.find(f => f.path === filePath)
     const currentFile = commitDetail.files.find(f => f.path === filePath)
     if (parentFile && currentFile && parentFile.hash !== currentFile.hash) {
-      return { label: '修改', color: '#d97706' }
+      return { label: t.history.modified, color: '#d97706' }
     }
-    return { label: '未变', color: '#9ca3af' }
+    return { label: t.history.unchanged, color: '#9ca3af' }
   }
 
   const onRollback = async (version: string) => {
@@ -163,14 +165,14 @@ export default function History() {
     try {
       const result = await window.electronAPI.undoRollback(state.repoPath, state.projectPath)
       if (result.success) {
-        dispatch({ type: 'SET_MESSAGE', payload: result.message || '已撤销回滚' })
+        dispatch({ type: 'SET_MESSAGE', payload: result.message || t.history.undoSuccess })
         setUndoAvailable(false)
         await loadHistory()
       } else {
-        dispatch({ type: 'SET_MESSAGE', payload: '撤销失败：' + (result.message || '未知错误') })
+        dispatch({ type: 'SET_MESSAGE', payload: t.history.undoFailed + (result.message || t.common.unknownError) })
       }
     } catch (e) {
-      dispatch({ type: 'SET_MESSAGE', payload: '撤销失败：' + String(e) })
+      dispatch({ type: 'SET_MESSAGE', payload: t.history.undoFailed + String(e) })
     } finally {
       setUndoLoading(false)
     }
@@ -188,12 +190,12 @@ export default function History() {
     try {
       const result = await window.electronAPI.rollbackFile(state.repoPath, state.projectPath, version, filePath)
       if (result.success) {
-        dispatch({ type: 'SET_MESSAGE', payload: result.message || `已恢复 ${filePath}` })
+        dispatch({ type: 'SET_MESSAGE', payload: result.message || `${t.history.restoreSuccess}${filePath}` })
       } else {
-        dispatch({ type: 'SET_MESSAGE', payload: '恢复失败：' + (result.message || '未知错误') })
+        dispatch({ type: 'SET_MESSAGE', payload: t.history.restoreFailed + (result.message || t.common.unknownError) })
       }
     } catch (e) {
-      dispatch({ type: 'SET_MESSAGE', payload: '恢复失败：' + String(e) })
+      dispatch({ type: 'SET_MESSAGE', payload: t.history.restoreFailed + String(e) })
     } finally {
       setRestoringFile(null)
     }
@@ -221,7 +223,7 @@ export default function History() {
 
     // 默认只显示变更文件
     if (!showAllFiles) {
-      files = files.filter(f => getFileStatus(f.path).label !== '未变')
+      files = files.filter(f => getFileStatus(f.path).label !== t.history.unchanged)
     }
 
     // 排序
@@ -246,7 +248,7 @@ export default function History() {
         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)', border: '1px solid #e5e7eb',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <h3 style={{ margin: 0 }}>提交历史</h3>
+          <h3 style={{ margin: 0 }}>{t.history.title}</h3>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             {undoAvailable && (
               <button
@@ -255,17 +257,17 @@ export default function History() {
                 onClick={onUndoRollback}
                 disabled={undoLoading}
               >
-                {undoLoading ? '恢复中...' : '撤销上次回滚'}
+                {undoLoading ? t.history.restoring : t.history.undoRollback}
               </button>
             )}
             <button onClick={loadHistory} disabled={loading}>
-              {loading ? '加载中...' : '刷新'}
+              {loading ? t.history.loading : t.history.refresh}
             </button>
           </div>
         </div>
 
         {commits.length === 0 ? (
-          <p style={{ color: '#6b7280' }}>暂无提交记录</p>
+          <p style={{ color: '#6b7280' }}>{t.history.noHistory}</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {commits.map(commit => (
@@ -289,7 +291,7 @@ export default function History() {
                         <span style={{
                           fontSize: '10px', padding: '1px 6px', borderRadius: '3px',
                           background: '#f3f4f6', color: '#6b7280', fontWeight: 500
-                        }}>手动</span>
+                        }}>{t.history.manual}</span>
                       )}
                     </div>
                     {commit.summary && (
@@ -300,7 +302,7 @@ export default function History() {
                     <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
                       <code style={{ background: '#f3f4f6', padding: '1px 6px', borderRadius: '3px', fontSize: '11px' }}>{commit.id}</code>
                       <span style={{ marginLeft: '10px' }}>{formatTime(commit.timestamp)}</span>
-                      <span style={{ marginLeft: '10px' }}>{commit.fileCount} 文件, {formatSize(commit.totalSize)}</span>
+                      <span style={{ marginLeft: '10px' }}>{commit.fileCount} {t.history.files} {formatSize(commit.totalSize)}</span>
                       {commit.changedFiles && (
                         <>
                           {commit.changedFiles.added.length > 0 && <span style={{ marginLeft: '8px', color: '#16a34a', fontSize: '11px' }}>+{commit.changedFiles.added.length}</span>}
@@ -314,13 +316,13 @@ export default function History() {
                     {confirmVersion === commit.id ? (
                       <>
                         <button className="warning-button" style={{ fontSize: '12px', padding: '3px 10px' }}
-                          onClick={e => { e.stopPropagation(); onRollback(commit.id) }}>确认回滚</button>
+                          onClick={e => { e.stopPropagation(); onRollback(commit.id) }}>{t.history.confirmRollback}</button>
                         <button className="secondary-button" style={{ fontSize: '12px', padding: '3px 10px' }}
-                          onClick={e => { e.stopPropagation(); setConfirmVersion(null) }}>取消</button>
+                          onClick={e => { e.stopPropagation(); setConfirmVersion(null) }}>{t.common.cancel}</button>
                       </>
                     ) : (
                       <button className="secondary-button" style={{ fontSize: '12px', padding: '3px 10px' }}
-                        onClick={e => { e.stopPropagation(); setConfirmVersion(commit.id) }}>回滚到此版本</button>
+                        onClick={e => { e.stopPropagation(); setConfirmVersion(commit.id) }}>{t.history.rollbackToVersion}</button>
                     )}
                     <span style={{ fontSize: '16px', color: '#9ca3af', transition: 'transform 0.2s',
                       transform: expandedCommit === commit.id ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
@@ -330,9 +332,9 @@ export default function History() {
                 {expandedCommit === commit.id && (
                   <div style={{ borderTop: '1px solid #e5e7eb', padding: '10px 14px', background: '#fafbfc' }}>
                     {!commitDetail ? (
-                      <p style={{ color: '#9ca3af', fontSize: '13px' }}>加载中...</p>
+                      <p style={{ color: '#9ca3af', fontSize: '13px' }}>{t.history.loadingDetail}</p>
                     ) : commitDetail.files.length === 0 ? (
-                      <p style={{ color: '#9ca3af', fontSize: '13px' }}>此版本无文件记录</p>
+                      <p style={{ color: '#9ca3af', fontSize: '13px' }}>{t.history.noFilesInVersion}</p>
                     ) : (
                       <>
                         {/* 工具栏：显示全部 + 排序 */}
@@ -347,39 +349,39 @@ export default function History() {
                               onChange={e => setShowAllFiles(e.target.checked)}
                               style={{ cursor: 'pointer' }}
                             />
-                            显示全部文件 ({commitDetail.files.length})
+                            {t.history.showAllFiles} ({commitDetail.files.length})
                           </label>
                           <div style={{ display: 'flex', gap: '4px', fontSize: '12px' }}>
-                            <span style={{ color: '#9ca3af' }}>排序：</span>
+                            <span style={{ color: '#9ca3af' }}>{t.history.sortBy}</span>
                             <button style={{
                               padding: '1px 8px', fontSize: '11px', borderRadius: '3px',
                               border: `1px solid ${sortBy === 'path' ? '#4f46e5' : '#d1d5db'}`,
                               background: sortBy === 'path' ? '#eef2ff' : '#fff',
                               color: sortBy === 'path' ? '#4f46e5' : '#6b7280',
                               cursor: 'pointer',
-                            }} onClick={() => setSortBy('path')}>路径</button>
+                            }} onClick={() => setSortBy('path')}>{t.history.path}</button>
                             <button style={{
                               padding: '1px 8px', fontSize: '11px', borderRadius: '3px',
                               border: `1px solid ${sortBy === 'type' ? '#4f46e5' : '#d1d5db'}`,
                               background: sortBy === 'type' ? '#eef2ff' : '#fff',
                               color: sortBy === 'type' ? '#4f46e5' : '#6b7280',
                               cursor: 'pointer',
-                            }} onClick={() => setSortBy('type')}>类型</button>
+                            }} onClick={() => setSortBy('type')}>{t.history.type}</button>
                           </div>
                         </div>
                         {!showAllFiles && (
                           <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '6px' }}>
-                            显示 {displayFiles.length} 个变更文件（共 {commitDetail.files.length} 个）
+                            {displayFiles.length}{t.history.showingFiles}{commitDetail.files.length}）
                           </div>
                         )}
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                           <thead>
                             <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-                              <th style={{ textAlign: 'left', padding: '4px 8px', color: '#6b7280', fontWeight: 500 }}>状态</th>
-                              <th style={{ textAlign: 'left', padding: '4px 8px', color: '#6b7280', fontWeight: 500 }}>文件路径</th>
-                              <th style={{ textAlign: 'right', padding: '4px 8px', color: '#6b7280', fontWeight: 500 }}>大小</th>
-                              <th style={{ textAlign: 'center', padding: '4px 8px', color: '#6b7280', fontWeight: 500 }}>对比</th>
-                              <th style={{ textAlign: 'center', padding: '4px 8px', color: '#6b7280', fontWeight: 500 }}>恢复</th>
+                              <th style={{ textAlign: 'left', padding: '4px 8px', color: '#6b7280', fontWeight: 500 }}>{t.history.status}</th>
+                              <th style={{ textAlign: 'left', padding: '4px 8px', color: '#6b7280', fontWeight: 500 }}>{t.history.filePath}</th>
+                              <th style={{ textAlign: 'right', padding: '4px 8px', color: '#6b7280', fontWeight: 500 }}>{t.history.size}</th>
+                              <th style={{ textAlign: 'center', padding: '4px 8px', color: '#6b7280', fontWeight: 500 }}>{t.history.diff}</th>
+                              <th style={{ textAlign: 'center', padding: '4px 8px', color: '#6b7280', fontWeight: 500 }}>{t.history.restore}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -397,18 +399,18 @@ export default function History() {
                                       fontSize: '12px', padding: '2px 8px', border: '1px solid #d1d5db',
                                       borderRadius: '4px', background: '#fff', cursor: 'pointer', color: '#374151'
                                     }} onClick={() => showDiff(file.path)}>
-                                      对比
+                                      {t.history.diff}
                                     </button>
                                   </td>
                                   <td style={{ padding: '4px 8px', textAlign: 'center' }}>
-                                    {status.label !== '未变' && (
+                                    {status.label !== t.history.unchanged && (
                                       <button style={{
                                         fontSize: '12px', padding: '2px 8px', border: '1px solid #fca5a5',
                                         borderRadius: '4px', background: '#fef2f2', cursor: 'pointer', color: '#dc2626'
                                       }} onClick={() => onRestoreFile(commitDetail.id, file.path)}
                                         disabled={restoringFile === file.path}
                                       >
-                                        {restoringFile === file.path ? '恢复中...' : '恢复'}
+                                        {restoringFile === file.path ? t.history.restoringFile : t.history.restore}
                                       </button>
                                     )}
                                   </td>
@@ -434,9 +436,9 @@ export default function History() {
             background: '#fff', borderRadius: '10px', padding: '24px', maxWidth: '420px', width: '90%',
             boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
           }}>
-            <h3 style={{ margin: '0 0 12px', fontSize: '15px', color: '#1f2937' }}>确认恢复文件</h3>
+            <h3 style={{ margin: '0 0 12px', fontSize: '15px', color: '#1f2937' }}>{t.history.confirmFileRestore}</h3>
             <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.6', margin: '0 0 8px' }}>
-              即将将以下文件恢复到版本 <code style={{ background: '#f3f4f6', padding: '1px 6px', borderRadius: '3px', fontSize: '12px' }}>{confirmRestore.version}</code> 的状态：
+              {t.history.fileRestoreWarning}<code style={{ background: '#f3f4f6', padding: '1px 6px', borderRadius: '3px', fontSize: '12px' }}>{confirmRestore.version}</code>{t.history.fileRestoreSuffix}
             </p>
             <div style={{
               padding: '8px 12px', background: '#f8fafc', borderRadius: '6px',
@@ -446,15 +448,15 @@ export default function History() {
               {confirmRestore.filePath}
             </div>
             <p style={{ fontSize: '12px', color: '#9ca3af', margin: '0 0 16px' }}>
-              当前工作副本中该文件的内容将被替换为目标版本的快照内容。
+              {t.history.fileRestoreNote}
             </p>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
               <button style={{
                 padding: '6px 16px', fontSize: '13px', border: '1px solid #d1d5db',
                 borderRadius: '6px', background: '#fff', cursor: 'pointer', color: '#374151',
-              }} onClick={() => setConfirmRestore(null)}>取消</button>
+              }} onClick={() => setConfirmRestore(null)}>{t.common.cancel}</button>
               <button className="warning-button" style={{ padding: '6px 16px', fontSize: '13px' }}
-                onClick={confirmRestoreFile}>确认恢复</button>
+                onClick={confirmRestoreFile}>{t.history.confirmRestore}</button>
             </div>
           </div>
         </div>
@@ -482,12 +484,12 @@ export default function History() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <h3 style={{ margin: 0, fontSize: '14px' }}>
-                  文件对比 — {diffFile?.path || ''}
+                  {t.history.diffTitle} {diffFile?.path || ''}
                 </h3>
                 {diffFile && (diffStats.added > 0 || diffStats.removed > 0) && (
                   <div style={{ display: 'flex', gap: '12px', fontSize: '12px' }}>
-                    <span style={{ color: '#16a34a', fontWeight: 500 }}>+{diffStats.added} 行</span>
-                    <span style={{ color: '#dc2626', fontWeight: 500 }}>-{diffStats.removed} 行</span>
+                    <span style={{ color: '#16a34a', fontWeight: 500 }}>+{diffStats.added} {t.history.lines}</span>
+                    <span style={{ color: '#dc2626', fontWeight: 500 }}>-{diffStats.removed} {t.history.lines}</span>
                   </div>
                 )}
               </div>
@@ -501,7 +503,7 @@ export default function History() {
             {diffError ? (
               <div style={{ padding: '40px', textAlign: 'center', color: '#dc2626' }}>{diffError}</div>
             ) : diffLoading ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#9ca3af' }}>加载对比内容...</div>
+              <div style={{ padding: '40px', textAlign: 'center', color: '#9ca3af' }}>{t.history.loadingDiff}</div>
             ) : diffFile ? (
               <div style={{ flex: 1, overflow: 'auto', background: '#fafbfc' }}>
                 <table style={{

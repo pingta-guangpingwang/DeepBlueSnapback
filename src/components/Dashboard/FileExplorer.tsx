@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAppState } from '../../context/AppContext'
 import { useFiles } from '../../hooks/useFiles'
+import { useI18n } from '../../i18n'
 
 interface TreeNode {
   name: string
@@ -89,6 +90,7 @@ function TreeNodeView({
   onEdit: (path: string) => void
   onDelete: (name: string) => void
 }) {
+  const { t } = useI18n()
   const isExpanded = expandedDirs.has(node.path)
   const paddingLeft = 14 + depth * 22
 
@@ -159,8 +161,8 @@ function TreeNodeView({
       }}>{icon}</span>
       <span style={{ fontSize: '13px', color: '#374151', flex: 1 }}>{node.name}</span>
       <div className="tree-row-actions">
-        <button className="tree-action-btn" onClick={() => onEdit(node.path)}>编辑</button>
-        <button className="tree-action-btn tree-action-delete" onClick={() => onDelete(node.path)}>删除</button>
+        <button className="tree-action-btn" onClick={() => onEdit(node.path)}>{t.fileExplorer.edit}</button>
+        <button className="tree-action-btn tree-action-delete" onClick={() => onDelete(node.path)}>{t.fileExplorer.delete}</button>
       </div>
     </div>
   )
@@ -169,6 +171,7 @@ function TreeNodeView({
 export default function FileExplorer() {
   const [state, dispatch] = useAppState()
   const { loadManagedFiles, createNewFile, startEditingFile, saveFile, deleteFile } = useFiles()
+  const { t } = useI18n()
   const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set())
   const [fileEntries, setFileEntries] = useState<FileEntry[]>([])
   const [treeLoading, setTreeLoading] = useState(false)
@@ -210,7 +213,7 @@ export default function FileExplorer() {
 
   const handleDeleteFile = (filePath: string) => {
     const fileName = filePath.split('/').pop() || filePath
-    if (!confirm(`确定要删除文件 "${fileName}" 吗？此操作不可撤销。`)) return
+    if (!confirm(t.fileExplorer.confirmDelete.replace('{name}', fileName))) return
     deleteFile(fileName)
     // Refresh tree after delete
     setTimeout(loadFileTree, 300)
@@ -229,37 +232,37 @@ export default function FileExplorer() {
         <div className="file-action-group">
           <input
             type="text"
-            placeholder="输入新文件名（如 sub/filename.txt）"
+            placeholder={t.fileExplorer.newFileName}
             value={state.newFileName}
             onChange={(e) => dispatch({ type: 'SET_NEW_FILE_NAME', payload: e.target.value })}
           />
           <button onClick={async () => {
             if (!state.newFileName.trim()) {
-              dispatch({ type: 'SET_MESSAGE', payload: '请输入文件名' })
+              dispatch({ type: 'SET_MESSAGE', payload: t.fileExplorer.enterName })
               return
             }
             await createNewFile(state.newFileName)
             await loadFileTree()
-          }}>创建文件</button>
+          }}>{t.fileExplorer.createFile}</button>
         </div>
         <button onClick={loadFileTree} disabled={treeLoading}>
-          {treeLoading ? '加载中...' : '刷新列表'}
+          {treeLoading ? t.fileExplorer.refreshing : t.fileExplorer.refreshList}
         </button>
       </div>
 
       {state.editingFile ? (
         <div className="file-editor">
           <div className="editor-header">
-            <h3>编辑文件: {state.editingFile}</h3>
+            <h3>{t.fileExplorer.editingFile} {state.editingFile}</h3>
             <div className="editor-actions">
-              <button onClick={() => { saveFile(); setTimeout(loadFileTree, 500) }}>保存</button>
-              <button onClick={() => dispatch({ type: 'SET_EDITING_FILE', payload: null })}>取消</button>
+              <button onClick={() => { saveFile(); setTimeout(loadFileTree, 500) }}>{t.fileExplorer.save}</button>
+              <button onClick={() => dispatch({ type: 'SET_EDITING_FILE', payload: null })}>{t.common.cancel}</button>
             </div>
           </div>
           <textarea
             value={state.fileContent}
             onChange={(e) => dispatch({ type: 'SET_FILE_CONTENT', payload: e.target.value })}
-            placeholder="文件内容..."
+            placeholder={t.fileExplorer.contentPlaceholder}
           />
         </div>
       ) : (
@@ -272,7 +275,7 @@ export default function FileExplorer() {
         }}>
           {tree.length === 0 ? (
             <div style={{ padding: '20px', textAlign: 'center', color: '#9ca3af' }}>
-              暂无文件，点击"创建文件"添加
+              {t.fileExplorer.noFiles}
             </div>
           ) : (
             tree.map(node => (

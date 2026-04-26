@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAppState } from '../../context/AppContext'
+import { useI18n } from '../../i18n'
 
 interface Props {
   folderPath: string
@@ -10,6 +11,7 @@ interface Props {
 
 export default function ImportProjectModal({ folderPath, warning, onConfirm, onCancel }: Props) {
   const [state] = useAppState()
+  const { t } = useI18n()
   const [projectName, setProjectName] = useState('')
   const [initWithCommit, setInitWithCommit] = useState(true)
   const [fileCount, setFileCount] = useState<number | null>(null)
@@ -50,7 +52,7 @@ export default function ImportProjectModal({ folderPath, warning, onConfirm, onC
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal-content" style={{ maxWidth: '520px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>导入新项目</h3>
+          <h3>{t.importProject.title}</h3>
           <button className="close-button" onClick={onCancel}>✕</button>
         </div>
         <div className="modal-body">
@@ -69,7 +71,7 @@ export default function ImportProjectModal({ folderPath, warning, onConfirm, onC
             padding: '12px 14px', background: '#f8fafc', borderRadius: '8px',
             border: '1px solid #e5e7eb', marginBottom: '16px',
           }}>
-            <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>源文件夹</div>
+            <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>{t.importProject.sourceFolder}</div>
             <div style={{
               fontSize: '13px', color: '#1f2937', fontFamily: 'Consolas, monospace',
               wordBreak: 'break-all', fontWeight: 500,
@@ -77,20 +79,20 @@ export default function ImportProjectModal({ folderPath, warning, onConfirm, onC
               {folderPath}
             </div>
             <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '6px' }}>
-              {fileCount !== null ? `检测到 ${fileCount} 个文件` : '正在扫描文件...'}
+              {fileCount !== null ? `${fileCount}${t.importProject.detectedFiles}` : t.importProject.scanning}
             </div>
           </div>
 
           {/* 仓库名称 */}
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#374151', marginBottom: '6px' }}>
-              仓库名称
+              {t.importProject.repoName}
             </label>
             <input
               type="text"
               value={projectName}
               onChange={e => setProjectName(e.target.value)}
-              placeholder="输入仓库名称"
+              placeholder={t.importProject.repoNamePlaceholder}
               autoFocus
               style={{
                 width: '100%', padding: '8px 12px', fontSize: '13px',
@@ -102,7 +104,7 @@ export default function ImportProjectModal({ folderPath, warning, onConfirm, onC
               marginTop: '6px', fontSize: '12px', color: '#9ca3af',
               fontFamily: 'Consolas, monospace',
             }}>
-              {state.rootRepositoryPath}/repositories/{projectName || '<名称>'}
+              {state.rootRepositoryPath}/repositories/{projectName || t.importProject.repoPathName}
             </div>
           </div>
 
@@ -120,9 +122,9 @@ export default function ImportProjectModal({ folderPath, warning, onConfirm, onC
               id="init-commit-check"
             />
             <label htmlFor="init-commit-check" style={{ cursor: 'pointer', flex: 1 }}>
-              <div style={{ fontSize: '13px', fontWeight: 500, color: '#166534' }}>立刻提交初始版本</div>
+              <div style={{ fontSize: '13px', fontWeight: 500, color: '#166534' }}>{t.importProject.initialCommit}</div>
               <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
-                勾选后，导入时将自动扫描文件夹内所有文件并创建初始提交版本
+                {t.importProject.initialCommitHint}
               </div>
             </label>
           </div>
@@ -133,19 +135,19 @@ export default function ImportProjectModal({ folderPath, warning, onConfirm, onC
             border: '1px solid #fde68a', fontSize: '12px', color: '#92400e',
             lineHeight: '1.5', marginBottom: '16px',
           }}>
-            导入后，文件夹将作为工作副本，版本数据存储在仓库的 repositories/ 目录中。
+            {t.importProject.importInfo}
           </div>
 
           {/* 操作按钮 */}
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-            <button onClick={onCancel} disabled={loading}>取消</button>
+            <button onClick={onCancel} disabled={loading}>{t.common.cancel}</button>
             <button
               className="primary-button"
               onClick={handleConfirm}
               disabled={!canConfirm}
               style={{ opacity: canConfirm ? 1 : 0.5 }}
             >
-              {loading ? '导入中...' : '确认导入'}
+              {loading ? t.importProject.importing : t.importProject.confirmImport}
             </button>
           </div>
         </div>

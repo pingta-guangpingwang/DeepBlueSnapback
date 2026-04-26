@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useAppState } from './context/AppContext'
+import { useI18n } from './i18n'
 import TitleBar from './components/Layout/TitleBar'
 import RootSetup from './components/Setup/RootSetup'
 import RepoList from './components/Repository/RepoList'
@@ -12,6 +13,7 @@ import OnboardingGuide from './components/Onboarding/OnboardingGuide'
 
 function App() {
   const [state, dispatch] = useAppState()
+  const { t } = useI18n()
 
   // Initialize: load root repository config
   useEffect(() => {
@@ -85,7 +87,7 @@ function App() {
       // update / update-to / commit：需要版本管理的文件夹
       const resolved = await window.electronAPI.resolvePaths(targetPath)
       if (!resolved) {
-        dispatch({ type: 'SET_MESSAGE', payload: '该文件夹不是 DBHT 管理的工作副本，无法执行此操作。' })
+        dispatch({ type: 'SET_MESSAGE', payload: t.app.notWorkingCopy })
         dispatch({ type: 'SET_CURRENT_VIEW', payload: 'repositories' })
         return
       }
@@ -111,7 +113,7 @@ function App() {
       }
 
       if (!project) {
-        dispatch({ type: 'SET_MESSAGE', payload: '无法加载该工作副本' })
+        dispatch({ type: 'SET_MESSAGE', payload: t.app.loadWorkingCopyFailed })
         dispatch({ type: 'SET_CURRENT_VIEW', payload: 'repositories' })
         return
       }

@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useAppState } from '../../context/AppContext'
 import { useProjects } from '../../hooks/useProjects'
+import { useI18n } from '../../i18n'
 
 export default function CreateProjectModal() {
   const [state, dispatch] = useAppState()
   const { createProject } = useProjects()
+  const { t } = useI18n()
   const [clientPath, setClientPath] = useState('')
   const [tried, setTried] = useState(false)
 
@@ -38,7 +40,7 @@ export default function CreateProjectModal() {
     <div className="modal-overlay" onClick={close}>
       <div className="modal-content" style={{ maxWidth: '580px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>创建新项目</h3>
+          <h3>{t.createProject.title}</h3>
           <button className="close-button" onClick={close}>✕</button>
         </div>
         <div className="modal-body">
@@ -47,7 +49,7 @@ export default function CreateProjectModal() {
             <div className="creator-section">
               <div className="form-group">
                 <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  项目名称
+                  {t.createProject.projectName}
                   {!nameOk && tried && <span style={{ color: '#dc2626', fontSize: '14px' }}>⚠</span>}
                 </label>
                 <input
@@ -57,7 +59,7 @@ export default function CreateProjectModal() {
                     dispatch({ type: 'SET_NEW_PROJECT_NAME', payload: e.target.value })
                     if (e.target.value.trim()) setTried(false)
                   }}
-                  placeholder="输入项目名称"
+                  placeholder={t.createProject.namePlaceholder}
                   style={warnStyle(nameOk)}
                   autoFocus
                 />
@@ -67,16 +69,16 @@ export default function CreateProjectModal() {
             {/* 仓库路径（自动生成） */}
             <div className="creator-section">
               <div className="form-group">
-                <label>仓库路径</label>
+                <label>{t.createProject.repoPath}</label>
                 <div style={{
                   padding: '8px 12px', background: '#f8fafc', borderRadius: '6px',
                   border: '1px solid #e5e7eb', fontSize: '13px', color: '#374151',
                   fontFamily: 'Consolas, monospace', wordBreak: 'break-all',
                 }}>
-                  {state.rootRepositoryPath}/repositories/{state.newProjectName.trim() || '<名称>'}
+                  {state.rootRepositoryPath}/repositories/{state.newProjectName.trim() || t.createProject.repoPathName}
                 </div>
                 <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
-                  版本数据存储位置，根据项目名称自动生成
+                  {t.createProject.repoPathHint}
                 </div>
               </div>
             </div>
@@ -85,7 +87,7 @@ export default function CreateProjectModal() {
             <div className="creator-section">
               <div className="form-group">
                 <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  客户端路径
+                  {t.createProject.clientPath}
                   {!clientOk && tried && <span style={{ color: '#dc2626', fontSize: '14px' }}>⚠</span>}
                 </label>
                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -96,25 +98,25 @@ export default function CreateProjectModal() {
                       setClientPath(e.target.value)
                       if (e.target.value.trim()) setTried(false)
                     }}
-                    placeholder="选择项目工作目录..."
+                    placeholder={t.createProject.clientPlaceholder}
                     style={{ flex: 1, fontSize: '13px', fontFamily: 'Consolas, monospace', ...warnStyle(clientOk) }}
                   />
-                  <button onClick={selectFolder} style={{ whiteSpace: 'nowrap' }}>浏览...</button>
+                  <button onClick={selectFolder} style={{ whiteSpace: 'nowrap' }}>{t.common.browse}</button>
                 </div>
                 <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
-                  工作副本存放位置。若文件夹名与项目名不同，将自动在其下创建项目名称子目录
+                  {t.createProject.clientPathHint}
                 </div>
               </div>
             </div>
 
             {/* 操作按钮 */}
             <div className="creator-actions" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
-              <button onClick={close}>取消</button>
+              <button onClick={close}>{t.common.cancel}</button>
               <button
                 className="primary-button"
                 onClick={handleCreate}
               >
-                创建项目
+                {t.createProject.createProject}
               </button>
             </div>
           </div>

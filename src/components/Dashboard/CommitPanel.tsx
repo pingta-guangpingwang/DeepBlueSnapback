@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAppState } from '../../context/AppContext'
 import { useRepository } from '../../hooks/useRepository'
+import { useI18n } from '../../i18n'
 
 function getFileIcon(name: string): { icon: string; color: string } {
   const ext = name.includes('.') ? name.split('.').pop()!.toLowerCase() : ''
@@ -23,21 +24,22 @@ function getFileIcon(name: string): { icon: string; color: string } {
   return map[ext] || { icon: ext ? ext.substring(0, 2).toUpperCase() : '?', color: '#9ca3af' }
 }
 
-const STATUS_MAP: Record<string, { text: string; color: string }> = {
-  A: { text: '新增', color: '#16a34a' },
-  M: { text: '修改', color: '#d97706' },
-  D: { text: '删除', color: '#dc2626' },
-}
-
 export default function CommitPanel() {
   const [state, dispatch] = useAppState()
   const { handleCommit } = useRepository()
+  const { t } = useI18n()
   const [validationMsg, setValidationMsg] = useState('')
   const [aiAuthor, setAiAuthor] = useState('')
   const [aiSession, setAiSession] = useState('')
   const [aiSummary, setAiSummary] = useState('')
   const [showRevertConfirm, setShowRevertConfirm] = useState(false)
   const [reverting, setReverting] = useState(false)
+
+  const STATUS_MAP: Record<string, { text: string; color: string }> = {
+    A: { text: t.commitPanel.added, color: '#16a34a' },
+    M: { text: t.commitPanel.modified, color: '#d97706' },
+    D: { text: t.commitPanel.deleted, color: '#dc2626' },
+  }
 
   const close = () => {
     dispatch({ type: 'SET_COMMIT_PANEL_PROJECT', payload: null })
@@ -50,7 +52,7 @@ export default function CommitPanel() {
 
   const onRevert = () => {
     if (state.selectedFiles.length === 0) {
-      setValidationMsg('请先勾选要还原的文件')
+      setValidationMsg(t.commitPanel.selectFilesFirst)
       return
     }
     setShowRevertConfirm(true)
@@ -67,9 +69,8 @@ export default function CommitPanel() {
     try {
       const result = await window.electronAPI.revertFiles(repoPath, workingCopyPath, state.selectedFiles)
       if (result.success) {
-        dispatch({ type: 'SET_MESSAGE', payload: `已还原 ${result.reverted.length} 个文件到最新版本` })
+        dispatch({ type: 'SET_MESSAGE', payload: `${result.reverted.length}${t.commitPanel.revertedCount}` })
         setShowRevertConfirm(false)
-        // 刷新文件列表
         const statusResult = await window.electronAPI.getStatus(repoPath, workingCopyPath)
         if (statusResult?.success && statusResult.status) {
           const files = statusResult.status
@@ -86,10 +87,10 @@ export default function CommitPanel() {
           dispatch({ type: 'SET_SELECTED_FILES', payload: [] })
         }
       } else {
-        setValidationMsg('还原失败：' + result.message)
+        setValidationMsg(t.commitPanel.revertFailed + result.message)
       }
     } catch (e) {
-      setValidationMsg('还原失败：' + String(e))
+      setValidationMsg(t.commitPanel.revertFailed + String(e))
     } finally {
       setReverting(false)
     }
@@ -116,8 +117,8 @@ export default function CommitPanel() {
   }
 
   const onSubmit = async () => {
-    if (state.selectedFiles.length === 0) { setValidationMsg('请先勾选要提交的文件'); return }
-    if (!state.commitMessage.trim()) { setValidationMsg('请输入提交描述信息'); return }
+    if (state.selectedFiles.length === 0) { setValidationMsg(t.commitPanel.selectCommitFiles); return }
+    if (!state.commitMessage.trim()) { setValidationMsg(t.commitPanel.enterMessage); return }
     setValidationMsg('')
     const options: { summary?: string; author?: string; sessionId?: string } = {}
     if (aiAuthor.trim()) options.author = aiAuthor.trim()
@@ -128,7 +129,6 @@ export default function CommitPanel() {
 
   const canSubmit = state.selectedFiles.length > 0 && state.commitMessage.trim()
 
-  // 按目录分组
   const groups: Record<string, typeof state.commitPanelFiles> = {}
   for (const file of state.commitPanelFiles) {
     const parts = file.path.split('/')
@@ -137,7 +137,6 @@ export default function CommitPanel() {
     groups[dir].push(file)
   }
 
-  // 统计
   const stats = { A: 0, M: 0, D: 0 }
   for (const f of state.commitPanelFiles) stats[f.status as 'A' | 'M' | 'D']++
 
@@ -156,16 +155,15 @@ export default function CommitPanel() {
           flexShrink: 0,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
-            <h3 style={{ margin: 0, fontSize: '15px', whiteSpace: 'nowrap' }}>提交变更</h3>
+            <h3 style={{ margin: 0, fontSize: '15px', whiteSpace: 'nowrap' }}>{t.commitPanel.title}</h3>
             <span style={{
               fontSize: '12px', color: '#6b7280', overflow: 'hidden',
               textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>{state.commitPanelProject}</span>
-            {/* 状态统计标签 */}
             <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}>
-              {stats.A > 0 && <span style={{ color: '#16a34a', fontWeight: 500 }}>+{stats.A} 新增</span>}
-              {stats.M > 0 && <span style={{ color: '#d97706', fontWeight: 500 }}>~{stats.M} 修改</span>}
-              {stats.D > 0 && <span style={{ color: '#dc2626', fontWeight: 500 }}>-{stats.D} 删除</span>}
+              {stats.A > 0 && <span style={{ color: '#16a34a', fontWeight: 500 }}>+{stats.A} {t.commitPanel.added}</span>}
+              {stats.M > 0 && <span style={{ color: '#d97706', fontWeight: 500 }}>~{stats.M} {t.commitPanel.modified}</span>}
+              {stats.D > 0 && <span style={{ color: '#dc2626', fontWeight: 500 }}>-{stats.D} {t.commitPanel.deleted}</span>}
             </div>
           </div>
           <button style={{
@@ -174,37 +172,34 @@ export default function CommitPanel() {
           }} onClick={close}>✕</button>
         </div>
 
-        {/* Body: 左右分栏 */}
+        {/* Body */}
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          {/* 左侧：文件树 */}
+          {/* Left: file tree */}
           <div style={{
             flex: 1, display: 'flex', flexDirection: 'column',
             borderRight: '1px solid #e5e7eb', minWidth: 0,
           }}>
-            {/* 工具栏 */}
             <div style={{
               padding: '6px 12px', borderBottom: '1px solid #f3f4f6',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               flexShrink: 0,
             }}>
               <span style={{ fontSize: '12px', color: '#6b7280' }}>
-                已选 <strong style={{ color: '#374151' }}>{state.selectedFiles.length}</strong> / {state.commitPanelFiles.length} 文件
+                <strong style={{ color: '#374151' }}>{state.selectedFiles.length}</strong> / {state.commitPanelFiles.length} {t.commitPanel.selectedCount}
               </span>
               <button className="secondary-button" style={{ fontSize: '11px', padding: '2px 10px' }} onClick={toggleAll}>
-                {state.selectedFiles.length === state.commitPanelFiles.length ? '取消全选' : '全选'}
+                {state.selectedFiles.length === state.commitPanelFiles.length ? t.commitPanel.deselectAll : t.commitPanel.selectAll}
               </button>
             </div>
 
-            {/* 文件列表 */}
             <div style={{ flex: 1, overflow: 'auto', background: '#fafbfc' }}>
               {state.commitPanelFiles.length === 0 ? (
                 <div style={{ padding: '30px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>
-                  没有检测到变更文件
+                  {t.commitPanel.noChanges}
                 </div>
               ) : (
                 Object.entries(groups).map(([dir, files]) => (
                   <div key={dir || '__root__'}>
-                    {/* 目录头 */}
                     {dir && (
                       <div style={{
                         display: 'flex', alignItems: 'center', gap: '5px',
@@ -216,7 +211,6 @@ export default function CommitPanel() {
                         <span style={{ fontSize: '11px', fontWeight: 600, color: '#6b7280', letterSpacing: '0.02em' }}>{dir}/</span>
                       </div>
                     )}
-                    {/* 文件行 */}
                     {files.map(file => {
                       const status = STATUS_MAP[file.status] || { text: file.status, color: '#6b7280' }
                       const { icon, color } = getFileIcon(file.path)
@@ -266,7 +260,7 @@ export default function CommitPanel() {
                               background: '#fff', cursor: 'pointer', color: '#6b7280',
                               lineHeight: '16px', flexShrink: 0,
                             }}
-                          >对比</button>
+                          >{t.commitPanel.diff}</button>
                         </div>
                       )
                     })}
@@ -276,20 +270,20 @@ export default function CommitPanel() {
             </div>
           </div>
 
-          {/* 右侧：提交信息 */}
+          {/* Right: commit message */}
           <div style={{
             width: '320px', flexShrink: 0,
             display: 'flex', flexDirection: 'column',
             padding: '12px', gap: '10px',
           }}>
-            <div style={{ fontWeight: 600, fontSize: '13px', color: '#1f2937' }}>提交信息</div>
+            <div style={{ fontWeight: 600, fontSize: '13px', color: '#1f2937' }}>{t.commitPanel.commitMessage}</div>
             <textarea
               value={state.commitMessage}
               onChange={(e) => {
                 dispatch({ type: 'SET_COMMIT_MESSAGE', payload: e.target.value })
                 setValidationMsg('')
               }}
-              placeholder="请输入提交描述信息..."
+              placeholder={t.commitPanel.messagePlaceholder}
               style={{
                 flex: 1, width: '100%', resize: 'none',
                 border: validationMsg && !state.commitMessage.trim() ? '1px solid #f87171' : '1px solid #d1d5db',
@@ -307,19 +301,18 @@ export default function CommitPanel() {
               </div>
             )}
 
-            {/* AI 提交标记 */}
             <div style={{
               borderTop: '1px solid #e5e7eb', paddingTop: '10px',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 600, color: '#6b7280', letterSpacing: '0.02em' }}>AI 标记（可选）</span>
-                <span style={{ fontSize: '10px', color: '#9ca3af' }}>标记 AI 工具来源</span>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: '#6b7280', letterSpacing: '0.02em' }}>{t.commitPanel.aiLabel}</span>
+                <span style={{ fontSize: '10px', color: '#9ca3af' }}>{t.commitPanel.aiDescription}</span>
               </div>
               <input
                 type="text"
                 value={aiAuthor}
                 onChange={e => setAiAuthor(e.target.value)}
-                placeholder="AI 工具名 (如 claude-code)"
+                placeholder={t.commitPanel.aiNamePlaceholder}
                 style={{
                   width: '100%', padding: '6px 10px', fontSize: '12px',
                   border: '1px solid #e5e7eb', borderRadius: '4px', marginBottom: '6px',
@@ -329,7 +322,7 @@ export default function CommitPanel() {
                 type="text"
                 value={aiSession}
                 onChange={e => setAiSession(e.target.value)}
-                placeholder="会话 ID (关联同次会话)"
+                placeholder={t.commitPanel.aiSessionPlaceholder}
                 style={{
                   width: '100%', padding: '6px 10px', fontSize: '12px',
                   border: '1px solid #e5e7eb', borderRadius: '4px', marginBottom: '6px',
@@ -339,7 +332,7 @@ export default function CommitPanel() {
                 type="text"
                 value={aiSummary}
                 onChange={e => setAiSummary(e.target.value)}
-                placeholder="变更摘要 (一句话描述目的)"
+                placeholder={t.commitPanel.aiSummaryPlaceholder}
                 style={{
                   width: '100%', padding: '6px 10px', fontSize: '12px',
                   border: '1px solid #e5e7eb', borderRadius: '4px',
@@ -354,16 +347,16 @@ export default function CommitPanel() {
                 disabled={state.selectedFiles.length === 0}
                 style={{ padding: '6px 16px', fontSize: '13px', opacity: state.selectedFiles.length > 0 ? 1 : 0.4 }}
               >
-                一键还原
+                {t.commitPanel.revertAll}
               </button>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button style={{ padding: '6px 16px', fontSize: '13px' }} onClick={close}>取消</button>
+                <button style={{ padding: '6px 16px', fontSize: '13px' }} onClick={close}>{t.common.cancel}</button>
                 <button
                   className="primary-button"
                   onClick={onSubmit}
                   style={{ opacity: canSubmit ? 1 : 0.5, padding: '6px 16px', fontSize: '13px' }}
                 >
-                  提交变更
+                  {t.commitPanel.commitChanges}
                 </button>
               </div>
             </div>
@@ -382,9 +375,9 @@ export default function CommitPanel() {
             background: '#fff', borderRadius: '10px', padding: '24px', maxWidth: '440px', width: '90%',
             boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
           }}>
-            <h3 style={{ margin: '0 0 12px', fontSize: '15px', color: '#1f2937' }}>确认还原文件</h3>
+            <h3 style={{ margin: '0 0 12px', fontSize: '15px', color: '#1f2937' }}>{t.commitPanel.confirmRevert}</h3>
             <p style={{ fontSize: '13px', color: '#374151', lineHeight: '1.6', margin: '0 0 12px' }}>
-              即将将以下 <strong>{state.selectedFiles.length}</strong> 个文件还原到上次提交的版本，当前未提交的修改将丢失：
+              {t.commitPanel.revertWarning.replace('以下', `以下 ${state.selectedFiles.length} `)}
             </p>
             <div style={{
               maxHeight: '150px', overflow: 'auto', padding: '8px 12px',
@@ -398,10 +391,10 @@ export default function CommitPanel() {
               <button style={{
                 padding: '6px 16px', fontSize: '13px', border: '1px solid #d1d5db',
                 borderRadius: '6px', background: '#fff', cursor: 'pointer', color: '#374151',
-              }} onClick={() => setShowRevertConfirm(false)}>取消</button>
+              }} onClick={() => setShowRevertConfirm(false)}>{t.common.cancel}</button>
               <button className="warning-button" style={{ padding: '6px 16px', fontSize: '13px' }}
                 onClick={confirmRevert} disabled={reverting}>
-                {reverting ? '还原中...' : '确认还原'}
+                {reverting ? t.commitPanel.reverting : t.commitPanel.confirmRevertBtn}
               </button>
             </div>
           </div>
