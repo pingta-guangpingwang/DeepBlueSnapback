@@ -13,6 +13,20 @@ export default function CreateProjectModal() {
   const nameOk = state.newProjectName.trim().length > 0
   const clientOk = clientPath.trim().length > 0
 
+  const projectName = state.newProjectName.trim()
+
+  // 统一用反斜杠显示路径
+  const normalizePath = (p: string) => p.replace(/\//g, '\\')
+  const repoPathPreview = normalizePath(
+    state.rootRepositoryPath + '/repositories/' + (projectName || t.createProject.repoPathName)
+  )
+  const clientBasename = clientPath.trim() ? normalizePath(clientPath.trim()).split('\\').pop() : ''
+  const workingCopyPreview = clientPath.trim()
+    ? (clientBasename === projectName
+        ? normalizePath(clientPath.trim())
+        : normalizePath(clientPath.trim()) + '\\' + (projectName || t.createProject.repoPathName))
+    : ''
+
   const handleCreate = () => {
     setTried(true)
     if (!nameOk || !clientOk) return
@@ -75,7 +89,7 @@ export default function CreateProjectModal() {
                   border: '1px solid #e5e7eb', fontSize: '13px', color: '#374151',
                   fontFamily: 'Consolas, monospace', wordBreak: 'break-all',
                 }}>
-                  {state.rootRepositoryPath}/repositories/{state.newProjectName.trim() || t.createProject.repoPathName}
+                  {repoPathPreview}
                 </div>
                 <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
                   {t.createProject.repoPathHint}
@@ -104,7 +118,9 @@ export default function CreateProjectModal() {
                   <button onClick={selectFolder} style={{ whiteSpace: 'nowrap' }}>{t.common.browse}</button>
                 </div>
                 <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
-                  {t.createProject.clientPathHint}
+                  {workingCopyPreview
+                    ? workingCopyPreview
+                    : t.createProject.clientPathHint}
                 </div>
               </div>
             </div>
