@@ -592,22 +592,7 @@ export default function RepoList() {
   })
 
   const enterHorseFarm = () => {
-    const farmIds = state.horseFarmProjectIds
-    if (farmIds.length === 0) {
-      dispatch({ type: 'SET_MESSAGE', payload: t.horseFarm.selectFirst })
-      return
-    }
-    const proj = state.projects.find(p => p.path === farmIds[0])
-    if (proj) {
-      dispatch({ type: 'RESET_PROJECT_STATE' })
-      dispatch({ type: 'SET_CURRENT_PROJECT', payload: proj.name })
-      dispatch({ type: 'SET_PROJECT_PATH', payload: proj.path })
-      dispatch({ type: 'SET_REPO_PATH', payload: proj.repoPath })
-      dispatch({ type: 'SET_CURRENT_VIEW', payload: 'dashboard' })
-      dispatch({ type: 'SET_ACTIVE_TAB', payload: 'horseFarm' })
-    } else {
-      dispatch({ type: 'SET_MESSAGE', payload: t.horseFarm.selectFirst })
-    }
+    dispatch({ type: 'SET_CURRENT_VIEW', payload: 'horseFarm' })
   }
 
   return (

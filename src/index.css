@@ -585,6 +585,14 @@ input {
   overflow: hidden;
 }
 
+.horsefarm-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
 .dashboard-header {
   background: white;
   border-bottom: 1px solid #e5e7eb;
@@ -1614,6 +1622,7 @@ pre {
   min-height: 0;
   display: flex;
   gap: 8px;
+  position: relative;
 }
 
 /* ---- HUD ---- */
@@ -1695,6 +1704,60 @@ pre {
   border-radius: 8px;
   border: 1px solid #1e293b;
   background: #0c1222;
+}
+
+/* ---- Module Panel (left overlay) ---- */
+.ws-module-panel {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+  user-select: none;
+  min-width: 120px;
+}
+
+.ws-module-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.ws-module-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  transition: all 0.2s;
+}
+
+.ws-module-item.ws-module-active {
+  background: rgba(59, 130, 246, 0.15);
+  color: #e2e8f0;
+  border-left: 2px solid #3b82f6;
+}
+
+.ws-module-dot {
+  font-size: 0.65rem;
+  flex-shrink: 0;
+}
+
+.ws-module-name {
+  font-weight: 500;
 }
 
 /* ---- Event Log ---- */

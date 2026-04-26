@@ -14,7 +14,7 @@ export interface Project {
 
 export interface AppState {
   // Navigation
-  currentView: 'setup' | 'repositories' | 'dashboard'
+  currentView: 'setup' | 'repositories' | 'dashboard' | 'horseFarm'
   activeTab: 'overview' | 'files' | 'history' | 'workshop' | 'horseFarm' | 'settings' | 'about'
 
   // Root repository

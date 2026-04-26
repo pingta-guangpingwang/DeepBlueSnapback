@@ -5,6 +5,7 @@ import TitleBar from './components/Layout/TitleBar'
 import RootSetup from './components/Setup/RootSetup'
 import RepoList from './components/Repository/RepoList'
 import Dashboard from './components/Dashboard/Dashboard'
+import HorseFarm from './components/Dashboard/HorseFarm/HorseFarm'
 import CommitPanel from './components/Dashboard/CommitPanel'
 import DiffViewer from './components/Dashboard/DiffViewer'
 import GitRemoteModal from './components/Dashboard/GitRemoteModal'
@@ -165,6 +166,26 @@ function App() {
         {state.commitPanelProject && <CommitPanel />}
         {state.diffModalFile && <DiffViewer />}
         {state.showOnboarding && <OnboardingGuide />}
+      </>
+    )
+  }
+
+  // Horse Farm view (standalone multi-project management)
+  if (state.currentView === 'horseFarm') {
+    return (
+      <>
+        <TitleBar />
+        <div className="horsefarm-page">
+          <header className="dashboard-header draggable-header">
+            <div className="header-left">
+              <button className="back-button" onClick={() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'repositories' })}>
+                {t.dashboard.back}
+              </button>
+              <h1>{t.horseFarm.tabLabel}</h1>
+            </div>
+          </header>
+          <HorseFarm />
+        </div>
       </>
     )
   }
