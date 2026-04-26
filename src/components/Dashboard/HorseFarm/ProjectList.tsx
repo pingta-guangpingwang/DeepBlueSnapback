@@ -1,4 +1,5 @@
 import { useI18n } from '../../../i18n'
+import { useAppState } from '../../../context/AppContext'
 import type { HorseFarmProject, HFTask } from '../../../types/horseFarm'
 import type { Project } from '../../../context/AppContext'
 import ProjectProgressCard from './ProjectProgressCard'
@@ -32,12 +33,39 @@ export default function ProjectList({
   addTask, updateTask, removeTask,
 }: ProjectListProps) {
   const { t } = useI18n()
+  const [, dispatch] = useAppState()
 
   if (projectIds.length === 0) {
     return (
       <div className="hf-empty-state">
-        <p style={{ fontSize: '32px', marginBottom: '8px' }}>🐴</p>
-        <p>{t.horseFarm.noProjects}</p>
+        <div style={{ fontSize: '48px', marginBottom: '12px' }}>🐴</div>
+        <h3 style={{ margin: '0 0 8px', fontSize: '16px', color: '#374151' }}>{t.horseFarm.tabLabel}</h3>
+        <p style={{ margin: '0 0 8px', color: '#6b7280', fontSize: '13px' }}>{t.horseFarm.noProjects}</p>
+        <p style={{ margin: '0 0 20px', color: '#9ca3af', fontSize: '12px' }}>
+          {t.horseFarm.selectProjects}
+        </p>
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+          <button
+            onClick={() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'repositories' })}
+            style={{
+              padding: '8px 20px', borderRadius: '8px', border: 'none',
+              background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+              color: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
+            }}
+          >
+            {t.horseFarm.addFromRepo}
+          </button>
+          <button
+            onClick={() => dispatch({ type: 'SET_HORSE_FARM_SUB_TAB', payload: 'settings' })}
+            style={{
+              padding: '8px 20px', borderRadius: '8px',
+              border: '1px solid #d1d5db', background: '#fff',
+              color: '#374151', cursor: 'pointer', fontSize: '13px', fontWeight: 500,
+            }}
+          >
+            {t.horseFarm.subTabSettings}
+          </button>
+        </div>
       </div>
     )
   }

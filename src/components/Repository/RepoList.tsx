@@ -615,19 +615,21 @@ export default function RepoList() {
           }}>{t.repoList.slogan}</span>
         </div>
         <div className="header-right" style={{ display: 'flex', gap: '8px' }}>
-          {state.horseFarmProjectIds.length > 0 && (
-            <button
-              onClick={enterHorseFarm}
-              style={{
-                background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
-                color: '#fff', border: 'none', fontWeight: 600,
-                padding: '8px 18px', borderRadius: '8px', cursor: 'pointer',
-                fontSize: '13px',
-              }}
-            >
-              🐴 {t.horseFarm.tabLabel} ({state.horseFarmProjectIds.length})
-            </button>
-          )}
+          <button
+            onClick={enterHorseFarm}
+            style={{
+              background: state.horseFarmProjectIds.length > 0
+                ? 'linear-gradient(135deg, #4f46e5, #7c3aed)'
+                : '#f3f4f6',
+              color: state.horseFarmProjectIds.length > 0 ? '#fff' : '#9ca3af',
+              border: state.horseFarmProjectIds.length > 0 ? 'none' : '1px solid #e5e7eb',
+              fontWeight: 600,
+              padding: '8px 18px', borderRadius: '8px', cursor: 'pointer',
+              fontSize: '13px',
+            }}
+          >
+            🐴 {t.horseFarm.tabLabel}{state.horseFarmProjectIds.length > 0 ? ` (${state.horseFarmProjectIds.length})` : ''}
+          </button>
         </div>
         <div className="header-right" />
       </header>
@@ -679,33 +681,28 @@ export default function RepoList() {
               >?</button>
             </div>
             <div className="section-actions">
-              {selectedForFarm.size > 0 && (
-                <button
-                  onClick={() => {
-                    dispatch({ type: 'ADD_TO_HORSE_FARM', payload: [...selectedForFarm] })
-                    const newCount = [...new Set([...state.horseFarmProjectIds, ...selectedForFarm])].length
-                    dispatch({ type: 'SET_MESSAGE', payload: t.horseFarm.addedToFarm.replace('{count}', String(newCount)) })
-                    setSelectedForFarm(new Set())
-                  }}
-                  style={{
-                    background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
-                    color: '#fff', border: 'none', fontWeight: 600,
-                  }}
-                >
-                  {t.horseFarm.addToHorseFarm} ({selectedForFarm.size})
-                </button>
-              )}
-              {state.horseFarmProjectIds.length > 0 && selectedForFarm.size === 0 && (
-                <button
-                  onClick={enterHorseFarm}
-                  style={{
-                    background: 'linear-gradient(135deg, #059669, #10b981)',
-                    color: '#fff', border: 'none', fontWeight: 600,
-                  }}
-                >
-                  🐴 {t.horseFarm.tabLabel} ({state.horseFarmProjectIds.length})
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  if (selectedForFarm.size === 0) return
+                  dispatch({ type: 'ADD_TO_HORSE_FARM', payload: [...selectedForFarm] })
+                  const newCount = [...new Set([...state.horseFarmProjectIds, ...selectedForFarm])].length
+                  dispatch({ type: 'SET_MESSAGE', payload: t.horseFarm.addedToFarm.replace('{count}', String(newCount)) })
+                  setSelectedForFarm(new Set())
+                }}
+                disabled={selectedForFarm.size === 0}
+                style={{
+                  background: selectedForFarm.size > 0
+                    ? 'linear-gradient(135deg, #4f46e5, #7c3aed)'
+                    : '#f3f4f6',
+                  color: selectedForFarm.size > 0 ? '#fff' : '#9ca3af',
+                  border: selectedForFarm.size > 0 ? 'none' : '1px solid #e5e7eb',
+                  fontWeight: 600,
+                  cursor: selectedForFarm.size === 0 ? 'not-allowed' : 'pointer',
+                  opacity: selectedForFarm.size === 0 ? 0.6 : 1,
+                }}
+              >
+                {t.horseFarm.addToHorseFarm}{selectedForFarm.size > 0 ? ` (${selectedForFarm.size})` : ''}
+              </button>
               <button onClick={() => dispatch({ type: 'SET_SHOW_CREATE_PROJECT_MODAL', payload: true })}>
                 {t.repoList.createProject}
               </button>
