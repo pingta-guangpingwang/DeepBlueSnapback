@@ -168,6 +168,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('ai-workshop:scan-project-dirs', projectPath),
   ensureWorkshopAssets: () =>
     ipcRenderer.invoke('workshop:ensure-assets'),
+
+  // Horse Farm
+  saveHorseFarmData: (projectPath: string, data: { requirements?: string; summary?: string }) =>
+    ipcRenderer.invoke('horsefarm:save-data', projectPath, data),
+  loadHorseFarmData: (projectPath: string) =>
+    ipcRenderer.invoke('horsefarm:load-data', projectPath),
+  generateProjectSummary: (projectPath: string, requirements: string) =>
+    ipcRenderer.invoke('horsefarm:generate-summary', projectPath, requirements),
+  generateMindMap: (projectPath: string, summary: string) =>
+    ipcRenderer.invoke('horsefarm:generate-mindmap', projectPath, summary),
+  generateKnowledgeBase: (projectPath: string, projectName: string, summary: string, requirements: string) =>
+    ipcRenderer.invoke('horsefarm:generate-kb', projectPath, projectName, summary, requirements),
+  readMindMapFile: (filePath: string) =>
+    ipcRenderer.invoke('horsefarm:read-mindmap', filePath),
+  readKnowledgeBase: (projectPath: string) =>
+    ipcRenderer.invoke('horsefarm:read-kb', projectPath),
 })
 
 // 类型声明

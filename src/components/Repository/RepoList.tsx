@@ -555,6 +555,7 @@ export default function RepoList() {
   const [showGitCloneModal, setShowGitCloneModal] = useState(false)
   const [showHelpModal, setShowHelpModal] = useState(false)
   const [cliPullTarget, setCliPullTarget] = useState<string | null>(null)
+  const [selectedForFarm, setSelectedForFarm] = useState<Set<string>>(new Set())
 
   // 检测来自右键菜单的拉取动作
   useEffect(() => {
@@ -654,6 +655,22 @@ export default function RepoList() {
               >?</button>
             </div>
             <div className="section-actions">
+              {selectedForFarm.size > 0 && (
+                <button
+                  onClick={() => {
+                    dispatch({ type: 'ADD_TO_HORSE_FARM', payload: [...selectedForFarm] })
+                    const newCount = [...new Set([...state.horseFarmProjectIds, ...selectedForFarm])].length
+                    dispatch({ type: 'SET_MESSAGE', payload: t.horseFarm.addedToFarm.replace('{count}', String(newCount)) })
+                    setSelectedForFarm(new Set())
+                  }}
+                  style={{
+                    background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                    color: '#fff', border: 'none', fontWeight: 600,
+                  }}
+                >
+                  {t.horseFarm.addToHorseFarm} ({selectedForFarm.size})
+                </button>
+              )}
               <button onClick={() => dispatch({ type: 'SET_SHOW_CREATE_PROJECT_MODAL', payload: true })}>
                 {t.repoList.createProject}
               </button>
@@ -680,6 +697,16 @@ export default function RepoList() {
                 onEnter={() => openProject(project.path)}
                 onCommit={() => openCommitPanel(project.path)}
                 onRemove={removeProject}
+                showCheckbox
+                selected={selectedForFarm.has(project.path)}
+                onToggleSelect={(path) => {
+                  setSelectedForFarm(prev => {
+                    const next = new Set(prev)
+                    if (next.has(path)) next.delete(path)
+                    else next.add(path)
+                    return next
+                  })
+                }}
               />
             ))}
           </div>

@@ -115,6 +115,15 @@ export interface ElectronAPI {
   readVisualFile: (projectPath: string) => Promise<{ success: boolean; content?: string }>
   scanProjectDirs: (projectPath: string) => Promise<{ success: boolean; dirs: Array<{ id: string; name: string }> }>
   ensureWorkshopAssets: () => Promise<{ ready: boolean; downloaded: boolean; error?: string }>
+
+  // Horse Farm
+  saveHorseFarmData: (projectPath: string, data: { requirements?: string; summary?: string }) => Promise<{ success: boolean; message?: string }>
+  loadHorseFarmData: (projectPath: string) => Promise<{ success: boolean; exists: boolean; requirements?: string; summary?: string; mindmapPath?: string; kbPath?: string }>
+  generateProjectSummary: (projectPath: string, requirements: string) => Promise<{ success: boolean; summary?: string; message?: string }>
+  generateMindMap: (projectPath: string, summary: string) => Promise<{ success: boolean; filePath?: string; data?: import('./horseFarm').MindMapData; message?: string }>
+  generateKnowledgeBase: (projectPath: string, projectName: string, summary: string, requirements: string) => Promise<{ success: boolean; filePath?: string; message?: string }>
+  readMindMapFile: (filePath: string) => Promise<{ success: boolean; data?: import('./horseFarm').MindMapData; message?: string }>
+  readKnowledgeBase: (projectPath: string) => Promise<{ success: boolean; content?: string; message?: string }>
 }
 
 declare global {

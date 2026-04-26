@@ -7,9 +7,12 @@ interface ProjectCardProps {
   onEnter: () => void
   onCommit: () => void
   onRemove: (projectPath: string) => void
+  selected?: boolean
+  onToggleSelect?: (projectPath: string) => void
+  showCheckbox?: boolean
 }
 
-export default function ProjectCard({ project, onEnter, onCommit, onRemove }: ProjectCardProps) {
+export default function ProjectCard({ project, onEnter, onCommit, onRemove, selected, onToggleSelect, showCheckbox }: ProjectCardProps) {
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
   const { t } = useI18n()
 
@@ -49,8 +52,18 @@ export default function ProjectCard({ project, onEnter, onCommit, onRemove }: Pr
   }
 
   return (
-    <div className="project-card">
-      <div className="project-info" style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, flex: 1 }}>
+    <div className="project-card" style={{ position: 'relative' }}>
+      {showCheckbox && (
+        <div style={{ position: 'absolute', top: '8px', left: '10px', zIndex: 1 }}>
+          <input
+            type="checkbox"
+            checked={selected || false}
+            onChange={() => onToggleSelect?.(project.path)}
+            style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#4f46e5' }}
+          />
+        </div>
+      )}
+      <div className="project-info" style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, flex: 1, paddingLeft: showCheckbox ? '28px' : '0' }}>
         <h3 style={{ margin: 0, whiteSpace: 'nowrap', fontSize: '14px' }}>{project.name}</h3>
         <span style={{ fontSize: '12px', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {project.path}

@@ -15,7 +15,7 @@ export interface Project {
 export interface AppState {
   // Navigation
   currentView: 'setup' | 'repositories' | 'dashboard'
-  activeTab: 'overview' | 'files' | 'history' | 'workshop' | 'settings' | 'about'
+  activeTab: 'overview' | 'files' | 'history' | 'workshop' | 'horseFarm' | 'settings' | 'about'
 
   // Root repository
   rootRepositoryPath: string
@@ -60,6 +60,11 @@ export interface AppState {
   // CLI 右键菜单待处理动作
   pendingCliAction: string | null
   cliTargetPath: string
+
+  // 驾驭工程/马场
+  horseFarmProjectIds: string[]
+  horseFarmActiveSubTab: 'list' | 'mindmap' | 'knowledgebase'
+  horseFarmActiveProject: string | null
 
   // 新手引导
   showOnboarding: boolean
@@ -116,6 +121,11 @@ export type AppAction =
   | { type: 'SET_GIT_AUTHOR_NAME'; payload: string }
   | { type: 'SET_GIT_AUTHOR_EMAIL'; payload: string }
   | { type: 'SET_SHOW_ONBOARDING'; payload: boolean }
+  | { type: 'TOGGLE_HORSE_FARM_PROJECT'; payload: string }
+  | { type: 'ADD_TO_HORSE_FARM'; payload: string[] }
+  | { type: 'REMOVE_FROM_HORSE_FARM'; payload: string }
+  | { type: 'SET_HORSE_FARM_SUB_TAB'; payload: 'list' | 'mindmap' | 'knowledgebase' }
+  | { type: 'SET_HORSE_FARM_ACTIVE_PROJECT'; payload: string | null }
 
 // --- Initial state ---
 
@@ -159,6 +169,10 @@ const initialState: AppState = {
 
   pendingCliAction: null,
   cliTargetPath: '',
+
+  horseFarmProjectIds: [],
+  horseFarmActiveSubTab: 'list',
+  horseFarmActiveProject: null,
 
   gitSyncStatus: null,
   gitConflicts: [],
@@ -287,6 +301,28 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, gitAuthorEmail: action.payload }
     case 'SET_SHOW_ONBOARDING':
       return { ...state, showOnboarding: action.payload }
+    case 'TOGGLE_HORSE_FARM_PROJECT':
+      return {
+        ...state,
+        horseFarmProjectIds: state.horseFarmProjectIds.includes(action.payload)
+          ? state.horseFarmProjectIds.filter(id => id !== action.payload)
+          : [...state.horseFarmProjectIds, action.payload],
+      }
+    case 'ADD_TO_HORSE_FARM':
+      return {
+        ...state,
+        horseFarmProjectIds: [...new Set([...state.horseFarmProjectIds, ...action.payload])],
+      }
+    case 'REMOVE_FROM_HORSE_FARM':
+      return {
+        ...state,
+        horseFarmProjectIds: state.horseFarmProjectIds.filter(id => id !== action.payload),
+        horseFarmActiveProject: state.horseFarmActiveProject === action.payload ? null : state.horseFarmActiveProject,
+      }
+    case 'SET_HORSE_FARM_SUB_TAB':
+      return { ...state, horseFarmActiveSubTab: action.payload }
+    case 'SET_HORSE_FARM_ACTIVE_PROJECT':
+      return { ...state, horseFarmActiveProject: action.payload }
     default:
       return state
   }

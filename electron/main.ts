@@ -1609,6 +1609,198 @@ ipcMain.handle('dbgvs:set-onboarding-completed', async (_, completed: boolean) =
   }
 })
 
+  // Horse Farm (驾驭工程/马场) — 数据持久化
+  ipcMain.handle('horsefarm:save-data', async (_, projectPath: string, data: { requirements?: string; summary?: string }) => {
+    try {
+      const hfPath = path.join(projectPath, '.dbvs-horsefarm.json')
+      let existing: any = {}
+      if (await fs.pathExists(hfPath)) {
+        try { existing = await fs.readJson(hfPath) } catch { /* ignore corrupt file */ }
+      }
+      if (data.requirements !== undefined) existing.requirements = data.requirements
+      if (data.summary !== undefined) existing.summary = data.summary
+      existing.updatedAt = new Date().toISOString()
+      await fs.writeJson(hfPath, existing, { spaces: 2 })
+      return { success: true }
+    } catch (error) {
+      return { success: false, message: String(error) }
+    }
+  })
+
+  ipcMain.handle('horsefarm:load-data', async (_, projectPath: string) => {
+    try {
+      const hfPath = path.join(projectPath, '.dbvs-horsefarm.json')
+      if (!await fs.pathExists(hfPath)) {
+        return { success: true, exists: false }
+      }
+      const data = await fs.readJson(hfPath)
+      return {
+        success: true,
+        exists: true,
+        requirements: data.requirements || '',
+        summary: data.summary || '',
+        mindmapPath: data.mindmapPath || '',
+        kbPath: data.kbPath || '',
+      }
+    } catch (error) {
+      return { success: true, exists: false }
+    }
+  })
+
+  ipcMain.handle('horsefarm:generate-summary', async (_, projectPath: string, requirements: string) => {
+    try {
+      const fileTree = await fs.readdir(projectPath)
+      const visibleFiles = fileTree.filter(f => !f.startsWith('.') && f !== 'node_modules').join(', ')
+      const summary = `Project at "${projectPath}" contains: ${visibleFiles || '(empty directory)'}. Requirements: ${requirements.substring(0, 200)}${requirements.length > 200 ? '...' : ''}. This project is ready for development with the Horse Farm system.`
+      return { success: true, summary }
+    } catch (error) {
+      return { success: false, summary: `Project summary generated. Requirements: ${requirements.substring(0, 200)}`, message: String(error) }
+    }
+  })
+
+  ipcMain.handle('horsefarm:generate-mindmap', async (_, projectPath: string, summary: string) => {
+    try {
+      const files = await fs.readdir(projectPath)
+      const visibleFiles = files.filter(f => !f.startsWith('.') && f !== 'node_modules')
+      const moduleNodes: any[] = []
+      for (const f of visibleFiles) {
+        const fullPath = path.join(projectPath, f)
+        const stat = await fs.stat(fullPath)
+        const childNodes: any[] = []
+        if (stat.isDirectory()) {
+          try {
+            const subFiles = await fs.readdir(fullPath)
+            for (const sf of subFiles.filter(s => !s.startsWith('.'))) {
+              childNodes.push({
+                id: `${f}-${sf}`,
+                label: sf,
+                type: 'file',
+                status: 'pending',
+                progress: 0,
+                children: [],
+              })
+            }
+          } catch { /* ignore */ }
+        }
+        moduleNodes.push({
+          id: f,
+          label: f,
+          type: stat.isDirectory() ? 'module' : 'file',
+          status: 'pending',
+          progress: 0,
+          children: childNodes,
+          metadata: stat.isDirectory() ? { description: `Module: ${f}` } : undefined,
+        })
+      }
+
+      const mindMapData = {
+        schema: 1 as const,
+        projectName: path.basename(projectPath),
+        generatedAt: new Date().toISOString(),
+        rootNode: {
+          id: 'root',
+          label: path.basename(projectPath),
+          type: 'root' as const,
+          status: 'in_progress' as const,
+          progress: 0,
+          children: moduleNodes,
+        },
+      }
+
+      const mindmapPath = path.join(projectPath, '.dbvs-mindmap.json')
+      await fs.writeJson(mindmapPath, mindMapData, { spaces: 2 })
+
+      // 更新 horse farm data
+      const hfPath = path.join(projectPath, '.dbvs-horsefarm.json')
+      let hfData: any = {}
+      if (await fs.pathExists(hfPath)) {
+        try { hfData = await fs.readJson(hfPath) } catch { /* ignore */ }
+      }
+      hfData.mindmapPath = mindmapPath
+      hfData.updatedAt = new Date().toISOString()
+      await fs.writeJson(hfPath, hfData, { spaces: 2 })
+
+      return { success: true, filePath: mindmapPath, data: mindMapData }
+    } catch (error) {
+      return { success: false, message: String(error) }
+    }
+  })
+
+  ipcMain.handle('horsefarm:generate-kb', async (_, projectPath: string, projectName: string, summary: string, requirements: string) => {
+    try {
+      let fileTree = ''
+      try {
+        const files = await fs.readdir(projectPath)
+        fileTree = files.filter(f => !f.startsWith('.') && f !== 'node_modules')
+          .map(f => `- ${f}`).join('\n')
+      } catch { fileTree = '(unable to scan)' }
+
+      const kbContent = `# ${projectName} — Knowledge Base
+
+## Project Overview
+${summary}
+
+## Requirements
+${requirements || '*(No requirements specified yet)*'}
+
+## Project Structure
+${fileTree || '*(Empty project)*'}
+
+## Development Timeline
+- **${new Date().toISOString().split('T')[0]}**: Project added to Horse Farm
+
+## Design Decisions
+*(To be populated during development)*
+
+## Notes
+This knowledge base is auto-generated by the DBHT Horse Farm system.
+Update it as the project evolves.
+`
+
+      const kbPath = path.join(projectPath, 'DBHT-KNOWLEDGEBASE.md')
+      await fs.writeFile(kbPath, kbContent, 'utf8')
+
+      // 更新 horse farm data
+      const hfPath = path.join(projectPath, '.dbvs-horsefarm.json')
+      let hfData: any = {}
+      if (await fs.pathExists(hfPath)) {
+        try { hfData = await fs.readJson(hfPath) } catch { /* ignore */ }
+      }
+      hfData.kbPath = kbPath
+      hfData.updatedAt = new Date().toISOString()
+      await fs.writeJson(hfPath, hfData, { spaces: 2 })
+
+      return { success: true, filePath: kbPath }
+    } catch (error) {
+      return { success: false, message: String(error) }
+    }
+  })
+
+  ipcMain.handle('horsefarm:read-mindmap', async (_, filePath: string) => {
+    try {
+      if (!await fs.pathExists(filePath)) {
+        return { success: false, message: 'Mind map file not found' }
+      }
+      const data = await fs.readJson(filePath)
+      return { success: true, data }
+    } catch (error) {
+      return { success: false, message: String(error) }
+    }
+  })
+
+  ipcMain.handle('horsefarm:read-kb', async (_, projectPath: string) => {
+    try {
+      const kbPath = path.join(projectPath, 'DBHT-KNOWLEDGEBASE.md')
+      if (!await fs.pathExists(kbPath)) {
+        return { success: false, message: 'Knowledge base not found' }
+      }
+      const content = await fs.readFile(kbPath, 'utf8')
+      return { success: true, content }
+    } catch (error) {
+      return { success: false, message: String(error) }
+    }
+  })
+
 } // end registerIPCHandlers
 
 // ==================== Git Bridge ====================
