@@ -438,89 +438,203 @@
   border-color: #4f46e5;
 }
 
-/* Mind Map Viewer */
-.hf-mindmap-container {
-  padding: 16px;
-  background: #fff;
+/* Mind Map Viewer — tree layout with SVG connectors */
+.mm-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #F2F3F8;
   border-radius: 8px;
   border: 1px solid #e5e7eb;
-  min-height: 300px;
-}
-
-.hf-mindmap-node {
   user-select: none;
 }
 
-.hf-mindmap-node-content {
+.mm-info-bar {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 20;
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(6px);
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.mm-info-title { font-weight: 600; color: #1f2937; }
+.mm-info-date { color: #9ca3af; }
+.mm-info-zoom { margin-left: auto; color: #6b7280; font-weight: 600; font-size: 11px; }
+
+.mm-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+.mm-svg-layer {
+  pointer-events: none;
+}
+
+.mm-connector {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  opacity: 0.6;
+}
+
+.mm-nodes-layer {
+  pointer-events: none;
+}
+
+/* Node Cards */
+.mm-node-card {
+  position: absolute;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: box-shadow 0.15s, transform 0.15s;
+  min-width: 60px;
+}
+
+.mm-node-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-1px);
+}
+
+/* Root card */
+.root-card {
+  border-radius: 28px;
+  padding: 10px 24px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   gap: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  white-space: nowrap;
+}
+
+.root-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+}
+
+/* Child card */
+.child-card {
+  border-radius: 10px;
+  border: 2px solid #e5e7eb;
   padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  cursor: pointer;
-  transition: all 0.15s;
-  margin: 4px 0;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 
-.hf-mindmap-node-content:hover {
-  border-color: #a5b4fc;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+.child-card.status-completed { border-color: #86efac; }
+.child-card.status-in_progress { border-color: #93c5fd; }
+.child-card.status-blocked { border-color: #fca5a5; }
+
+.mm-node-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.hf-mindmap-node-content.status-completed {
-  background: #f0fdf4;
-  border-color: #86efac;
+.mm-node-icon {
+  font-size: 14px;
+  flex-shrink: 0;
 }
 
-.hf-mindmap-node-content.status-in_progress {
-  background: #eff6ff;
-  border-color: #93c5fd;
-}
-
-.hf-mindmap-node-content.status-pending {
-  background: #f9fafb;
-}
-
-.hf-mindmap-node-content.status-blocked {
-  background: #fef2f2;
-  border-color: #fca5a5;
-}
-
-.hf-mindmap-node-content .node-expand {
-  font-size: 10px;
-  color: #9ca3af;
-  width: 14px;
-  text-align: center;
-}
-
-.hf-mindmap-node-content .node-label {
+.mm-node-text {
   font-size: 13px;
   font-weight: 500;
   color: #1f2937;
-  flex: 1;
+  line-height: 1.4;
+  word-break: break-word;
 }
 
-.hf-mindmap-node-content .node-type {
+.root-card .mm-node-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.mm-node-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 22px;
+}
+
+.mm-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.mm-status-label {
   font-size: 10px;
   color: #9ca3af;
-  background: #f3f4f6;
-  padding: 2px 6px;
-  border-radius: 4px;
+  text-transform: uppercase;
 }
 
-.hf-mindmap-node-content .node-progress-mini {
-  width: 40px;
+.mm-progress-label {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.mm-node-progress-bar {
+  width: 100%;
   height: 4px;
   background: #e5e7eb;
   border-radius: 2px;
   overflow: hidden;
 }
 
-.hf-mindmap-node-content .node-progress-mini-fill {
+.mm-node-progress-fill {
   height: 100%;
-  background: #4f46e5;
   border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* Collapse button */
+.mm-collapse-btn {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1.5px solid #d1d5db;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #9ca3af;
+  padding: 0;
+  line-height: 1;
+  transition: all 0.15s;
+  z-index: 5;
+}
+
+.mm-collapse-btn:hover {
+  border-color: #5B6EF5;
+  color: #5B6EF5;
+  background: #EEF0FF;
 }
 
 /* KB Viewer */
