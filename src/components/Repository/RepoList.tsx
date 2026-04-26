@@ -586,6 +586,25 @@ export default function RepoList() {
     marginBottom: '-2px',
   })
 
+  const enterHorseFarm = () => {
+    const farmIds = state.horseFarmProjectIds
+    if (farmIds.length === 0) {
+      dispatch({ type: 'SET_MESSAGE', payload: t.horseFarm.selectFirst })
+      return
+    }
+    const proj = state.projects.find(p => p.path === farmIds[0])
+    if (proj) {
+      dispatch({ type: 'RESET_PROJECT_STATE' })
+      dispatch({ type: 'SET_CURRENT_PROJECT', payload: proj.name })
+      dispatch({ type: 'SET_PROJECT_PATH', payload: proj.path })
+      dispatch({ type: 'SET_REPO_PATH', payload: proj.repoPath })
+      dispatch({ type: 'SET_CURRENT_VIEW', payload: 'dashboard' })
+      dispatch({ type: 'SET_ACTIVE_TAB', payload: 'horseFarm' })
+    } else {
+      dispatch({ type: 'SET_MESSAGE', payload: t.horseFarm.selectFirst })
+    }
+  }
+
   return (
     <div className="repositories-screen">
       <header className="screen-header draggable-header">
@@ -604,6 +623,21 @@ export default function RepoList() {
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
             letterSpacing: '0.02em',
           }}>{t.repoList.slogan}</span>
+        </div>
+        <div className="header-right" style={{ display: 'flex', gap: '8px' }}>
+          {state.horseFarmProjectIds.length > 0 && (
+            <button
+              onClick={enterHorseFarm}
+              style={{
+                background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                color: '#fff', border: 'none', fontWeight: 600,
+                padding: '8px 18px', borderRadius: '8px', cursor: 'pointer',
+                fontSize: '13px',
+              }}
+            >
+              🐴 {t.horseFarm.tabLabel} ({state.horseFarmProjectIds.length})
+            </button>
+          )}
         </div>
         <div className="header-right" />
       </header>
@@ -669,6 +703,17 @@ export default function RepoList() {
                   }}
                 >
                   {t.horseFarm.addToHorseFarm} ({selectedForFarm.size})
+                </button>
+              )}
+              {state.horseFarmProjectIds.length > 0 && selectedForFarm.size === 0 && (
+                <button
+                  onClick={enterHorseFarm}
+                  style={{
+                    background: 'linear-gradient(135deg, #059669, #10b981)',
+                    color: '#fff', border: 'none', fontWeight: 600,
+                  }}
+                >
+                  🐴 {t.horseFarm.tabLabel} ({state.horseFarmProjectIds.length})
                 </button>
               )}
               <button onClick={() => dispatch({ type: 'SET_SHOW_CREATE_PROJECT_MODAL', payload: true })}>
