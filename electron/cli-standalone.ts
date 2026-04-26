@@ -1,8 +1,8 @@
 /**
- * DBGODVS CLI - 独立命令行接口（不依赖 Electron GUI）
+ * DBHT CLI - Standalone Command Line Interface (no Electron GUI dependency)
  *
- * 用法: node electron/cli-standalone.js <command> [options]
- *   或 npx ts-node electron/cli-standalone.ts <command> [options]
+ * Usage: node electron/cli-standalone.js <command> [options]
+ *   or npx ts-node electron/cli-standalone.ts <command> [options]
  */
 
 import { Command } from 'commander'
@@ -11,14 +11,14 @@ import * as path from 'path'
 import * as os from 'os'
 import git from 'isomorphic-git'
 import http from 'isomorphic-git/http/node'
-import { DBGODVSRepository } from './dbvs-repository'
+import { DBHTRepository } from './dbvs-repository'
 
-const repo = new DBGODVSRepository()
+const repo = new DBHTRepository()
 const program = new Command()
 
 program
-  .name('dbgvs')
-  .description('深蓝主神版本管理系统 - 本地版本管理工具')
+  .name('dbht')
+  .description('DeepBlueHarnessTrace / 深蓝驭溯 - Local Version Control System')
   .version('2.0.0')
   .option('--format <type>', '输出格式: json, table, text', 'json')
   .option('--root <path>', '指定根仓库路径（覆盖配置）')
@@ -104,7 +104,7 @@ function getRootPath(opts: any): string {
   if (fs.pathExistsSync(configPath)) {
     return fs.readJsonSync(configPath).rootPath
   }
-  throw new Error('根仓库未配置。使用 dbgvs set-root <path> 设置。')
+  throw new Error('根仓库未配置。使用 dbht set-root <path> 设置。')
 }
 
 // ==================== 根仓库管理 ====================
@@ -210,7 +210,7 @@ program.command('create-project <name>')
       // 写 README
       const readmePath = path.join(workingCopyPath, 'README.md')
       if (!(await fs.pathExists(readmePath))) {
-        await fs.writeFile(readmePath, `# ${name}\n\n这是一个新的DBGODVS项目。\n`)
+        await fs.writeFile(readmePath, `# ${name}\n\nThis is a new DBHT project.\n`)
       }
 
       // 注册到 projects.json
@@ -612,7 +612,7 @@ program.command('info <projectPath>')
   })
 
 program.command('init <projectPath>')
-  .description('在指定目录初始化 DBGODVS 仓库')
+  .description('在指定目录初始化 DBHT 仓库')
   .action(async (projectPath: string) => {
     const fmt = program.opts().format
     try {
@@ -846,7 +846,7 @@ program.command('git-pull <projectPath>')
 
       await git.fetch({ fs, http, dir: projectPath, remote: 'origin', ref: branch, onAuth })
       try {
-        await git.merge({ fs, dir: projectPath, ours: branch, theirs: `origin/${branch}`, author: { name: 'DBGODVS', email: 'dbgvs@local' } })
+        await git.merge({ fs, dir: projectPath, ours: branch, theirs: `origin/${branch}`, author: { name: 'DBHT', email: 'dbht@local' } })
         out({ success: true, message: '拉取成功' }, fmt)
       } catch (mergeError: any) {
         const msg = String(mergeError)
@@ -867,8 +867,8 @@ program.command('git-push <projectPath>')
   .requiredOption('-m, --message <msg>', '提交信息')
   .option('-u, --username <username>', '用户名', 'anonymous')
   .option('-t, --token <token>', 'Personal Access Token')
-  .option('--author-name <name>', '作者名称', 'DBGODVS')
-  .option('--author-email <email>', '作者邮箱', 'dbgvs@local')
+  .option('--author-name <name>', '作者名称', 'DBHT')
+  .option('--author-email <email>', '作者邮箱', 'dbht@local')
   .action(async (projectPath: string, opts: any) => {
     const fmt = program.opts().format
     try {

@@ -1,9 +1,9 @@
 "use strict";
 /**
- * DBGODVS CLI - 独立命令行接口（不依赖 Electron GUI）
+ * DBHT CLI - Standalone Command Line Interface (no Electron GUI dependency)
  *
- * 用法: node electron/cli-standalone.js <command> [options]
- *   或 npx ts-node electron/cli-standalone.ts <command> [options]
+ * Usage: node electron/cli-standalone.js <command> [options]
+ *   or npx ts-node electron/cli-standalone.ts <command> [options]
  */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -49,11 +49,11 @@ const os = __importStar(require("os"));
 const isomorphic_git_1 = __importDefault(require("isomorphic-git"));
 const node_1 = __importDefault(require("isomorphic-git/http/node"));
 const dbvs_repository_1 = require("./dbvs-repository");
-const repo = new dbvs_repository_1.DBGODVSRepository();
+const repo = new dbvs_repository_1.DBHTRepository();
 const program = new commander_1.Command();
 program
-    .name('dbgvs')
-    .description('深蓝主神版本管理系统 - 本地版本管理工具')
+    .name('dbht')
+    .description('DeepBlueHarnessTrace / 深蓝驭溯 - Local Version Control System')
     .version('2.0.0')
     .option('--format <type>', '输出格式: json, table, text', 'json')
     .option('--root <path>', '指定根仓库路径（覆盖配置）');
@@ -153,7 +153,7 @@ function getRootPath(opts) {
     if (fs.pathExistsSync(configPath)) {
         return fs.readJsonSync(configPath).rootPath;
     }
-    throw new Error('根仓库未配置。使用 dbgvs set-root <path> 设置。');
+    throw new Error('根仓库未配置。使用 dbht set-root <path> 设置。');
 }
 // ==================== 根仓库管理 ====================
 program.command('set-root <rootPath>')
@@ -259,7 +259,7 @@ program.command('create-project <name>')
         // 写 README
         const readmePath = path.join(workingCopyPath, 'README.md');
         if (!(await fs.pathExists(readmePath))) {
-            await fs.writeFile(readmePath, `# ${name}\n\n这是一个新的DBGODVS项目。\n`);
+            await fs.writeFile(readmePath, `# ${name}\n\nThis is a new DBHT project.\n`);
         }
         // 注册到 projects.json
         const registry = await readProjectRegistry(rootPath);
@@ -659,7 +659,7 @@ program.command('info <projectPath>')
     }
 });
 program.command('init <projectPath>')
-    .description('在指定目录初始化 DBGODVS 仓库')
+    .description('在指定目录初始化 DBHT 仓库')
     .action(async (projectPath) => {
     const fmt = program.opts().format;
     try {
@@ -907,7 +907,7 @@ program.command('git-pull <projectPath>')
         catch { /* use default */ }
         await isomorphic_git_1.default.fetch({ fs, http: node_1.default, dir: projectPath, remote: 'origin', ref: branch, onAuth });
         try {
-            await isomorphic_git_1.default.merge({ fs, dir: projectPath, ours: branch, theirs: `origin/${branch}`, author: { name: 'DBGODVS', email: 'dbgvs@local' } });
+            await isomorphic_git_1.default.merge({ fs, dir: projectPath, ours: branch, theirs: `origin/${branch}`, author: { name: 'DBHT', email: 'dbht@local' } });
             out({ success: true, message: '拉取成功' }, fmt);
         }
         catch (mergeError) {
@@ -930,8 +930,8 @@ program.command('git-push <projectPath>')
     .requiredOption('-m, --message <msg>', '提交信息')
     .option('-u, --username <username>', '用户名', 'anonymous')
     .option('-t, --token <token>', 'Personal Access Token')
-    .option('--author-name <name>', '作者名称', 'DBGODVS')
-    .option('--author-email <email>', '作者邮箱', 'dbgvs@local')
+    .option('--author-name <name>', '作者名称', 'DBHT')
+    .option('--author-email <email>', '作者邮箱', 'dbht@local')
     .action(async (projectPath, opts) => {
     const fmt = program.opts().format;
     try {

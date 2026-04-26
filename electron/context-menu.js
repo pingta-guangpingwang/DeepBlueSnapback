@@ -44,22 +44,22 @@ const fs = __importStar(require("fs-extra"));
  * Windows 右键菜单管理
  *
  * 架构：
- *   注册表 → dbvs-launcher.exe → TCP 连接 → DBGODVS 主进程
+ *   注册表 → dbvs-launcher.exe → TCP 连接 → DBHT 主进程
  *
- * - dbvs-launcher.exe 是小型启动器，负责连接已运行的 DBGODVS 或启动新实例
- * - DBGODVS 主进程在启动时开启 TCP IPC Server，监听启动器命令
+ * - dbvs-launcher.exe 是小型启动器，负责连接已运行的 DBHT 或启动新实例
+ * - DBHT 主进程在启动时开启 TCP IPC Server，监听启动器命令
  */
 // 注册表项路径 — 对文件夹右键时显示
-const REG_KEY = 'Directory\\Background\\shell\\DBGODVS';
+const REG_KEY = 'Directory\\Background\\shell\\DBHT';
 // 对文件夹本身右键时显示
-const REG_KEY_DIR = 'Directory\\shell\\DBGODVS';
+const REG_KEY_DIR = 'Directory\\shell\\DBHT';
 /**
  * 获取启动器路径
  * - 开发模式：编译后的 dbvs-launcher.js（用 node 运行）
  * - 打包模式：dbvs-launcher.exe（或 dbvs-launcher.js 用 node 运行）
  */
 function getLauncherCommand() {
-    const isDev = !process.execPath.includes('dbgvs') && !process.execPath.includes('DBGODVS');
+    const isDev = !process.execPath.includes('dbgvs') && !process.execPath.includes('DBHT');
     if (isDev) {
         // 开发模式：node electron/dbvs-launcher.js
         const launcherJs = path.join(__dirname, 'dbvs-launcher.js');
@@ -122,10 +122,10 @@ async function registerContextMenu() {
         commandTemplate = `"${cmd}" --%ACTION% "%V"`;
     }
     // 先创建主菜单项
-    await runReg(['add', REG_KEY, '/ve', '/d', '深蓝主神管理工具', '/f']);
+    await runReg(['add', REG_KEY, '/ve', '/d', '深蓝驭溯管理工具', '/f']);
     await runReg(['add', REG_KEY, '/v', 'Icon', '/d', iconPath, '/f']);
     await runReg(['add', REG_KEY, '/v', 'Position', '/d', 'Middle', '/f']);
-    await runReg(['add', REG_KEY_DIR, '/ve', '/d', '深蓝主神管理工具', '/f']);
+    await runReg(['add', REG_KEY_DIR, '/ve', '/d', '深蓝驭溯管理工具', '/f']);
     await runReg(['add', REG_KEY_DIR, '/v', 'Icon', '/d', iconPath, '/f']);
     await runReg(['add', REG_KEY_DIR, '/v', 'Position', '/d', 'Middle', '/f']);
     const items = [
@@ -167,7 +167,7 @@ async function isContextMenuRegistered() {
     return r.success;
 }
 /**
- * 解析命令行参数，提取 DBGODVS 操作
+ * 解析命令行参数，提取 DBHT 操作
  * （主进程直接启动时的备用解析，启动器不走这里）
  */
 function parseCommandLine(argv) {

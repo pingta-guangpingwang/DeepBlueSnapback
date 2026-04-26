@@ -41,7 +41,7 @@ const express_1 = __importDefault(require("express"));
 const fs = __importStar(require("fs-extra"));
 const path = __importStar(require("path"));
 const dbvs_repository_1 = require("./dbvs-repository");
-const repo = new dbvs_repository_1.DBGODVSRepository();
+const repo = new dbvs_repository_1.DBHTRepository();
 class LANServer {
     constructor() {
         this.server = null;
@@ -54,7 +54,7 @@ class LANServer {
         // Get server info
         this.app.get('/api/info', (_req, res) => {
             res.json({
-                name: 'DBGODVS LAN Server',
+                name: 'DBHT LAN Server',
                 version: '2.0.0',
                 rootPath: this.rootPath
             });

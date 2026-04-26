@@ -24,7 +24,7 @@ interface WorkingCopyLink {
     repoPath: string;
     checkedOutVersion: string | null;
 }
-export declare class DBGODVSRepository {
+export declare class DBHTRepository {
     /**
      * 从工作副本目录读取链接文件，获取对应的仓库路径
      */

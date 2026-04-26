@@ -22,8 +22,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   pathJoin: (...paths: string[]) => ipcRenderer.invoke('fs:path-join', ...paths),
   pathBasename: (filePath: string) => ipcRenderer.invoke('fs:path-basename', filePath),
 
-  // DBGODVS操作（SVN 风格：repoPath = 集中仓库, workingCopyPath = 工作副本）
-  isDBGODVSRepository: (path: string) => ipcRenderer.invoke('dbgvs:is-repository', path),
+  // DBHT操作（SVN 风格：repoPath = 集中仓库, workingCopyPath = 工作副本）
+  isDBHTRepository: (path: string) => ipcRenderer.invoke('dbgvs:is-repository', path),
   createRepository: (repoPath: string, name: string) => ipcRenderer.invoke('dbgvs:create-repository', repoPath, name),
   createProject: (rootPath: string, projectName: string, customPath?: string) => ipcRenderer.invoke('dbgvs:create-project', rootPath, projectName, customPath),
   getProjects: (rootPath: string) => ipcRenderer.invoke('dbgvs:get-projects', rootPath),
@@ -151,7 +151,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   unregisterProject: (rootPath: string, workingCopyPath: string) =>
     ipcRenderer.invoke('dbgvs:unregister-project', rootPath, workingCopyPath),
 
-  // 启动检查：补全项目 DBGODVS-GUIDE.md
+  // 启动检查：补全项目 DBHT-GUIDE.md
   ensureProjectDocs: (rootPath: string) =>
     ipcRenderer.invoke('dbgvs:ensure-project-docs', rootPath),
 
@@ -186,7 +186,7 @@ export interface ElectronAPI {
   copyDir: (src: string, dest: string) => Promise<{ success: boolean; message?: string }>
   pathJoin: (...paths: string[]) => Promise<{ result: string }>
   pathBasename: (filePath: string) => Promise<{ result: string }>
-  isDBGODVSRepository: (path: string) => Promise<boolean>
+  isDBHTRepository: (path: string) => Promise<boolean>
   createRepository: (repoPath: string, name: string) => Promise<{ success: boolean; message?: string }>
   createProject: (rootPath: string, projectName: string, customPath?: string) => Promise<{ success: boolean; message?: string }>
   getProjects: (rootPath: string) => Promise<{ success: boolean; projects?: Array<{

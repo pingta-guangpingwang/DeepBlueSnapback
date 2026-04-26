@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useAppState } from '../../context/AppContext'
 import { useRepository } from '../../hooks/useRepository'
 import { useGit } from '../../hooks/useGit'
+import { useI18n } from '../../i18n'
 
 // 文件类型图标
 function getFileIcon(name: string): { icon: string; color: string } {
@@ -27,9 +28,9 @@ function getFileIcon(name: string): { icon: string; color: string } {
 }
 
 const STATUS_MAP: Record<string, { text: string; color: string }> = {
-  A: { text: '新增', color: '#16a34a' },
-  M: { text: '修改', color: '#d97706' },
-  D: { text: '删除', color: '#dc2626' },
+  A: { text: 'Added', color: '#16a34a' },
+  M: { text: 'Modified', color: '#d97706' },
+  D: { text: 'Deleted', color: '#dc2626' },
 }
 
 interface StatusFile {
@@ -41,6 +42,7 @@ export default function Overview() {
   const [state, dispatch] = useAppState()
   const { loadStatus, handleUpdate, loadRepositoryInfo, showFileDiff } = useRepository()
   const { loadGitStatus, gitPull, gitPush, loadCredentials } = useGit()
+  const { t } = useI18n()
   const [feedback, setFeedback] = useState('')
   const [gitAuth, setGitAuth] = useState<{ username: string; token: string }>({ username: '', token: '' })
   const [pushMsg, setPushMsg] = useState('')
@@ -76,8 +78,8 @@ export default function Overview() {
     dispatch({ type: 'SET_PENDING_CLI_ACTION', payload: { action: null, targetPath: '' } })
 
     if (action === 'update') {
-      setFeedback('正在更新到最新版本...')
-      handleUpdate().then(() => setFeedback('已更新到最新版本。'))
+      setFeedback(t.overview.updating)
+      handleUpdate().then(() => setFeedback(t.overview.updated))
     }
     // commit 动作通过 Overview 内部的 openCommitPanel 处理，在组件挂载后由下面的 effect 触发
   }, [state.pendingCliAction, handleUpdate, dispatch])
@@ -117,7 +119,7 @@ export default function Overview() {
   }, [statusItems])
 
   const onGetStatus = useCallback(async () => {
-    setFeedback('正在获取状态...')
+    setFeedback(t.overview.gettingStatus)
     await loadStatus()
     // 同时加载 diff 统计
     if (state.repoPath && state.projectPath) {
@@ -131,22 +133,22 @@ export default function Overview() {
       } catch { setDiffSummary(null) }
     }
     if (statusItems.length === 0 && state.statusLines.length === 0) {
-      setFeedback('工作区与最新版本一致，没有变更。')
+      setFeedback(t.overview.noChanges)
     } else {
       setFeedback('')
     }
   }, [loadStatus, state.repoPath, state.projectPath])
 
   const onUpdate = useCallback(async () => {
-    setFeedback('正在更新到最新版本...')
+    setFeedback(t.overview.updating)
     await handleUpdate()
-    setFeedback('已更新到最新版本。')
+    setFeedback(t.overview.updated)
   }, [handleUpdate])
 
   const onRepoInfo = useCallback(async () => {
-    setFeedback('正在获取仓库信息...')
+    setFeedback(t.overview.gettingInfo)
     await loadRepositoryInfo()
-    setFeedback('已获取仓库信息。')
+    setFeedback(t.overview.gotInfo)
   }, [loadRepositoryInfo])
 
   const openCommitPanel = useCallback(async () => {
@@ -176,10 +178,10 @@ export default function Overview() {
         dispatch({ type: 'SET_SELECTED_FILES', payload: files.map(f => f.path) })
         dispatch({ type: 'SET_COMMIT_MESSAGE', payload: '' })
       } else {
-        setFeedback('没有检测到变更文件')
+        setFeedback(t.overview.noChangedFiles)
       }
     } catch {
-      setFeedback('打开提交面板失败')
+      setFeedback(t.overview.openCommitFailed)
     } finally {
       dispatch({ type: 'SET_IS_LOADING', payload: false })
     }
@@ -222,27 +224,27 @@ export default function Overview() {
             <div style={{ fontSize: '22px', fontWeight: 700, color: '#1f2937' }}>
               {state.repoStatus === true ? '✓' : '—'}
             </div>
-            <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>仓库</div>
+            <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{t.overview.repo}</div>
           </div>
           <div style={{ width: '1px', background: '#e5e7eb' }} />
           <div style={{ textAlign: 'center', flex: 1 }}>
             <div style={{ fontSize: '22px', fontWeight: 700, color: stats.A > 0 || stats.M > 0 || stats.D > 0 ? '#d97706' : '#16a34a' }}>
               {statusItems.length}
             </div>
-            <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>变更</div>
+            <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{t.overview.changes}</div>
           </div>
           <div style={{ width: '1px', background: '#e5e7eb' }} />
           <div style={{ textAlign: 'center', flex: 1 }}>
             <div style={{ fontSize: '22px', fontWeight: 700, color: '#1f2937' }}>{state.fileTree.length}</div>
-            <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>文件</div>
+            <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{t.overview.files}</div>
           </div>
           {statusItems.length > 0 && (
             <>
               <div style={{ width: '1px', background: '#e5e7eb' }} />
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flex: 1, justifyContent: 'center' }}>
-                {stats.A > 0 && <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: 600 }}>+{stats.A} 新增</span>}
-                {stats.M > 0 && <span style={{ fontSize: '12px', color: '#d97706', fontWeight: 600 }}>~{stats.M} 修改</span>}
-                {stats.D > 0 && <span style={{ fontSize: '12px', color: '#dc2626', fontWeight: 600 }}>-{stats.D} 删除</span>}
+                {stats.A > 0 && <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: 600 }}>+{stats.A} {t.overview.added}</span>}
+                {stats.M > 0 && <span style={{ fontSize: '12px', color: '#d97706', fontWeight: 600 }}>~{stats.M} {t.overview.modified}</span>}
+                {stats.D > 0 && <span style={{ fontSize: '12px', color: '#dc2626', fontWeight: 600 }}>-{stats.D} {t.overview.deleted}</span>}
               </div>
             </>
           )}
@@ -250,11 +252,11 @@ export default function Overview() {
 
         {/* 操作按钮 */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
-          <button onClick={onGetStatus}>获取状态</button>
-          <button onClick={onUpdate}>更新</button>
-          <button onClick={onRepoInfo}>信息</button>
+          <button onClick={onGetStatus}>{t.overview.getStatus}</button>
+          <button onClick={onUpdate}>{t.overview.update}</button>
+          <button onClick={onRepoInfo}>{t.overview.info}</button>
           <button onClick={() => { if (state.projectPath) window.electronAPI.openFolder(state.projectPath) }}>
-            打开文件夹
+            {t.overview.openFolder}
           </button>
           <button
             className="primary-button"
@@ -262,7 +264,7 @@ export default function Overview() {
             disabled={statusItems.length === 0}
             style={{ opacity: statusItems.length > 0 ? 1 : 0.4 }}
           >
-            提交变更
+            {t.overview.commitChanges}
           </button>
         </div>
       </div>
@@ -274,10 +276,10 @@ export default function Overview() {
           padding: '8px 16px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e5e7eb',
           fontSize: '13px',
         }}>
-          <span style={{ fontWeight: 600, color: '#374151' }}>变更统计:</span>
-          <span style={{ color: '#16a34a', fontWeight: 600 }}>+{diffSummary.totalAdded} 行</span>
-          <span style={{ color: '#dc2626', fontWeight: 600 }}>-{diffSummary.totalRemoved} 行</span>
-          <span style={{ color: '#6b7280' }}>({diffSummary.files.length} 文件)</span>
+          <span style={{ fontWeight: 600, color: '#374151' }}>{t.overview.diffStats}</span>
+          <span style={{ color: '#16a34a', fontWeight: 600 }}>+{diffSummary.totalAdded} {t.overview.lines}</span>
+          <span style={{ color: '#dc2626', fontWeight: 600 }}>-{diffSummary.totalRemoved} {t.overview.lines}</span>
+          <span style={{ color: '#6b7280' }}>({diffSummary.files.length} {t.overview.files_lc})</span>
         </div>
       )}
 
@@ -318,7 +320,7 @@ export default function Overview() {
               style={{ fontSize: '12px', padding: '3px 12px' }}
               disabled={state.isLoading}
               onClick={() => {
-                const msg = pushMsg || state.commitMessage || 'DBGODVS sync'
+                const msg = pushMsg || state.commitMessage || t.overview.dbhtSync
                 gitPush(msg, gitAuth.username, gitAuth.token)
               }}
             >
@@ -327,13 +329,13 @@ export default function Overview() {
           </>
         ) : (
           <>
-            <span style={{ fontSize: '13px', color: '#9ca3af' }}>未连接远程仓库</span>
+            <span style={{ fontSize: '13px', color: '#9ca3af' }}>{t.overview.noRemote}</span>
             <div style={{ flex: 1 }} />
             <button
               style={{ fontSize: '12px', padding: '3px 12px' }}
               onClick={() => dispatch({ type: 'SET_SHOW_GIT_REMOTE_MODAL', payload: true })}
             >
-              连接远程
+              {t.overview.connectRemote}
             </button>
           </>
         )}
@@ -347,8 +349,8 @@ export default function Overview() {
         {statusItems.length === 0 ? (
           <div style={{ padding: '40px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>
             {state.statusLines.length === 0
-              ? '点击"获取状态"查看变更文件'
-              : '工作区与最新版本一致，没有变更'}
+              ? t.overview.clickGetStatus
+              : t.overview.noChanges}
           </div>
         ) : (
           Object.entries(groups).map(([dir, files]) => (
@@ -408,7 +410,7 @@ export default function Overview() {
                       <button
                         onClick={() => openDiff(file.path)}
                         className="tree-action-btn"
-                      >对比</button>
+                      >Diff</button>
                     )}
                   </div>
                 )
@@ -426,11 +428,11 @@ export default function Overview() {
           border: '1px solid #e5e7eb',
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontWeight: 600, fontSize: '13px', color: '#374151' }}>仓库信息</span>
+            <span style={{ fontWeight: 600, fontSize: '13px', color: '#374151' }}>{t.overview.repoInfo}</span>
             <button
               className="tree-action-btn"
               onClick={() => dispatch({ type: 'SET_REPOSITORY_INFO', payload: '' })}
-            >关闭</button>
+            >{t.overview.close}</button>
           </div>
           <pre style={{ fontSize: '12px', lineHeight: '1.6', margin: 0, color: '#4b5563' }}>{state.repositoryInfo}</pre>
         </div>

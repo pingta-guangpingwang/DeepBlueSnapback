@@ -42,7 +42,7 @@ const fs = __importStar(require("fs-extra"));
 const path = __importStar(require("path"));
 const node_1 = __importDefault(require("isomorphic-git/http/node"));
 const electron_1 = require("electron");
-const DBGODVS_GITIGNORE = `.dbvs-link.json
+const DBHT_GITIGNORE = `.dbvs-link.json
 .dbvs/
 `;
 class GitBridge {
@@ -112,15 +112,15 @@ class GitBridge {
                 await isomorphic_git_1.default.deleteRemote({ fs, dir, remote: 'origin' });
             }
             await isomorphic_git_1.default.addRemote({ fs, dir, remote: 'origin', url: remoteUrl });
-            // Write .gitignore for DBGODVS files
+            // Write .gitignore for DBHT files
             const gitignorePath = path.join(dir, '.gitignore');
             if (!(await fs.pathExists(gitignorePath))) {
-                await fs.writeFile(gitignorePath, DBGODVS_GITIGNORE);
+                await fs.writeFile(gitignorePath, DBHT_GITIGNORE);
             }
             else {
                 const content = await fs.readFile(gitignorePath, 'utf-8');
                 if (!content.includes('.dbvs-link.json')) {
-                    await fs.appendFile(gitignorePath, '\n' + DBGODVS_GITIGNORE);
+                    await fs.appendFile(gitignorePath, '\n' + DBHT_GITIGNORE);
                 }
             }
             // Try initial fetch + checkout
@@ -251,7 +251,7 @@ class GitBridge {
                     fs, dir,
                     ours: branch,
                     theirs: `origin/${branch}`,
-                    author: { name: 'DBGODVS', email: 'dbgvs@local' },
+                    author: { name: 'DBHT', email: 'dbht@local' },
                 });
             }
             catch (mergeError) {

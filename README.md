@@ -1,243 +1,250 @@
-# DBGODVS
-Your code's local vault. Version control without the cloud, without the complexity
+# DBHT — DeepBlueHarnessTrace
 
-# DBGODVS — 深蓝主神版本管理系统
+**Your code's local vault. Version control without the cloud, without the complexity.**
 
-基于 Electron + React 的本地版本控制系统，采用 SVN 风格的集中仓库 + 分布式工作副本架构。
+深蓝驭溯 (DBHT) is a local version control system built with Electron + React, featuring an SVN-style centralized repository and distributed working copy architecture.
 
-我叫王广平，我的微信：1084703441，邮箱18351267631@163.com 
-个人网站：www.ssrgpt.com
-我将努力开发与世界连接，这是我发向全世界发送的一根信息触手，欢迎交流
+**Put a leash on AI — make every line of generated code traceable.**
 
-## 快速开始
+## Author
 
-### 开发环境
-双击 `start.bat` 一键启动。
+**Wang Guangping (王广平)**
 
-### 生产环境
+- WeChat: 1084703441
+- Email: 18351267631@163.com
+- Website: [www.shenlanai.com](https://www.shenlanai.com)
+
+> I strive to build connections with the world. This is my information tentacle reaching out globally — let's connect.
+
+## Quick Start
+
+### Development
+
+Double-click `start.bat` to launch. Dependencies are automatically installed on first run.
+
+### Production
+
 ```bash
 npm run build && npm run start
 ```
 
-### CLI 模式
+### CLI Mode
+
 ```bash
-# 设置根仓库
-dbgvs set-root D:/DBGODVS-Root
+# Set root repository
+dbht set-root D:/DBHT-Root
 
-# 创建项目
-dbgvs create-project my-app
+# Create a project
+dbht create-project my-app
 
-# 查看状态
-dbgvs status /path/to/project
+# Check status
+dbht status /path/to/project
 
-# 提交变更
-dbgvs commit /path/to/project --message "修复登录 bug"
+# Commit changes
+dbht commit /path/to/project --message "Fix login bug"
 ```
 
-## 技术栈
+## Tech Stack
 
-- **前端**: React 19 + TypeScript + Vite 8 (端口 3005)
-- **桌面**: Electron 28
-- **版本控制**: DBGODVS 自研引擎 (集中仓库 + 工作副本)
-- **Git 远程同步**: isomorphic-git (pull/push/冲突解决)
-- **CLI**: Commander.js (独立运行，不依赖 Electron GUI)
+- **Frontend**: React 19 + TypeScript + Vite 8 (port 3005)
+- **Desktop**: Electron 28
+- **Version Control**: Custom DBHT engine (centralized repo + working copy)
+- **Git Remote Sync**: isomorphic-git (pull/push/conflict resolution)
+- **CLI**: Commander.js (standalone, no Electron GUI required)
 
-## 架构
+## Architecture
 
 ```
-DBGODVS-Root/                    ← 根仓库
-├── repositories/             ← 集中版本仓库
-│   ├── project-a/           ← 每个项目的版本数据
-│   │   ├── config.json      ← 仓库配置
-│   │   ├── HEAD.json        ← 当前版本指针
-│   │   ├── commits/         ← 提交记录
-│   │   └── objects/         ← 文件快照 (content-addressed)
+DBHT-Root/                        ← Root repository
+├── repositories/             ← Central version stores
+│   ├── project-a/           ← Per-project version data
+│   │   ├── config.json      ← Repository config
+│   │   ├── HEAD.json        ← Current version pointer
+│   │   ├── commits/         ← Commit records
+│   │   └── objects/         ← File snapshots (content-addressed)
 │   └── project-b/
-├── projects.json             ← 项目注册表
+├── projects.json             ← Project registry
 └── config/
-    └── dbvs-root.json        ← 根仓库配置
+    └── dbht-root.json        ← Root config
 
-工作副本 (任意位置)/
-├── .dbvs-link.json           ← 指向集中仓库的链接
-├── DBGODVS-GUIDE.md             ← 版本管理说明文档
-├── .git/                     ← (可选) Git 远程同步
-└── ...项目文件...
+Working Copy (any location)/
+├── .dbvs-link.json          ← Link to central repository
+├── DBHT-GUIDE.md            ← Version control guide (auto-generated)
+├── .git/                    ← (Optional) Git remote sync
+└── ...project files...
 ```
 
-### 核心概念
+### Core Concepts
 
-| 概念 | 说明 |
-|------|------|
-| **根仓库** | 所有项目版本数据的存放根目录 |
-| **集中仓库** | 每个项目的完整版本历史 (commits + objects) |
-| **工作副本** | 用户实际操作的文件目录，通过 `.dbvs-link.json` 关联仓库 |
-| **提交 (Commit)** | 将工作副本的文件快照保存到集中仓库 |
-| **更新 (Update)** | 从集中仓库恢复文件到工作副本 |
-| **回滚 (Rollback)** | 恢复到历史指定版本 |
+| Concept | Description |
+|---------|-------------|
+| **Root Repository** | Top-level directory storing all project version data |
+| **Central Repository** | Per-project complete version history (commits + objects) |
+| **Working Copy** | The directory you actually work in, linked via `.dbvs-link.json` |
+| **Commit** | Save a snapshot of working copy files to the central repository |
+| **Update** | Restore files from the central repository to the working copy |
+| **Rollback** | Revert to a specific historical version |
 
-## CLI 命令参考
+## CLI Reference
 
-### 全局选项
+### Global Options
 ```
---format <json|table|text>    输出格式 (默认 json)
---root <path>                 指定根仓库路径
+--format <json|table|text>    Output format (default: json)
+--root <path>                 Specify root repository path
 ```
 
-### 根仓库管理
+### Root Repository Management
 ```bash
-dbgvs set-root <path>          # 设置根仓库路径
-dbgvs get-root                 # 获取当前根仓库路径
+dbht set-root <path>          # Set root repository path
+dbht get-root                 # Get current root repository path
 ```
 
-### 项目管理
+### Project Management
 ```bash
-dbgvs create-project <name>    # 创建新项目
-dbgvs import-project <src>     # 导入外部文件夹为项目
-dbgvs delete-project <name>    # 删除项目
-dbgvs delete-project <name> --keep-files  # 仅删除版本历史，保留文件
-dbgvs list-projects            # 列出所有项目
-dbgvs list-repos               # 列出所有仓库
-dbgvs unregister <path>        # 从项目列表移除
-dbgvs unregister <path> --delete-files  # 移除并删除文件
+dbht create-project <name>    # Create a new project
+dbht import-project <src>     # Import an existing folder as a project
+dbht delete-project <name>    # Delete a project
+dbht delete-project <name> --keep-files  # Delete version history only, keep files
+dbht list-projects            # List all projects
+dbht list-repos               # List all repositories
+dbht unregister <path>        # Remove from project list
+dbht unregister <path> --delete-files  # Remove and delete files
 ```
 
-### 版本控制操作
+### Version Control Operations
 ```bash
-dbgvs status [path]            # 查看工作区状态
-dbgvs commit <path> -m "msg"   # 提交变更
-dbgvs commit <path> -m "msg" -f file1,file2  # 提交指定文件
-dbgvs update <path>            # 更新到最新版本
-dbgvs rollback <path> -v v3    # 回滚到指定版本
-dbgvs history <path>           # 查看提交历史
-dbgvs log [path] -n 10         # 查看最近 N 条提交日志
-dbgvs diff <path> -f file.ts   # 查看文件差异
-dbgvs diff <path> -f file.ts -a v1 -b v2  # 比较两个版本
-dbgvs info <path>              # 查看仓库信息
-dbgvs init <path>              # 初始化仓库
-dbgvs verify <path>            # 验证仓库完整性
-dbgvs file-tree <path>         # 列出项目文件树
-dbgvs version [path]           # 查看当前版本
-dbgvs pull <repoPath> <dir>    # 从仓库拉取项目到目标目录
+dbht status [path]            # Show working copy status
+dbht commit <path> -m "msg"   # Commit changes
+dbht commit <path> -m "msg" -f file1,file2  # Commit specific files
+dbht update <path>            # Update to latest version
+dbht rollback <path> -v v3    # Roll back to specified version
+dbht history <path>           # View commit history
+dbht log [path] -n 10         # Show recent N commits
+dbht diff <path> -f file.ts   # View file diff
+dbht diff <path> -f file.ts -a v1 -b v2  # Compare two versions
+dbht info <path>              # Show repository info
+dbht init <path>              # Initialize repository
+dbht verify <path>            # Verify repository integrity
+dbht file-tree <path>         # List project file tree
+dbht version [path]           # Show current version
+dbht pull <repoPath> <dir>    # Pull project to target directory
 ```
 
-### Git 远程同步
+### Git Remote Sync
 ```bash
-dbgvs git-connect <path> <url>              # 连接远程仓库
-dbgvs git-connect <path> <url> -b main -u user -t TOKEN
+dbht git-connect <path> <url>              # Connect to remote repo
+dbht git-connect <path> <url> -b main -u user -t TOKEN
 
-dbgvs git-pull <path>                       # 拉取远程更新
-dbgvs git-pull <path> -u user -t TOKEN
+dbht git-pull <path>                       # Pull remote updates
+dbht git-pull <path> -u user -t TOKEN
 
-dbgvs git-push <path> -m "sync message"     # 推送到远程
-dbgvs git-push <path> -m "msg" -u user -t TOKEN
+dbht git-push <path> -m "sync message"     # Push to remote
+dbht git-push <path> -m "msg" -u user -t TOKEN
 ```
 
-## AI 工作小世界
+## AI Workspace
 
-DBGODVS 的核心理念：**让 AI 放开手脚开发，每一行代码都可追溯、可回滚。**
+DBHT core philosophy: **Let AI develop freely — every line of code is traceable and rollbackable.**
 
-<img src="yanshi.png" alt="DBGODVS AI 工作小世界演示" width="100%" />
+### AI Agent Integration
 
-### AI 智能体接入
+Every project managed by DBHT automatically generates two documents:
 
-每个由 DBGODVS 管理的项目目录下都会自动生成两份文档：
+| File | Purpose |
+|------|---------|
+| `DBHT-GUIDE.md` | CLI quick reference, version control guide, disaster recovery |
+| `DBHT-REQUIREMENTS.md` | Project requirements tracking, feature status, AI workflow spec |
 
-| 文件 | 用途 |
-|------|------|
-| `DBGODVS-GUIDE.md` | CLI 命令速查、版本操作指引、故障恢复 |
-| `DBGODVS-REQUIREMENTS.md` | 项目需求跟踪、功能实现状态、AI 工作流规范 |
+### Auto Permission Configuration
 
-### AI 自动权限配置
-
-AI 首次进入项目时，会自动在 `.claude/settings.json` 中配置以下权限，无需反复弹授权：
+On first entering a project, AI agents auto-configure `.claude/settings.json`:
 
 ```json
 {
   "permissions": {
     "allow": [
-      "Bash(dbgvs *)", "Bash(npm *)", "Bash(git *)", "Bash(node *)",
+      "Bash(dbht *)", "Bash(npm *)", "Bash(git *)", "Bash(node *)",
       "Read", "Glob", "Grep", "Edit", "Write"
     ]
   }
 }
 ```
 
-若 AI 无法自动创建配置，会主动提示用户手动授权；用户不同意则正常继续，不影响功能。
+If auto-configuration fails, the AI will prompt the user to manually authorize. If declined, work continues normally.
 
-### AI 智能体推荐工作流
+### Recommended AI Agent Workflow
 
-1. **了解项目**: 读取 `DBGODVS-GUIDE.md` 和 `DBGODVS-REQUIREMENTS.md`
-2. **开始工作前**: `dbgvs status <path>` 检查当前变更
-3. **每完成一个功能/修复**: 立即 `dbgvs commit <path> -m "feat: 描述"` — 不要积累变更
-4. **查看差异**: `dbgvs diff <path> -f <file>` 查看具体变更
-5. **回滚误操作**: `dbgvs rollback <path> -v <version>`
-6. **远程同步**: `dbgvs git-pull <path>` / `dbgvs git-push <path> -m "msg"`
+1. **Understand the project**: Read `DBHT-GUIDE.md` and `DBHT-REQUIREMENTS.md`
+2. **Before starting work**: `dbht status <path>` to check current changes
+3. **After each feature/fix**: Immediately `dbht commit <path> -m "feat: description"`
+4. **View diffs**: `dbht diff <path> -f <file>` to inspect specific changes
+5. **Undo mistakes**: `dbht rollback <path> -v <version>`
+6. **Remote sync**: `dbht git-pull <path>` / `dbht git-push <path> -m "msg"`
 
-### AI 语义化提交规范
+### Semantic Commit Convention
 
-| 类型 | 格式 | 示例 |
-|------|------|------|
-| 新功能 | `feat: 描述` | `feat: 新增用户登录页面` |
-| 修复 | `fix: 描述` | `fix: 修复文件上传失败问题` |
-| 重构 | `refactor: 描述` | `refactor: 重构数据库连接模块` |
-| 文档 | `docs: 描述` | `docs: 更新 API 文档` |
-| 测试 | `test: 描述` | `test: 新增订单模块单元测试` |
+| Type | Format | Example |
+|------|--------|---------|
+| Feature | `feat: description` | `feat: add user login page` |
+| Fix | `fix: description` | `fix: resolve file upload failure` |
+| Refactor | `refactor: description` | `refactor: restructure DB connection module` |
+| Docs | `docs: description` | `docs: update API documentation` |
+| Test | `test: description` | `test: add order module unit tests` |
 
-### AI 提交追踪
+### AI Commit Tracking
 
-AI 提交时可标记来源，便于区分人工与 AI 操作：
+Tag commits with AI source for easy human/AI distinction:
 
 ```bash
-dbgvs commit <path> --message "feat: 新增功能" \
+dbht commit <path> --message "feat: add feature" \
   --ai claude-code \
-  --session <会话ID> \
-  --summary "本次变更的目的和范围"
+  --session <session-id> \
+  --summary "Purpose and scope of this change"
 ```
 
-按 AI 会话批量回滚：
+Rollback all commits from a specific AI session:
 
 ```bash
-dbgvs rollback-ai <path> --session <会话ID>
+dbht rollback-ai <path> --session <session-id>
 ```
 
-## 忽略规则
+## Ignore Rules
 
-DBGODVS 自动忽略以下文件/目录（不纳入版本管理）：
-- `.dbvs/` `.dbvs-link.json` — DBGODVS 内部文件
-- `.git/` — Git 远程同步数据
-- `node_modules/` — 依赖目录
-- `.DS_Store` `Thumbs.db` — 系统文件
-- 所有以 `.` 开头的隐藏文件
+DBHT automatically ignores the following (excluded from version control):
+- `.dbvs/` `.dbvs-link.json` — DBHT internal files
+- `.git/` — Git remote sync data
+- `node_modules/` — Dependency directories
+- `.DS_Store` `Thumbs.db` — System files
+- All hidden files starting with `.`
 
-## 端口冲突
+## Port Conflict Resolution
 
 ```bat
 netstat -ano | findstr :3005
 taskkill /PID <pid> /F
 ```
 
-## 联系与支持
+## Contact & Support
 
-DBGODVS 是一款完全免费的开源软件，如果你觉得它对你有帮助，欢迎打赏支持，你的鼓励是我持续更新的动力。
+DBHT is free and open-source software. If you find it helpful, your support is greatly appreciated!
 
 <table>
   <tr>
     <td align="center">
       <img src="f9e661730d92fb35985a8d0dffcfb624.jpg" width="180" /><br/>
-      <b>微信支付</b>
+      <b>WeChat Pay</b>
     </td>
     <td align="center">
       <img src="cd5741cc158ccc6be0b524f0444cc22c.jpg" width="180" /><br/>
-      <b>支付宝</b>
+      <b>Alipay</b>
     </td>
     <td align="center">
       <img src="94407fbdd42a797af5a902bc107d72e8.jpg" width="180" /><br/>
-      <b>微信交流群</b>
+      <b>WeChat Group</b>
     </td>
   </tr>
 </table>
 
-## 许可
+## License
 
 MIT
-

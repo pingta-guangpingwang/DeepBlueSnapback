@@ -1,7 +1,7 @@
 @echo off
 set ELECTRON_CACHE=%LOCALAPPDATA%\electron\Cache
 set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
-echo Building and starting DBGODVS production version...
+echo Building and starting DBHT production version...
 
 echo Checking dependencies...
 echo.
@@ -19,6 +19,6 @@ echo.
 call npm run start
 if %errorlevel% neq 0 (
     echo.
-    echo DBGODVS exited with an error.
+    echo DBHT exited with an error.
     pause
 )

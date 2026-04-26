@@ -1,25 +1,25 @@
 /**
- * DBGODVS CLI - 命令行接口
+ * DBHT CLI - Command Line Interface
  *
- * 用法：
- *   dbgvs <command> [options]
+ * Usage:
+ *   dbht <command> [options]
  *
- * 所有命令默认输出 JSON 格式，便于 AI Agent 解析。
- * 可选 --format table 或 --format text 切换输出格式。
+ * All commands output JSON by default for AI Agent parsing.
+ * Use --format table or --format text to change output format.
  */
 
 import { Command } from 'commander'
 import * as fs from 'fs-extra'
 import * as path from 'path'
-import { DBGODVSRepository } from './dbvs-repository'
+import { DBHTRepository } from './dbvs-repository'
 import { app } from 'electron'
 
-const repo = new DBGODVSRepository()
+const repo = new DBHTRepository()
 const program = new Command()
 
 program
-  .name('dbgvs')
-  .description('深蓝主神版本管理系统 - 本地版本管理工具')
+  .name('dbht')
+  .description('DeepBlueHarnessTrace / 深蓝驭溯 - Local Version Control System')
   .version('2.0.0')
   .option('--format <type>', '输出格式: json, table, text', 'json')
   .option('--root <path>', '根仓库路径')
@@ -293,7 +293,7 @@ program
 
 program
   .command('init <projectPath>')
-  .description('在指定目录初始化 DBGODVS 仓库')
+  .description('在指定目录初始化 DBHT 仓库')
   .action(async (projectPath: string) => {
     const opts = program.opts()
     try {

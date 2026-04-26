@@ -1,10 +1,10 @@
 /**
- * DBGODVS CLI - 命令行接口
+ * DBHT CLI - Command Line Interface
  *
- * 用法：
- *   dbgvs <command> [options]
+ * Usage:
+ *   dbht <command> [options]
  *
- * 所有命令默认输出 JSON 格式，便于 AI Agent 解析。
- * 可选 --format table 或 --format text 切换输出格式。
+ * All commands output JSON by default for AI Agent parsing.
+ * Use --format table or --format text to change output format.
  */
 export declare function runCLI(argv: string[]): void;

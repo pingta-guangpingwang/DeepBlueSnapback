@@ -6,7 +6,7 @@ import DiffMatchPatch from 'diff-match-patch'
 const dmp = new DiffMatchPatch.diff_match_patch()
 
 /** 忽略的目录/文件模式（内置） */
-const IGNORE_PATTERNS = ['.dbvs', '.dbvs-link.json', 'node_modules', '.git', '.DS_Store', 'Thumbs.db', 'DBGODVS-GUIDE.md']
+const IGNORE_PATTERNS = ['.dbvs', '.dbvs-link.json', 'node_modules', '.git', '.DS_Store', 'Thumbs.db', 'DBHT-GUIDE.md']
 
 function shouldIgnoreBuiltin(name: string): boolean {
   return IGNORE_PATTERNS.includes(name) || name.startsWith('.')
@@ -137,7 +137,7 @@ interface WorkingCopyLink {
   checkedOutVersion: string | null
 }
 
-export class DBGODVSRepository {
+export class DBHTRepository {
 
   // ==================== 路径解析 ====================
 
@@ -201,7 +201,7 @@ export class DBGODVSRepository {
     try {
       await fs.ensureDir(repoPath)
       if (await fs.pathExists(path.join(repoPath, 'config.json'))) {
-        return { success: false, message: '该目录已经是 DBGODVS 仓库' }
+        return { success: false, message: '该目录已经是 DBHT 仓库' }
       }
       await fs.writeJson(path.join(repoPath, 'config.json'), {
         name: projectName,
@@ -237,7 +237,7 @@ export class DBGODVSRepository {
   async getStatus(repoPath: string, workingCopyPath: string): Promise<{ success: boolean; status: string[]; message?: string }> {
     try {
       if (!(await fs.pathExists(path.join(repoPath, 'HEAD.json')))) {
-        return { success: false, status: [], message: '不是 DBGODVS 仓库' }
+        return { success: false, status: [], message: '不是 DBHT 仓库' }
       }
 
       // 从仓库读取 HEAD 获取上一版本文件列表

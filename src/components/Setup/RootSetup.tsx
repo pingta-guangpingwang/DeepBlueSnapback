@@ -1,7 +1,9 @@
 import { useAppState } from '../../context/AppContext'
+import { useI18n } from '../../i18n'
 
 export default function RootSetup() {
   const [state, dispatch] = useAppState()
+  const { t } = useI18n()
 
   const chooseRootRepository = async () => {
     const folder = await window.electronAPI.selectFolder()
@@ -12,13 +14,13 @@ export default function RootSetup() {
 
   const confirmRootRepository = async () => {
     if (!state.rootRepositoryPath) {
-      dispatch({ type: 'SET_MESSAGE', payload: '请先选择根仓库目录' })
+      dispatch({ type: 'SET_MESSAGE', payload: t.setup.selectFirst })
       return
     }
 
     try {
       dispatch({ type: 'SET_IS_LOADING', payload: true })
-      dispatch({ type: 'SET_MESSAGE', payload: '正在创建根仓库...' })
+      dispatch({ type: 'SET_MESSAGE', payload: t.setup.creating })
 
       const result = await window.electronAPI.createRootRepository(state.rootRepositoryPath)
 
@@ -31,18 +33,18 @@ export default function RootSetup() {
         try {
           const cliResult = await window.electronAPI.registerCLI()
           if (cliResult?.success) {
-            dispatch({ type: 'SET_MESSAGE', payload: '根仓库设置成功！命令行工具已注册，可在任意位置使用 dbgvs 命令。' })
+            dispatch({ type: 'SET_MESSAGE', payload: t.setup.success })
           } else {
-            dispatch({ type: 'SET_MESSAGE', payload: '根仓库设置成功！（命令行注册失败，可在设置中手动注册）' })
+            dispatch({ type: 'SET_MESSAGE', payload: t.setup.successCliFail })
           }
         } catch {
-          dispatch({ type: 'SET_MESSAGE', payload: '根仓库设置成功！（命令行注册失败，可在设置中手动注册）' })
+          dispatch({ type: 'SET_MESSAGE', payload: t.setup.successCliFail })
         }
       } else {
-        dispatch({ type: 'SET_MESSAGE', payload: '创建根仓库失败：' + (result?.message ?? '未知错误') })
+        dispatch({ type: 'SET_MESSAGE', payload: t.setup.failPrefix + (result?.message ?? '') })
       }
     } catch (error) {
-      dispatch({ type: 'SET_MESSAGE', payload: '创建根仓库失败：' + (error as Error).message })
+      dispatch({ type: 'SET_MESSAGE', payload: t.setup.failPrefix + (error as Error).message })
     } finally {
       dispatch({ type: 'SET_IS_LOADING', payload: false })
     }
@@ -55,26 +57,26 @@ export default function RootSetup() {
       </div>
       <div className="setup-content">
         <div className="setup-logo">
-          <h1>DBGODVS</h1>
-          <p>深蓝主神版本管理系统</p>
-          <p className="setup-subtitle">SVN服务器 + 客户端一体化版本管理工具</p>
+          <h1>{t.brand.name}</h1>
+          <p>{t.brand.chineseName}</p>
+          <p className="setup-subtitle">{t.brand.description}</p>
         </div>
 
         <div className="setup-card">
-          <h2>设置根仓库位置</h2>
-          <p>选择一个目录作为所有项目的根仓库位置，这里将存储所有项目的版本历史和配置。</p>
+          <h2>{t.setup.title}</h2>
+          <p>{t.setup.subtitle}</p>
 
           <div className="setup-actions">
             <button className="primary-button" onClick={chooseRootRepository}>
-              选择根仓库目录
+              {t.setup.selectFolder}
             </button>
 
             {state.rootRepositoryPath && (
               <div className="path-display">
-                <strong>已选择：</strong>
+                <strong>{t.setup.selected}</strong>
                 <span>{state.rootRepositoryPath}</span>
                 <button className="confirm-button" onClick={confirmRootRepository}>
-                  确认并创建根仓库
+                  {t.setup.confirm}
                 </button>
               </div>
             )}
@@ -87,7 +89,7 @@ export default function RootSetup() {
               className="secondary-button"
               onClick={() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'repositories' })}
             >
-              进入仓库管理
+              {t.setup.enterRepo}
             </button>
           </div>
         )}

@@ -45,7 +45,7 @@ const git_bridge_1 = require("./git-bridge");
 const lan_server_1 = require("./lan-server");
 const context_menu_1 = require("./context-menu");
 let mainWindow = null;
-const dbvsRepo = new dbvs_repository_1.DBGODVSRepository();
+const dbvsRepo = new dbvs_repository_1.DBHTRepository();
 const cliCommand = (0, context_menu_1.parseCommandLine)(process.argv);
 function createWindow() {
     mainWindow = new electron_1.BrowserWindow({
@@ -246,7 +246,7 @@ function registerIPCHandlers() {
             return false;
         }
     });
-    // 检查是否是DBGODVS仓库（新格式：config.json+HEAD.json，或旧格式：.dbvs/，或工作副本：.dbvs-link.json）
+    // 检查是否是DBHT仓库（新格式：config.json+HEAD.json，或旧格式：.dbvs/，或工作副本：.dbvs-link.json）
     electron_1.ipcMain.handle('dbgvs:is-repository', async (_, inputPath) => {
         // 新格式：集中仓库
         if (await fs.pathExists(path.join(inputPath, 'config.json')) &&
@@ -260,7 +260,7 @@ function registerIPCHandlers() {
         // 旧格式：.dbvs/ 子目录
         return fs.pathExists(path.join(inputPath, '.dbvs'));
     });
-    // 创建DBGODVS仓库（在集中存储位置）
+    // 创建DBHT仓库（在集中存储位置）
     electron_1.ipcMain.handle('dbgvs:create-repository', async (_, repoPath, projectName) => {
         return await dbvsRepo.createRepository(repoPath, projectName);
     });
@@ -604,10 +604,10 @@ function registerIPCHandlers() {
         return await (0, context_menu_1.isContextMenuRegistered)();
     });
     // ==================== 项目文档生成 ====================
-    function generateDBGODVSGuide(projectName, projectPath, repoPath) {
-        return `# ${projectName} — DBGODVS 版本管理说明
+    function generateDBHTGuide(projectName, projectPath, repoPath) {
+        return `# ${projectName} — DBHT 版本管理说明
 
-> 本项目使用 **DBGODVS（深蓝主神版本管理系统）** 进行版本控制。
+> 本项目使用 **DBHT（深蓝驭溯版本管理系统）** 进行版本控制。
 
 ## 项目信息
 
@@ -617,7 +617,7 @@ function registerIPCHandlers() {
 
 ## 常用命令
 
-以下命令需要在安装了 DBGODVS 的环境中执行。将 \`(projectPath)\` 替换为本项目的实际路径。
+以下命令需要在安装了 DBHT 的环境中执行。将 \`(projectPath)\` 替换为本项目的实际路径。
 
 ### 查看状态
 \`\`\`bash
@@ -685,7 +685,7 @@ dbgvs info "${projectPath}"
 
 如果无法自动创建配置文件，请主动告知用户：
 
-> "本项目使用 DBGODVS 进行版本管理。建议在 .claude/settings.json 中配置以下权限自动放行，以避免反复授权：dbgvs *、npm *、git *、node *、Read、Glob、Grep、Edit、Write"
+> "本项目使用 DBHT 进行版本管理。建议在 .claude/settings.json 中配置以下权限自动放行，以避免反复授权：dbgvs *、npm *、git *、node *、Read、Glob、Grep、Edit、Write"
 
 如果用户不同意，正常继续工作即可，不影响功能使用。
 
@@ -780,9 +780,9 @@ temp_*
 dbgvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
 \`\`\`
 
-## DBGODVS 桌面应用
+## DBHT 桌面应用
 
-除了命令行，用户也可以打开 **DBGODVS 桌面应用** 进行可视化管理。启动应用后会自动检测并刷新所有项目。
+除了命令行，用户也可以打开 **DBHT 桌面应用** 进行可视化管理。启动应用后会自动检测并刷新所有项目。
 
 ### 桌面应用功能
 
@@ -791,17 +791,17 @@ dbgvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
 - **历史面板**：浏览所有版本的提交历史，查看每次提交的文件清单和 diff 对比，支持一键回滚、恢复单个文件、撤销回滚
 - **设置面板**：Git 远程仓库连接、自动快照开关、数据验证、仓库初始化
 - **仓库管理**：创建/导入/删除项目、Checkout 工作副本、Git 远程克隆、Windows 右键菜单集成
-- **自动更新**：应用启动时自动检测所有项目的 DBGODVS-GUIDE.md 是否为最新版本，旧版自动刷新
+- **自动更新**：应用启动时自动检测所有项目的 DBHT-GUIDE.md 是否为最新版本，旧版自动刷新
 
 ### 提醒用户查看
 
 如果需要让用户确认变更内容或查看可视化 diff，可以提示用户：
 
-> "请打开 DBGODVS 桌面应用，在历史面板中查看版本对比详情。"
+> "请打开 DBHT 桌面应用，在历史面板中查看版本对比详情。"
 
 ## AI 工作小世界可视化
 
-DBGODVS 内置"AI 工作小世界"标签页，可将 AI 的开发工作可视化为游戏场景。打开项目即自动生成空场景（基于项目目录结构），AI 在项目根目录写入 \`dbvs-visual.json\` 文件后自动同步丰富数据。
+DBHT 内置"AI 工作小世界"标签页，可将 AI 的开发工作可视化为游戏场景。打开项目即自动生成空场景（基于项目目录结构），AI 在项目根目录写入 \`dbvs-visual.json\` 文件后自动同步丰富数据。
 
 ### 激活方式
 
@@ -856,15 +856,15 @@ AI 每完成一个任务或切换模块时更新此文件即可。
 
 ## 更多信息
 
-- DBGODVS 技术文档：请参阅 DBGODVS 安装目录下的 README.md
+- DBHT 技术文档：请参阅 DBHT 安装目录下的 README.md
 - Git 远程同步：如项目已连接远程仓库，可通过 \`dbvs git-pull\` / \`dbvs git-push\` 同步
 - 完整 CLI 参考：\`dbvs --help\` 查看所有可用命令
 `;
     }
     async function ensureProjectGuide(projectPath, projectName, repoPath) {
-        const guidePath = path.join(projectPath, 'DBGODVS-GUIDE.md');
-        const newContent = generateDBGODVSGuide(projectName, projectPath, repoPath);
-        const versionTag = '<!-- DBGODVS-GUIDE-VERSION: 4 -->';
+        const guidePath = path.join(projectPath, 'DBHT-GUIDE.md');
+        const newContent = generateDBHTGuide(projectName, projectPath, repoPath);
+        const versionTag = '<!-- DBHT-GUIDE-VERSION: 4 -->';
         if (await fs.pathExists(guidePath)) {
             const existing = await fs.readFile(guidePath, 'utf-8');
             // 已是最新版本则跳过
@@ -873,10 +873,10 @@ AI 每完成一个任务或切换模块时更新此文件即可。
         }
         await fs.writeFile(guidePath, versionTag + '\n' + newContent);
     }
-    function generateDBGODVSRequirements(projectName) {
+    function generateDBHTRequirements(projectName) {
         return `# ${projectName} — 需求与实现状态
 
-> 本文档由 DBGODVS 自动生成，记录项目功能需求和 AI 工作流规范。
+> 本文档由 DBHT 自动生成，记录项目功能需求和 AI 工作流规范。
 
 ## 1. 项目概述
 
@@ -949,7 +949,7 @@ AI 智能体在开发过程中必须遵循以下规则：
 
 若未配置，主动告知用户授权，用户不同意则正常继续。
 
-### 8.3 DBGODVS 功能实现状态
+### 8.3 DBHT 功能实现状态
 
 | 功能模块 | 命令 | 状态 |
 |---------|------|------|
@@ -976,11 +976,11 @@ AI 智能体在开发过程中必须遵循以下规则：
 `;
     }
     async function ensureProjectRequirements(projectPath, projectName) {
-        const reqPath = path.join(projectPath, 'DBGODVS-REQUIREMENTS.md');
+        const reqPath = path.join(projectPath, 'DBHT-REQUIREMENTS.md');
         // 仅在文件不存在时生成，不覆盖用户自定义内容
         if (await fs.pathExists(reqPath))
             return;
-        const content = generateDBGODVSRequirements(projectName);
+        const content = generateDBHTRequirements(projectName);
         await fs.writeFile(reqPath, content);
     }
     // ==================== 项目创建/列表 IPC（SVN 风格）====================
@@ -1011,9 +1011,9 @@ AI 智能体在开发过程中必须遵循以下规则：
             // 创建 README
             const readmePath = path.join(workingCopyPath, 'README.md');
             if (!(await fs.pathExists(readmePath))) {
-                await fs.writeFile(readmePath, `# ${projectName}\n\n这是一个新的DBGODVS项目。\n`);
+                await fs.writeFile(readmePath, `# ${projectName}\n\n这是一个新的DBHT项目。\n`);
             }
-            // 创建 DBGODVS-GUIDE.md
+            // 创建 DBHT-GUIDE.md
             await ensureProjectGuide(workingCopyPath, projectName.trim(), repoPath);
             await ensureProjectRequirements(workingCopyPath, projectName.trim());
             // 注册到项目表
@@ -1130,7 +1130,7 @@ AI 智能体在开发过程中必须遵循以下规则：
                     }
                 }
             }
-            // 创建 DBGODVS-GUIDE.md
+            // 创建 DBHT-GUIDE.md
             await ensureProjectGuide(normalizedProjectPath, name, repoPath);
             await ensureProjectRequirements(normalizedProjectPath, name);
             // 注册到项目表
@@ -1189,7 +1189,7 @@ AI 智能体在开发过程中必须遵循以下规则：
                     await writeProjectRegistry(rootPath, registry);
                 }
             }
-            // 创建 DBGODVS-GUIDE.md
+            // 创建 DBHT-GUIDE.md
             await ensureProjectGuide(targetPath, projectName, normalizedRepoPath);
             await ensureProjectRequirements(targetPath, projectName);
             return { success: true, message: `Checkout 成功: ${targetPath}`, targetPath };
@@ -1235,7 +1235,7 @@ AI 智能体在开发过程中必须遵循以下规则：
                 });
             }
             await writeProjectRegistry(rootPath, registry);
-            // 创建 DBGODVS-GUIDE.md
+            // 创建 DBHT-GUIDE.md
             await ensureProjectGuide(targetPath, projectName, normalizedRepoPath);
             await ensureProjectRequirements(targetPath, projectName);
             return { success: true, message: `Checkout 成功: ${targetPath}`, targetPath, projectName };
@@ -1251,7 +1251,7 @@ AI 智能体在开发过程中必须遵循以下规则：
             // 读取链接文件获取 repoPath
             const link = await dbvsRepo.readWorkingCopyLink(normalizedWCPath);
             if (!link || !link.repoPath) {
-                return { success: false, message: '该目录不是有效的 DBGODVS 工作副本（缺少 .dbvs-link.json）' };
+                return { success: false, message: '该目录不是有效的 DBHT 工作副本（缺少 .dbvs-link.json）' };
             }
             // 检查仓库是否还存在
             if (!(await fs.pathExists(path.join(link.repoPath, 'config.json')))) {
@@ -1305,7 +1305,7 @@ AI 智能体在开发过程中必须遵循以下规则：
             return { success: false, message: String(error) };
         }
     });
-    // 启动检查：为所有项目补全 DBGODVS-GUIDE.md
+    // 启动检查：为所有项目补全 DBHT-GUIDE.md
     electron_1.ipcMain.handle('dbgvs:ensure-project-docs', async (_, rootPath) => {
         try {
             const registry = await readProjectRegistry(rootPath);
@@ -1313,14 +1313,14 @@ AI 智能体在开发过程中必须遵循以下规则：
             for (const entry of registry) {
                 for (const wc of entry.workingCopies) {
                     if (await fs.pathExists(wc.path)) {
-                        const beforeExists = await fs.pathExists(path.join(wc.path, 'DBGODVS-GUIDE.md'));
+                        const beforeExists = await fs.pathExists(path.join(wc.path, 'DBHT-GUIDE.md'));
                         await ensureProjectGuide(wc.path, entry.name, entry.repoPath);
                         await ensureProjectRequirements(wc.path, entry.name);
                         if (!beforeExists)
                             updated++;
                         else {
-                            const content = await fs.readFile(path.join(wc.path, 'DBGODVS-GUIDE.md'), 'utf-8');
-                            if (content.includes('<!-- DBGODVS-GUIDE-VERSION: 4 -->'))
+                            const content = await fs.readFile(path.join(wc.path, 'DBHT-GUIDE.md'), 'utf-8');
+                            if (content.includes('<!-- DBHT-GUIDE-VERSION: 4 -->'))
                                 updated++;
                         }
                     }
@@ -1680,7 +1680,7 @@ async function getProjectsList(rootPath) {
 registerIPCHandlers();
 electron_1.app.whenReady().then(createWindow);
 // ==================== 本地 IPC Server（接收启动器命令）====================
-const IPC_PORT_FILE = path.join(process.env.APPDATA || process.env.LOCALAPPDATA || path.join(require('os').homedir(), '.config'), 'DBGODVS', 'ipc-port');
+const IPC_PORT_FILE = path.join(process.env.APPDATA || process.env.LOCALAPPDATA || path.join(require('os').homedir(), '.config'), 'DBHT', 'ipc-port');
 let ipcServer = null;
 /**
  * 启动本地 TCP 服务，监听启动器发来的右键菜单命令

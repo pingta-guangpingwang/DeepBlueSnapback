@@ -2,7 +2,7 @@
 set PORT=3005
 set ELECTRON_CACHE=%LOCALAPPDATA%\electron\Cache
 set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
-echo Starting DBGODVS...
+echo Starting DBHT...
 
 echo Checking dependencies...
 echo.
@@ -28,10 +28,10 @@ if %errorlevel% equ 0 (
     timeout /t 3 /nobreak >nul
 )
 
-echo Launching DBGODVS...
+echo Launching DBHT...
 call npm run dev-electron
 if %errorlevel% neq 0 (
     echo.
-    echo DBGODVS exited with an error.
+    echo DBHT exited with an error.
     pause
 )

@@ -1,6 +1,6 @@
-appId: com.deepblue.dbgodvs
-productName: DBGODVS
-copyright: Copyright © 2026 深蓝主神
+appId: com.deepblue.dbht
+productName: DBHT
+copyright: Copyright © 2026 深蓝驭溯
 
 directories:
   output: release
@@ -22,13 +22,13 @@ win:
     - target: nsis
       arch: [x64]
   icon: assets/icon.ico
-  artifactName: DBGODVS-Setup-${version}.${ext}
+  artifactName: DBHT-Setup-${version}.${ext}
 
 nsis:
   oneClick: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: DBGODVS
+  shortcutName: DBHT
   installerIcon: assets/icon.ico
   uninstallerIcon: assets/icon.ico
   installerHeaderIcon: assets/icon.ico

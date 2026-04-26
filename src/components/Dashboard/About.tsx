@@ -1,7 +1,9 @@
 import { useAppState } from '../../context/AppContext'
+import { useI18n } from '../../i18n'
 
 export default function About() {
   const [state, dispatch] = useAppState()
+  const { t } = useI18n()
 
   const reopenGuide = async () => {
     await window.electronAPI.setOnboardingCompleted(false)
@@ -17,17 +19,17 @@ export default function About() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
               <span style={{
                 fontSize: '18px', fontWeight: 700, color: '#1f2937',
-              }}>DBGODVS</span>
+              }}>{t.brand.name}</span>
               <span style={{
                 fontSize: '12px', fontWeight: 600, color: '#fff',
                 background: '#4f46e5', padding: '2px 8px', borderRadius: '10px',
               }}>v1.0.0</span>
             </div>
             <p style={{ margin: '0 0 4px', color: '#6b7280', fontSize: '13px' }}>
-              深蓝主神版本管理系统 — 面向开发者的本地版本管理工具
+              {t.about.description}
             </p>
             <p style={{ margin: 0, color: '#9ca3af', fontSize: '12px' }}>
-              给 AI 套上缰绳，让每一次代码生成都有迹可循
+              {t.about.tagline}
             </p>
           </div>
           <div style={{
@@ -43,10 +45,10 @@ export default function About() {
           marginTop: '16px',
         }}>
           {[
-            { label: '架构', value: 'SVN 集中式' },
-            { label: '存储', value: '本地 content-addressed' },
-            { label: '界面', value: 'GUI + CLI 双模式' },
-            { label: '同步', value: 'Git Remote 可选' },
+            { label: t.about.architecture, value: t.about.architectureValue },
+            { label: t.about.storage, value: t.about.storageValue },
+            { label: t.about.interface, value: t.about.interfaceValue },
+            { label: t.about.sync, value: t.about.syncValue },
           ].map(item => (
             <div key={item.label} style={{
               padding: '10px 12px', background: '#f8fafc', borderRadius: '6px',
@@ -61,11 +63,11 @@ export default function About() {
 
       {/* 功能引导 */}
       <div className="settings-section">
-        <h3>功能引导</h3>
+        <h3>{t.about.guide}</h3>
         <p style={{ color: '#6b7280', margin: '0 0 16px', fontSize: '13px' }}>
-          重新查看 DBGODVS 的功能介绍和使用指南。
+          {t.about.guideDesc}
         </p>
-        <button onClick={reopenGuide}>查看新手引导</button>
+        <button onClick={reopenGuide}>{t.about.viewGuide}</button>
       </div>
 
       {/* 关于作者 + 打赏 横向布局 */}
@@ -73,39 +75,39 @@ export default function About() {
         <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
           {/* 左侧：作者信息 */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{ marginTop: 0 }}>关于 DBGODVS</h3>
+            <h3 style={{ marginTop: 0 }}>{t.about.aboutTitle}</h3>
             <p style={{ margin: '0 0 12px', color: '#6b7280', fontSize: '13px' }}>
-              深蓝主神版本管理系统 — 面向开发者的本地版本管理工具
+              {t.about.description}
             </p>
             <div style={{ padding: '14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-              <div style={{ fontWeight: 600, fontSize: '14px', color: '#1f2937', marginBottom: '8px' }}>作者：王广平</div>
+              <div style={{ fontWeight: 600, fontSize: '14px', color: '#1f2937', marginBottom: '8px' }}>{t.about.author}</div>
               <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr', gap: '4px 10px', fontSize: '13px', color: '#374151' }}>
-                <span style={{ color: '#6b7280' }}>微信</span>
+                <span style={{ color: '#6b7280' }}>{t.about.wechat}</span>
                 <span>1084703441</span>
-                <span style={{ color: '#6b7280' }}>邮箱</span>
+                <span style={{ color: '#6b7280' }}>{t.about.email}</span>
                 <span>18351267631@163.com</span>
-                <span style={{ color: '#6b7280' }}>网站</span>
-                <a href="https://www.ssrgpt.com" target="_blank" rel="noopener noreferrer" style={{ color: '#4f46e5', textDecoration: 'none' }}>www.ssrgpt.com</a>
+                <span style={{ color: '#6b7280' }}>{t.about.website}</span>
+                <a href="https://www.shenlanai.com" target="_blank" rel="noopener noreferrer" style={{ color: '#4f46e5', textDecoration: 'none' }}>www.shenlanai.com</a>
               </div>
               <p style={{ margin: '10px 0 0', fontSize: '13px', color: '#6b7280', lineHeight: 1.6, fontStyle: 'italic' }}>
-                我将努力开发与世界连接，这是我发向全世界发送的一根信息触手，欢迎交流。
+                {t.about.authorQuote}
               </p>
             </div>
             <div style={{ borderTop: '1px solid #e5e7eb', marginTop: '14px', paddingTop: '14px' }}>
               <p style={{ margin: 0, fontSize: '13px', color: '#6b7280', lineHeight: 1.6 }}>
-                DBGODVS 是一款完全免费的开源软件。如果你觉得它对你有帮助，欢迎打赏支持，你的鼓励是我持续更新的动力。 →
+                {t.about.donateDesc}
               </p>
             </div>
           </div>
           {/* 右侧：二维码 */}
           <div style={{ display: 'flex', gap: '12px', flexShrink: 0, paddingTop: '36px', alignItems: 'flex-end' }}>
             <div style={{ textAlign: 'center' }}>
-              <img src="/wechat-pay.jpg" alt="微信支付" style={{ height: '260px', borderRadius: '8px', border: '1px solid #e5e7eb' }} />
-              <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>微信支付</div>
+              <img src="/wechat-pay.jpg" alt={t.about.wechatPay} style={{ height: '260px', borderRadius: '8px', border: '1px solid #e5e7eb' }} />
+              <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>{t.about.wechatPay}</div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <img src="/alipay.jpg" alt="支付宝" style={{ height: '200px', borderRadius: '8px', border: '1px solid #e5e7eb' }} />
-              <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>支付宝</div>
+              <img src="/alipay.jpg" alt={t.about.alipay} style={{ height: '200px', borderRadius: '8px', border: '1px solid #e5e7eb' }} />
+              <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>{t.about.alipay}</div>
             </div>
           </div>
         </div>

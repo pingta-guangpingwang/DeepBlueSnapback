@@ -28,7 +28,7 @@ function App() {
             dispatch({ type: 'SET_PROJECTS', payload: projResult.projects })
           }
         } catch { /* ignore load failure */ }
-        // Check and fill missing DBGODVS-GUIDE.md for all projects
+        // Check and fill missing DBHT-GUIDE.md for all projects
         try {
           await window.electronAPI.ensureProjectDocs(result.rootPath)
         } catch { /* ignore */ }
@@ -85,7 +85,7 @@ function App() {
       // update / update-to / commit：需要版本管理的文件夹
       const resolved = await window.electronAPI.resolvePaths(targetPath)
       if (!resolved) {
-        dispatch({ type: 'SET_MESSAGE', payload: '该文件夹不是 DBGODVS 管理的工作副本，无法执行此操作。' })
+        dispatch({ type: 'SET_MESSAGE', payload: '该文件夹不是 DBHT 管理的工作副本，无法执行此操作。' })
         dispatch({ type: 'SET_CURRENT_VIEW', payload: 'repositories' })
         return
       }

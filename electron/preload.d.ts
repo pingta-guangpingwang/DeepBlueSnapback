@@ -41,7 +41,7 @@ export interface ElectronAPI {
     pathBasename: (filePath: string) => Promise<{
         result: string;
     }>;
-    isDBGODVSRepository: (path: string) => Promise<boolean>;
+    isDBHTRepository: (path: string) => Promise<boolean>;
     createRepository: (repoPath: string, name: string) => Promise<{
         success: boolean;
         message?: string;

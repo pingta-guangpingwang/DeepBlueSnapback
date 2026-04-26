@@ -80,7 +80,7 @@ export function useGit() {
     try {
       const result = await window.electronAPI.gitPush(
         state.projectPath, commitMessage,
-        state.gitAuthorName || 'DBGODVS User',
+        state.gitAuthorName || 'DBHT User',
         state.gitAuthorEmail || 'dbgvs@local',
         username, token
       )
@@ -108,7 +108,7 @@ export function useGit() {
           // All conflicts resolved — commit the merge
           await window.electronAPI.gitCommitMerge(
             state.projectPath,
-            state.gitAuthorName || 'DBGODVS User',
+            state.gitAuthorName || 'DBHT User',
             state.gitAuthorEmail || 'dbgvs@local'
           )
           dispatch({ type: 'SET_SHOW_CONFLICT_MODAL', payload: false })
@@ -132,7 +132,7 @@ export function useGit() {
       // Commit merge resolution
       await window.electronAPI.gitCommitMerge(
         state.projectPath,
-        state.gitAuthorName || 'DBGODVS User',
+        state.gitAuthorName || 'DBHT User',
         state.gitAuthorEmail || 'dbgvs@local'
       )
       dispatch({ type: 'SET_GIT_CONFLICTS', payload: [] })

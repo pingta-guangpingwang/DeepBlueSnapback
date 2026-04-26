@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAppState } from '../../context/AppContext'
+import { useI18n } from '../../i18n'
 
 interface Props {
   onClose: () => void
@@ -9,6 +10,7 @@ type ClonePhase = 'form' | 'cloning' | 'success' | 'error'
 
 export default function GitCloneModal({ onClose }: Props) {
   const [state, dispatch] = useAppState()
+  const { t } = useI18n()
   const [remoteUrl, setRemoteUrl] = useState('')
   const [branch, setBranch] = useState('main')
   const [targetDir, setTargetDir] = useState('')
@@ -73,7 +75,7 @@ export default function GitCloneModal({ onClose }: Props) {
   const handleClone = async () => {
     if (!remoteUrl.trim() || !targetDir.trim() || !folderName.trim()) return
     setPhase('cloning')
-    setProgressLines(['正在克隆远程仓库...'])
+    setProgressLines([t.gitClone.cloningRepo])
 
     try {
       // Save credentials if requested
@@ -87,7 +89,7 @@ export default function GitCloneModal({ onClose }: Props) {
       const fullTargetPath = [targetDir.trim(), folderName.trim()].join('/').replace(/\\/g, '/')
 
       // Clone via git bridge IPC
-      setProgressLines(prev => [...prev, '连接远程仓库...'])
+      setProgressLines(prev => [...prev, t.gitClone.connecting])
       const result = await window.electronAPI.gitConnect(
         fullTargetPath, remoteUrl.trim(), branch.trim() || 'main',
         username.trim() || 'anonymous', token.trim() || ''
@@ -99,9 +101,9 @@ export default function GitCloneModal({ onClose }: Props) {
         return
       }
 
-      setProgressLines(prev => [...prev, '正在注册项目...'])
+      setProgressLines(prev => [...prev, t.gitClone.registeringProject])
 
-      // Register as DBGODVS project
+      // Register as DBHT project
       if (state.rootRepositoryPath) {
         const regResult = await window.electronAPI.registerProject(
           state.rootRepositoryPath, fullTargetPath, folderName.trim(), true
@@ -112,16 +114,16 @@ export default function GitCloneModal({ onClose }: Props) {
           if (projResult?.success && projResult.projects) {
             dispatch({ type: 'SET_PROJECTS', payload: projResult.projects })
           }
-          setProgressLines(prev => [...prev, `项目 "${folderName}" 克隆完成！`])
+          setProgressLines(prev => [...prev, t.gitClone.projectCloned.replace('{name}', folderName)])
           setPhase('success')
         } else {
           setPhase('error')
-          setErrorMessage('克隆成功但注册失败：' + (regResult?.message || '未知错误'))
+          setErrorMessage(t.gitClone.cloneSuccessRegFail + (regResult?.message || '未知错误'))
         }
       } else {
-        setProgressLines(prev => [...prev, '克隆完成，但未找到根仓库路径'])
+        setProgressLines(prev => [...prev, t.gitClone.cloneSuccessNoRoot])
         setPhase('error')
-        setErrorMessage('未配置根仓库路径，无法注册项目')
+        setErrorMessage(t.gitClone.noRootPath)
       }
     } catch (error) {
       setPhase('error')
@@ -136,7 +138,7 @@ export default function GitCloneModal({ onClose }: Props) {
     <div className="modal-overlay" onClick={close}>
       <div className="modal-content" style={{ maxWidth: '560px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>从远程仓库克隆</h3>
+          <h3>{t.gitClone.title}</h3>
           {!isBusy && (
             <button className="close-button" onClick={close}>✕</button>
           )}
@@ -145,7 +147,7 @@ export default function GitCloneModal({ onClose }: Props) {
           <div className="project-creator">
             {/* Remote URL */}
             <div className="form-group">
-              <label>仓库地址</label>
+              <label>{t.gitClone.repoUrl}</label>
               <input
                 type="text"
                 value={remoteUrl}
@@ -156,13 +158,13 @@ export default function GitCloneModal({ onClose }: Props) {
                 autoFocus={phase === 'form'}
               />
               <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
-                支持 GitHub、GitLab、Gitee 等 Git 仓库地址
+                {t.gitClone.repoUrlHint}
               </div>
             </div>
 
             {/* Branch */}
             <div className="form-group" style={{ marginTop: '14px' }}>
-              <label>分支</label>
+              <label>{t.gitClone.branch}</label>
               <input
                 type="text"
                 value={branch}
@@ -175,20 +177,20 @@ export default function GitCloneModal({ onClose }: Props) {
 
             {/* Target directory */}
             <div className="form-group" style={{ marginTop: '14px' }}>
-              <label>目标文件夹</label>
+              <label>{t.gitClone.targetFolder}</label>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <input
                   type="text"
                   value={targetDir}
                   onChange={e => setTargetDir(e.target.value)}
-                  placeholder="选择存放位置..."
+                  placeholder={t.gitClone.targetPlaceholder}
                   style={{ flex: 1, fontFamily: 'Consolas, monospace', fontSize: '13px' }}
                   disabled={isBusy}
                 />
-                <button onClick={selectTarget} disabled={isBusy} style={{ whiteSpace: 'nowrap' }}>浏览</button>
+                <button onClick={selectTarget} disabled={isBusy} style={{ whiteSpace: 'nowrap' }}>{t.gitClone.browse}</button>
               </div>
               <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '6px', fontFamily: 'Consolas, monospace' }}>
-                {targetDir || '<路径>'}/{folderName || '<项目名>'}
+                {targetDir || t.gitClone.pathPreview}/{folderName || t.gitClone.projectName}
               </div>
             </div>
 
@@ -198,14 +200,14 @@ export default function GitCloneModal({ onClose }: Props) {
               borderRadius: '8px', border: '1px solid #e5e7eb',
             }}>
               <div style={{ fontSize: '13px', fontWeight: 500, color: '#374151', marginBottom: '10px' }}>
-                认证信息（私有仓库必填）
+                {t.gitClone.authInfo}
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input
                   type="text"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
-                  placeholder="用户名"
+                  placeholder={t.gitClone.username}
                   style={{ flex: 1, fontSize: '13px' }}
                   disabled={isBusy}
                 />
@@ -228,7 +230,7 @@ export default function GitCloneModal({ onClose }: Props) {
                   disabled={isBusy}
                 />
                 <label htmlFor="clone-save-creds" style={{ cursor: 'pointer', fontSize: '12px', color: '#6b7280' }}>
-                  保存凭证
+                  {t.gitClone.saveCredentials}
                 </label>
               </div>
             </div>
@@ -253,11 +255,11 @@ export default function GitCloneModal({ onClose }: Props) {
                   {phase === 'cloning' && (
                     <>
                       <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>&#9696;</span>
-                      正在克隆...
+                      {' '}{t.gitClone.cloning}
                     </>
                   )}
-                  {phase === 'success' && <>&#10003; 克隆完成</>}
-                  {phase === 'error' && <>&#10007; 克隆失败</>}
+                  {phase === 'success' && <>&#10003; {' '}{t.gitClone.cloneComplete}</>}
+                  {phase === 'error' && <>&#10007; {' '}{t.gitClone.cloneFailed}</>}
                 </div>
                 {/* Log area */}
                 <div
@@ -296,14 +298,14 @@ export default function GitCloneModal({ onClose }: Props) {
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
               {phase === 'form' && (
                 <>
-                  <button onClick={close}>取消</button>
+                  <button onClick={close}>{t.gitClone.cancel}</button>
                   <button
                     className="primary-button"
                     onClick={handleClone}
                     disabled={!canClone}
                     style={{ opacity: canClone ? 1 : 0.5 }}
                   >
-                    克隆项目
+                    {t.gitClone.cloneProject}
                   </button>
                 </>
               )}
@@ -312,17 +314,17 @@ export default function GitCloneModal({ onClose }: Props) {
                   fontSize: '12px', color: '#9ca3af', padding: '4px 0',
                   fontStyle: 'italic',
                 }}>
-                  请勿关闭此窗口，正在克隆中...
+                  {t.gitClone.doNotClose}
                 </div>
               )}
               {phase === 'success' && (
                 <button className="primary-button" onClick={close}>
-                  完成
+                  {t.gitClone.done}
                 </button>
               )}
               {phase === 'error' && (
                 <>
-                  <button onClick={close}>关闭</button>
+                  <button onClick={close}>{t.gitClone.close}</button>
                   <button
                     className="primary-button"
                     onClick={() => {
@@ -331,7 +333,7 @@ export default function GitCloneModal({ onClose }: Props) {
                       setErrorMessage('')
                     }}
                   >
-                    重试
+                    {t.gitClone.retry}
                   </button>
                 </>
               )}

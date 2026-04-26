@@ -20,8 +20,8 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     copyDir: (src, dest) => electron_1.ipcRenderer.invoke('fs:copy-dir', src, dest),
     pathJoin: (...paths) => electron_1.ipcRenderer.invoke('fs:path-join', ...paths),
     pathBasename: (filePath) => electron_1.ipcRenderer.invoke('fs:path-basename', filePath),
-    // DBGODVS操作（SVN 风格：repoPath = 集中仓库, workingCopyPath = 工作副本）
-    isDBGODVSRepository: (path) => electron_1.ipcRenderer.invoke('dbgvs:is-repository', path),
+    // DBHT操作（SVN 风格：repoPath = 集中仓库, workingCopyPath = 工作副本）
+    isDBHTRepository: (path) => electron_1.ipcRenderer.invoke('dbgvs:is-repository', path),
     createRepository: (repoPath, name) => electron_1.ipcRenderer.invoke('dbgvs:create-repository', repoPath, name),
     createProject: (rootPath, projectName, customPath) => electron_1.ipcRenderer.invoke('dbgvs:create-project', rootPath, projectName, customPath),
     getProjects: (rootPath) => electron_1.ipcRenderer.invoke('dbgvs:get-projects', rootPath),
@@ -112,7 +112,7 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     registerWorkingCopy: (rootPath, workingCopyPath) => electron_1.ipcRenderer.invoke('dbgvs:register-working-copy', rootPath, workingCopyPath),
     // 从项目列表移除工作副本（仅断开关联）
     unregisterProject: (rootPath, workingCopyPath) => electron_1.ipcRenderer.invoke('dbgvs:unregister-project', rootPath, workingCopyPath),
-    // 启动检查：补全项目 DBGODVS-GUIDE.md
+    // 启动检查：补全项目 DBHT-GUIDE.md
     ensureProjectDocs: (rootPath) => electron_1.ipcRenderer.invoke('dbgvs:ensure-project-docs', rootPath),
     // 新手引导
     getOnboardingStatus: () => electron_1.ipcRenderer.invoke('dbgvs:get-onboarding-status'),

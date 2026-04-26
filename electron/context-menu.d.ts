@@ -17,7 +17,7 @@ export declare function unregisterContextMenu(): Promise<{
  */
 export declare function isContextMenuRegistered(): Promise<boolean>;
 /**
- * 解析命令行参数，提取 DBGODVS 操作
+ * 解析命令行参数，提取 DBHT 操作
  * （主进程直接启动时的备用解析，启动器不走这里）
  */
 export declare function parseCommandLine(argv: string[]): {

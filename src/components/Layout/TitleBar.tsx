@@ -1,7 +1,9 @@
 import { useAppState } from '../../context/AppContext'
+import { useI18n } from '../../i18n'
 
 export default function TitleBar() {
   const [state, dispatch] = useAppState()
+  const { t } = useI18n()
 
   const handleMinimize = () => {
     window.electronAPI.minimizeWindow()
@@ -18,17 +20,17 @@ export default function TitleBar() {
   }
 
   const titleMap: Record<string, string> = {
-    setup: 'DBGODVS - 设置',
-    repositories: 'DBGODVS - 仓库管理',
-    dashboard: `DBGODVS - ${state.currentProject ?? '仪表盘'}`,
+    setup: t.titleBar.setup,
+    repositories: t.titleBar.repositories,
+    dashboard: t.titleBar.dashboard(state.currentProject ?? 'Dashboard'),
   }
 
   return (
     <div className="draggable-header" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', height: 32, background: '#fff', borderBottom: '1px solid #e5e7eb', userSelect: 'none' }}>
-      <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{titleMap[state.currentView] ?? 'DBGODVS'}</span>
+      <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{titleMap[state.currentView] ?? t.titleBar.default}</span>
       <div className="header-spacer" />
       <a
-        href="https://www.ssrgpt.com"
+        href="https://www.shenlanai.com"
         target="_blank"
         rel="noopener noreferrer"
         onClick={e => e.stopPropagation()}
@@ -41,14 +43,14 @@ export default function TitleBar() {
         onMouseEnter={e => { e.currentTarget.style.color = '#4f46e5'; e.currentTarget.style.background = '#f5f3ff' }}
         onMouseLeave={e => { e.currentTarget.style.color = '#9ca3af'; e.currentTarget.style.background = 'transparent' }}
       >
-        ssrgpt.com
+        shenlanai.com
       </a>
       <div className="window-controls">
-        <button className="window-btn minimize-btn" onClick={handleMinimize} title="最小化">─</button>
-        <button className="window-btn maximize-btn" onClick={handleMaximize} title={state.isMaximized ? '还原' : '最大化'}>
+        <button className="window-btn minimize-btn" onClick={handleMinimize} title={t.titleBar.minimize}>─</button>
+        <button className="window-btn maximize-btn" onClick={handleMaximize} title={state.isMaximized ? t.titleBar.restore : t.titleBar.maximize}>
           {state.isMaximized ? '❐' : '□'}
         </button>
-        <button className="window-btn close-btn" onClick={handleClose} title="关闭">✕</button>
+        <button className="window-btn close-btn" onClick={handleClose} title={t.titleBar.close}>✕</button>
       </div>
     </div>
   )

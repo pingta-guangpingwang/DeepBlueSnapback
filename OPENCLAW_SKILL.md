@@ -1,16 +1,16 @@
-# 深蓝主神版本管理技能 (DBGODVS)
+# 深蓝驭溯版本管理技能 (DBHT)
 
-DBGODVS 是一个本地版本管理工具，提供类似 SVN 的集中仓库 + 分布式工作副本架构。AI 智能体可以通过命令行操作 DBGODVS 完成项目版本管理。
+DBHT 是一个本地版本管理工具，提供类似 SVN 的集中仓库 + 分布式工作副本架构。AI 智能体可以通过命令行操作 DBHT 完成项目版本管理。
 
 ## 安装与初始化
 
 ### 前置条件
-- DBGODVS 已安装并可用命令行 `dbgvs`
+- DBHT 已安装并可用命令行 `dbht`
 - 已设置根仓库路径
 
 ### 初始化根仓库
 ```bash
-dbgvs set-root /path/to/root-repo
+dbht set-root /path/to/root-repo
 ```
 
 ### 在项目中初始化版本管理
@@ -18,13 +18,13 @@ dbgvs set-root /path/to/root-repo
 对于一个新项目目录：
 ```bash
 # 创建仓库并注册项目（会自动提交初始版本）
-dbgvs init /path/to/project
+dbht init /path/to/project
 ```
 
 对于已有项目目录：
 ```bash
-# 导入已有项目到 DBGODVS 管理
-dbgvs import-project /path/to/existing/project
+# 导入已有项目到 DBHT 管理
+dbht import-project /path/to/existing/project
 ```
 
 ## 日常工作流
@@ -32,7 +32,7 @@ dbgvs import-project /path/to/existing/project
 ### 查看工作区状态
 ```bash
 # 查看当前有哪些文件变更（新增/修改/删除）
-dbgvs status /path/to/project
+dbht status /path/to/project
 
 # 输出示例：
 # A new-file.ts        （新增）
@@ -43,54 +43,54 @@ dbgvs status /path/to/project
 ### 提交变更
 ```bash
 # 提交所有变更文件
-dbgvs commit /path/to/project -m "feat: 添加用户认证模块"
+dbht commit /path/to/project -m "feat: 添加用户认证模块"
 
 # 提交指定文件
-dbgvs commit /path/to/project -m "fix: 修复登录验证" -f "src/auth.ts,src/utils.ts"
+dbht commit /path/to/project -m "fix: 修复登录验证" -f "src/auth.ts,src/utils.ts"
 ```
 
 ### 查看版本信息
 ```bash
 # 查看当前版本状态
-dbgvs version /path/to/project
+dbht version /path/to/project
 
 # 查看提交历史
-dbgvs log /path/to/project
+dbht log /path/to/project
 
 # 查看最近 5 条
-dbgvs log /path/to/project -n 5
+dbht log /path/to/project -n 5
 ```
 
 ### 更新与回滚
 ```bash
 # 更新到最新版本（丢弃工作区修改，恢复到仓库最新状态）
-dbgvs update /path/to/project
+dbht update /path/to/project
 
 # 回滚到指定版本
-dbgvs rollback /path/to/project -v 20260418T143022123
+dbht rollback /path/to/project -v 20260418T143022123
 ```
 
 ### 查看差异
 ```bash
 # 查看工作区与最新版本的差异
-dbgvs diff /path/to/project -f src/main.ts
+dbht diff /path/to/project -f src/main.ts
 
 # 查看两个版本间的差异
-dbgvs diff /path/to/project -f src/main.ts -a 20260418T120000000 -b 20260418T143022123
+dbht diff /path/to/project -f src/main.ts -a 20260418T120000000 -b 20260418T143022123
 ```
 
 ### 拉取项目
 ```bash
 # 从仓库拉取项目到新目录
-dbgvs pull /path/to/root-repo/repositories/ProjectName /target/directory
+dbht pull /path/to/root-repo/repositories/ProjectName /target/directory
 
 # 指定文件夹名
-dbgvs pull /path/to/root-repo/repositories/ProjectName /target/directory -n MyProject
+dbht pull /path/to/root-repo/repositories/ProjectName /target/directory -n MyProject
 ```
 
 ### 列出所有仓库
 ```bash
-dbgvs list-repos
+dbht list-repos
 ```
 
 ## AI 智能体集成指南
@@ -101,32 +101,32 @@ dbgvs list-repos
    ```
    用户：帮我创建一个新项目 MyProject
    AI：
-   $ dbgvs init /path/to/MyProject
-   $ dbgvs commit /path/to/MyProject -m "初始项目结构"
+   $ dbht init /path/to/MyProject
+   $ dbht commit /path/to/MyProject -m "初始项目结构"
    ```
 
 2. **功能开发后提交**
    ```
    用户：我已经完成了登录功能
    AI：
-   $ dbgvs status /path/to/MyProject
-   $ dbgvs commit /path/to/MyProject -m "feat: 实现用户登录功能"
+   $ dbht status /path/to/MyProject
+   $ dbht commit /path/to/MyProject -m "feat: 实现用户登录功能"
    ```
 
 3. **出错时回滚**
    ```
    用户：刚才的改动有问题，回滚到上一个版本
    AI：
-   $ dbgvs log /path/to/MyProject -n 5
-   $ dbgvs rollback /path/to/MyProject -v 20260418T143022123
+   $ dbht log /path/to/MyProject -n 5
+   $ dbht rollback /path/to/MyProject -v 20260418T143022123
    ```
 
 4. **版本对比**
    ```
    用户：最近改了什么？
    AI：
-   $ dbgvs log /path/to/MyProject -n 3
-   $ dbgvs diff /path/to/MyProject -f src/main.ts
+   $ dbht log /path/to/MyProject -n 3
+   $ dbht diff /path/to/MyProject -f src/main.ts
    ```
 
 ### AI 安全策略
