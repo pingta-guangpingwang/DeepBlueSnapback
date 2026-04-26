@@ -1048,7 +1048,11 @@ ipcMain.handle('dbgvs:create-project', async (_, rootPath: string, projectName: 
     if (!result.success) return result
 
     // 工作副本路径（必填）
-    const workingCopyPath = path.resolve(customPath.trim())
+    // 如果选中文件夹名不等于项目名称，自动在文件夹下创建以项目名命名的子目录
+    const resolvedCustom = path.resolve(customPath.trim())
+    const workingCopyPath = path.basename(resolvedCustom) === projectName.trim()
+      ? resolvedCustom
+      : path.join(resolvedCustom, projectName.trim())
     await fs.ensureDir(workingCopyPath)
 
     // 创建 .dbvs-link.json 链接文件

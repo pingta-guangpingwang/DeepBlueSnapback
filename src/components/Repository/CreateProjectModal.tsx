@@ -102,7 +102,7 @@ export default function CreateProjectModal() {
                   <button onClick={selectFolder} style={{ whiteSpace: 'nowrap' }}>浏览...</button>
                 </div>
                 <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>
-                  工作副本存放位置，实际开发操作的目录
+                  工作副本存放位置。若文件夹名与项目名不同，将自动在其下创建项目名称子目录
                 </div>
               </div>
             </div>
