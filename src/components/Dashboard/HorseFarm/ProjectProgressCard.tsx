@@ -14,6 +14,9 @@ interface ProjectProgressCardProps {
   onRemove: () => void
   onOpen: () => void
   onStartWorkflow: () => void
+  onViewMindMap: () => void
+  onViewKB: () => void
+  detailProjectPath: string | null
   updateRequirements: (requirements: string) => void
   updateSummary: (summary: string) => void
   setPhase: (phase: HorseFarmProject['phase']) => void
@@ -33,7 +36,7 @@ const phaseLabels: Record<string, string> = {
 
 export default function ProjectProgressCard({
   hfProject, project, isActive, progress,
-  onSelect, onRemove, onOpen,
+  onSelect, onRemove, onOpen, onStartWorkflow, onViewMindMap, onViewKB, detailProjectPath,
   updateRequirements, updateSummary, setPhase, setMindmapPath, setKnowledgeBasePath,
   addSystemMessage, addTask, updateTask, removeTask,
 }: ProjectProgressCardProps) {
@@ -83,6 +86,12 @@ export default function ProjectProgressCard({
               {expanded ? '收起' : '任务'}
             </button>
           )}
+          <button onClick={(e) => { e.stopPropagation(); onViewMindMap() }}
+            style={{ color: detailProjectPath === hfProject.projectPath ? '#7c3aed' : '#6b7280', fontWeight: detailProjectPath === hfProject.projectPath ? 600 : 400 }}
+          >🧠</button>
+          <button onClick={(e) => { e.stopPropagation(); onViewKB() }}
+            style={{ color: detailProjectPath === hfProject.projectPath ? '#059669' : '#6b7280', fontWeight: detailProjectPath === hfProject.projectPath ? 600 : 400 }}
+          >📄</button>
           <button onClick={(e) => { e.stopPropagation(); onRemove() }} style={{ color: '#9ca3af' }}>
             {t.horseFarm.removeFromFarm}
           </button>

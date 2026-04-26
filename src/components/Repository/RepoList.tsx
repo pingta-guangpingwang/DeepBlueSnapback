@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAppState } from '../../context/AppContext'
 import { useProjects } from '../../hooks/useProjects'
 import { useRepository } from '../../hooks/useRepository'
@@ -566,15 +566,11 @@ export default function RepoList() {
     }
   }, [state.pendingCliAction, state.cliTargetPath, dispatch])
 
-  // 持久化 horse farm 项目 ID (跳过首次挂载以避免空数组覆盖已保存数据)
-  const hfIdsInitialized = useRef(false)
+  // 持久化 horse farm 项目 ID (仅在启动加载完成后才保存，避免空数组覆盖)
   useEffect(() => {
-    if (!hfIdsInitialized.current) {
-      hfIdsInitialized.current = true
-      return
-    }
+    if (!state.horseFarmIdsLoaded) return
     window.electronAPI.saveHorseFarmProjectIds(state.horseFarmProjectIds).catch(() => {})
-  }, [state.horseFarmProjectIds])
+  }, [state.horseFarmProjectIds, state.horseFarmIdsLoaded])
 
   const changeRootRepository = async () => {
     const confirmed = confirm(t.repoList.confirmChangeRoot)

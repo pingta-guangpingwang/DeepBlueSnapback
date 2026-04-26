@@ -9,10 +9,13 @@ interface ProjectListProps {
   hfProjects: Record<string, HorseFarmProject>
   activeProject: string | null
   projects: Project[]
+  detailProjectPath: string | null
   onSelectProject: (path: string) => void
   onRemoveProject: (path: string) => void
   onStartWorkflow: (path: string) => void
   onOpenProject: (path: string) => void
+  onViewMindMap: (path: string) => void
+  onViewKB: (path: string) => void
   getProgress: (path: string) => number
   updateRequirements: (path: string, requirements: string) => void
   updateSummary: (path: string, summary: string) => void
@@ -26,8 +29,8 @@ interface ProjectListProps {
 }
 
 export default function ProjectList({
-  projectIds, hfProjects, activeProject, projects,
-  onSelectProject, onRemoveProject, onOpenProject,
+  projectIds, hfProjects, activeProject, projects, detailProjectPath,
+  onSelectProject, onRemoveProject, onOpenProject, onViewMindMap, onViewKB,
   getProgress, updateRequirements, updateSummary, setPhase,
   setMindmapPath, setKnowledgeBasePath, addSystemMessage,
   addTask, updateTask, removeTask,
@@ -83,10 +86,13 @@ export default function ProjectList({
             project={proj}
             isActive={activeProject === id}
             progress={getProgress(id)}
+            detailProjectPath={detailProjectPath}
             onSelect={() => onSelectProject(id)}
             onRemove={() => onRemoveProject(id)}
             onOpen={() => onOpenProject(id)}
             onStartWorkflow={() => onSelectProject(id)}
+            onViewMindMap={() => onViewMindMap(id)}
+            onViewKB={() => onViewKB(id)}
             updateRequirements={(req) => updateRequirements(id, req)}
             updateSummary={(sum) => updateSummary(id, sum)}
             setPhase={(p) => setPhase(id, p)}

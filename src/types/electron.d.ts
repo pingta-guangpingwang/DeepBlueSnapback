@@ -128,6 +128,10 @@ export interface ElectronAPI {
   loadHorseFarmConfig: () => Promise<{ success: boolean; config?: import('./horseFarm').HFConfig; message?: string }>
   saveHorseFarmProjectIds: (ids: string[]) => Promise<{ success: boolean }>
   loadHorseFarmProjectIds: () => Promise<{ success: boolean; ids: string[] }>
+  initializeAllProjects: (projects: Array<{ path: string; name: string }>) => Promise<{
+    success: boolean
+    results?: Array<{ path: string; name: string; kb: string; mindmap: string }>
+  }>
 }
 
 declare global {

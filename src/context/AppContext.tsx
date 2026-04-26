@@ -63,6 +63,7 @@ export interface AppState {
 
   // 驾驭工程/马场
   horseFarmProjectIds: string[]
+  horseFarmIdsLoaded: boolean
   horseFarmActiveSubTab: 'list' | 'mindmap' | 'knowledgebase' | 'settings'
   horseFarmActiveProject: string | null
 
@@ -172,6 +173,7 @@ const initialState: AppState = {
   cliTargetPath: '',
 
   horseFarmProjectIds: [],
+  horseFarmIdsLoaded: false,
   horseFarmActiveSubTab: 'list',
   horseFarmActiveProject: null,
 
@@ -325,7 +327,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_HORSE_FARM_ACTIVE_PROJECT':
       return { ...state, horseFarmActiveProject: action.payload }
     case 'SET_HORSE_FARM_PROJECT_IDS':
-      return { ...state, horseFarmProjectIds: action.payload }
+      return { ...state, horseFarmProjectIds: action.payload, horseFarmIdsLoaded: true }
     default:
       return state
   }

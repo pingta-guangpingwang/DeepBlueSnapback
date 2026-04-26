@@ -192,6 +192,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('horsefarm:save-project-ids', ids),
   loadHorseFarmProjectIds: () =>
     ipcRenderer.invoke('horsefarm:load-project-ids'),
+  initializeAllProjects: (projects: Array<{ path: string; name: string }>) =>
+    ipcRenderer.invoke('horsefarm:initialize-all', projects),
 })
 
 // 类型声明
