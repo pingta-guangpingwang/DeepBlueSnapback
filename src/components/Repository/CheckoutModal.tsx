@@ -60,13 +60,24 @@ export default function CheckoutModal({ onConfirm, onCancel, defaultTargetDir }:
 
   const selectTargetDir = async () => {
     const dir = await window.electronAPI.selectFolder()
-    if (dir) setTargetDir(dir)
+    if (dir) {
+      // 拆分为父目录 + 文件夹名
+      const normalized = dir.replace(/\//g, '\\')
+      const lastSep = normalized.lastIndexOf('\\')
+      if (lastSep > 0) {
+        setTargetDir(normalized.substring(0, lastSep))
+        setFolderName(normalized.substring(lastSep + 1))
+      } else {
+        setTargetDir(normalized)
+        setFolderName('')
+      }
+    }
   }
 
   const handleConfirm = async () => {
     if (!selectedRepo || !targetDir) return
     setLoading(true)
-    const name = folderName.trim() || selectedRepo.name
+    const name = folderName.trim()
     await onConfirm(selectedRepo.path, targetDir, name)
     setLoading(false)
   }
@@ -172,7 +183,9 @@ export default function CheckoutModal({ onConfirm, onCancel, defaultTargetDir }:
             />
             <div style={{ marginTop: '4px', fontSize: '12px', color: '#9ca3af' }}>
               {targetDir
-                ? `${targetDir}/${folderName || selectedRepo?.name || '<名称>'}`
+                ? folderName.trim()
+                  ? `${targetDir}\\${folderName.trim()}`
+                  : `${targetDir}（直接拉取到此目录）`
                 : '请先选择目标目录'}
             </div>
           </div>

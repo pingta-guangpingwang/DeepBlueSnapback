@@ -1267,7 +1267,10 @@ ipcMain.handle('dbgvs:checkout-project', async (_, rootPath: string, repoPath: s
 // Checkout 到指定位置（带自定义文件夹名称）
 ipcMain.handle('dbgvs:checkout-to', async (_, rootPath: string, repoPath: string, targetParentDir: string, folderName: string) => {
   try {
-    const targetPath = path.resolve(path.join(targetParentDir, folderName))
+    // 文件夹名为空时直接拉取到目标目录，否则拼接子目录
+    const targetPath = folderName.trim()
+      ? path.resolve(path.join(targetParentDir, folderName.trim()))
+      : path.resolve(targetParentDir)
 
     // 检查目标是否已存在
     if (await fs.pathExists(targetPath)) {
