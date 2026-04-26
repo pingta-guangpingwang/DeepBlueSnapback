@@ -1,7 +1,8 @@
 .hf-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   gap: 0;
   background: #f8fafc;
 }
