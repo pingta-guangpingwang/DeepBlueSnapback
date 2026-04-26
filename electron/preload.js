@@ -121,4 +121,12 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     readVisualFile: (projectPath) => electron_1.ipcRenderer.invoke('ai-workshop:read-visual-file', projectPath),
     scanProjectDirs: (projectPath) => electron_1.ipcRenderer.invoke('ai-workshop:scan-project-dirs', projectPath),
     ensureWorkshopAssets: () => electron_1.ipcRenderer.invoke('workshop:ensure-assets'),
+    // Horse Farm
+    saveHorseFarmData: (projectPath, data) => electron_1.ipcRenderer.invoke('horsefarm:save-data', projectPath, data),
+    loadHorseFarmData: (projectPath) => electron_1.ipcRenderer.invoke('horsefarm:load-data', projectPath),
+    generateProjectSummary: (projectPath, requirements) => electron_1.ipcRenderer.invoke('horsefarm:generate-summary', projectPath, requirements),
+    generateMindMap: (projectPath, summary) => electron_1.ipcRenderer.invoke('horsefarm:generate-mindmap', projectPath, summary),
+    generateKnowledgeBase: (projectPath, projectName, summary, requirements) => electron_1.ipcRenderer.invoke('horsefarm:generate-kb', projectPath, projectName, summary, requirements),
+    readMindMapFile: (filePath) => electron_1.ipcRenderer.invoke('horsefarm:read-mindmap', filePath),
+    readKnowledgeBase: (projectPath) => electron_1.ipcRenderer.invoke('horsefarm:read-kb', projectPath),
 });

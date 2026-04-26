@@ -124,6 +124,10 @@ export interface ElectronAPI {
   generateKnowledgeBase: (projectPath: string, projectName: string, summary: string, requirements: string) => Promise<{ success: boolean; filePath?: string; message?: string }>
   readMindMapFile: (filePath: string) => Promise<{ success: boolean; data?: import('./horseFarm').MindMapData; message?: string }>
   readKnowledgeBase: (projectPath: string) => Promise<{ success: boolean; content?: string; message?: string }>
+  saveHorseFarmConfig: (config: import('./horseFarm').HFConfig) => Promise<{ success: boolean; message?: string }>
+  loadHorseFarmConfig: () => Promise<{ success: boolean; config?: import('./horseFarm').HFConfig; message?: string }>
+  saveHorseFarmProjectIds: (ids: string[]) => Promise<{ success: boolean }>
+  loadHorseFarmProjectIds: () => Promise<{ success: boolean; ids: string[] }>
 }
 
 declare global {

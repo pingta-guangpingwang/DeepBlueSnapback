@@ -561,6 +561,7 @@ const zh: Translations = {
     subTabList: '项目列表',
     subTabMindmap: '思维导图',
     subTabKB: '知识库',
+    subTabSettings: '设置',
     commandPlaceholder: '输入指令或对所有项目提问...',
     commandSend: '发送',
     commandClear: '清空',

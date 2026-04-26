@@ -63,7 +63,7 @@ export interface AppState {
 
   // 驾驭工程/马场
   horseFarmProjectIds: string[]
-  horseFarmActiveSubTab: 'list' | 'mindmap' | 'knowledgebase'
+  horseFarmActiveSubTab: 'list' | 'mindmap' | 'knowledgebase' | 'settings'
   horseFarmActiveProject: string | null
 
   // 新手引导
@@ -124,8 +124,9 @@ export type AppAction =
   | { type: 'TOGGLE_HORSE_FARM_PROJECT'; payload: string }
   | { type: 'ADD_TO_HORSE_FARM'; payload: string[] }
   | { type: 'REMOVE_FROM_HORSE_FARM'; payload: string }
-  | { type: 'SET_HORSE_FARM_SUB_TAB'; payload: 'list' | 'mindmap' | 'knowledgebase' }
+  | { type: 'SET_HORSE_FARM_SUB_TAB'; payload: 'list' | 'mindmap' | 'knowledgebase' | 'settings' }
   | { type: 'SET_HORSE_FARM_ACTIVE_PROJECT'; payload: string | null }
+  | { type: 'SET_HORSE_FARM_PROJECT_IDS'; payload: string[] }
 
 // --- Initial state ---
 
@@ -323,6 +324,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, horseFarmActiveSubTab: action.payload }
     case 'SET_HORSE_FARM_ACTIVE_PROJECT':
       return { ...state, horseFarmActiveProject: action.payload }
+    case 'SET_HORSE_FARM_PROJECT_IDS':
+      return { ...state, horseFarmProjectIds: action.payload }
     default:
       return state
   }

@@ -184,6 +184,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('horsefarm:read-mindmap', filePath),
   readKnowledgeBase: (projectPath: string) =>
     ipcRenderer.invoke('horsefarm:read-kb', projectPath),
+  saveHorseFarmConfig: (config: any) =>
+    ipcRenderer.invoke('horsefarm:save-config', config),
+  loadHorseFarmConfig: () =>
+    ipcRenderer.invoke('horsefarm:load-config'),
+  saveHorseFarmProjectIds: (ids: string[]) =>
+    ipcRenderer.invoke('horsefarm:save-project-ids', ids),
+  loadHorseFarmProjectIds: () =>
+    ipcRenderer.invoke('horsefarm:load-project-ids'),
 })
 
 // 类型声明

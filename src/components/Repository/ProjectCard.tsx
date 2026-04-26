@@ -10,9 +10,10 @@ interface ProjectCardProps {
   selected?: boolean
   onToggleSelect?: (projectPath: string) => void
   showCheckbox?: boolean
+  isInFarm?: boolean
 }
 
-export default function ProjectCard({ project, onEnter, onCommit, onRemove, selected, onToggleSelect, showCheckbox }: ProjectCardProps) {
+export default function ProjectCard({ project, onEnter, onCommit, onRemove, selected, onToggleSelect, showCheckbox, isInFarm }: ProjectCardProps) {
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
   const { t } = useI18n()
 
@@ -73,6 +74,11 @@ export default function ProjectCard({ project, onEnter, onCommit, onRemove, sele
         </span>
         {project.hasChanges && (
           <span style={{ fontSize: '12px', color: '#d97706', fontWeight: 500 }}>● {t.projectCard.hasChanges}</span>
+        )}
+        {isInFarm && (
+          <span style={{ fontSize: '11px', color: '#7c3aed', fontWeight: 500, background: '#ede9fe', padding: '2px 8px', borderRadius: '8px' }}>
+            🐴 {t.horseFarm.tabLabelShort}
+          </span>
         )}
       </div>
       <div className="project-actions" style={{ flexShrink: 0 }}>

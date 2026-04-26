@@ -567,6 +567,7 @@ const en = {
     subTabList: 'Projects',
     subTabMindmap: 'Mind Map',
     subTabKB: 'Knowledge Base',
+    subTabSettings: 'Settings',
     commandPlaceholder: 'Enter command or ask about projects...',
     commandSend: 'Send',
     commandClear: 'Clear',

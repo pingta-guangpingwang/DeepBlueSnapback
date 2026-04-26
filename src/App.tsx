@@ -34,6 +34,13 @@ function App() {
         try {
           await window.electronAPI.ensureProjectDocs(result.rootPath)
         } catch { /* ignore */ }
+        // Load saved Horse Farm project IDs
+        try {
+          const hfResult = await window.electronAPI.loadHorseFarmProjectIds()
+          if (hfResult.success && hfResult.ids.length > 0) {
+            dispatch({ type: 'SET_HORSE_FARM_PROJECT_IDS', payload: hfResult.ids })
+          }
+        } catch { /* ignore */ }
       } else {
         dispatch({ type: 'SET_CURRENT_VIEW', payload: 'repositories' })
       }

@@ -566,6 +566,11 @@ export default function RepoList() {
     }
   }, [state.pendingCliAction, state.cliTargetPath, dispatch])
 
+  // 持久化 horse farm 项目 ID
+  useEffect(() => {
+    window.electronAPI.saveHorseFarmProjectIds(state.horseFarmProjectIds).catch(() => {})
+  }, [state.horseFarmProjectIds])
+
   const changeRootRepository = async () => {
     const confirmed = confirm(t.repoList.confirmChangeRoot)
     if (!confirmed) return
@@ -744,6 +749,7 @@ export default function RepoList() {
                 onRemove={removeProject}
                 showCheckbox
                 selected={selectedForFarm.has(project.path)}
+                isInFarm={state.horseFarmProjectIds.includes(project.path)}
                 onToggleSelect={(path) => {
                   setSelectedForFarm(prev => {
                     const next = new Set(prev)

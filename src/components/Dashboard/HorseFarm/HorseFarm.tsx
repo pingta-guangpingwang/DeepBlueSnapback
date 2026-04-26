@@ -1,18 +1,34 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAppState } from '../../../context/AppContext'
 import { useI18n } from '../../../i18n'
 import { useHorseFarm } from '../../../hooks/useHorseFarm'
-import type { HFSubTab } from '../../../types/horseFarm'
+import type { HFSubTab, HFConfig } from '../../../types/horseFarm'
+import { DEFAULT_API_CONFIG } from '../../../types/horseFarm'
 import CommandCenter from './CommandCenter'
 import ProjectList from './ProjectList'
 import MindMapViewer from './MindMapViewer'
 import KnowledgeBaseViewer from './KnowledgeBaseViewer'
+import HorseFarmSettings from './HorseFarmSettings'
 import './HorseFarm.css'
 
 export default function HorseFarm() {
   const [state, dispatch] = useAppState()
   const { t } = useI18n()
   const hf = useHorseFarm()
+  const [hfConfig, setHfConfig] = useState<HFConfig>({
+    projectIds: [],
+    apiKeys: [],
+    settings: { ...DEFAULT_API_CONFIG },
+  })
+
+  // Load saved config on mount
+  useEffect(() => {
+    window.electronAPI.loadHorseFarmConfig().then(result => {
+      if (result.success && result.config) {
+        setHfConfig(result.config)
+      }
+    }).catch(() => {})
+  }, [])
 
   // 同步项目列表到 horse farm
   useEffect(() => {
@@ -23,6 +39,7 @@ export default function HorseFarm() {
     { key: 'list', label: t.horseFarm.subTabList },
     { key: 'mindmap', label: t.horseFarm.subTabMindmap },
     { key: 'knowledgebase', label: t.horseFarm.subTabKB },
+    { key: 'settings', label: t.horseFarm.subTabSettings },
   ]
 
   // 合并所有项目的消息 + 全局消息
@@ -108,6 +125,12 @@ export default function HorseFarm() {
           <KnowledgeBaseViewer
             activeProject={state.horseFarmActiveProject}
             hfProjects={hf.hfProjects}
+          />
+        )}
+        {state.horseFarmActiveSubTab === 'settings' && (
+          <HorseFarmSettings
+            config={hfConfig}
+            onConfigChange={setHfConfig}
           />
         )}
       </div>

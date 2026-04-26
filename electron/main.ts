@@ -1801,6 +1801,45 @@ Update it as the project evolves.
     }
   })
 
+  // Horse Farm — 项目 ID 持久化
+  const HF_CONFIG_DIR = path.join(app.getPath('userData'), 'horsefarm')
+  const HF_PROJECT_IDS_PATH = path.join(HF_CONFIG_DIR, 'project-ids.json')
+  const HF_CONFIG_PATH = path.join(HF_CONFIG_DIR, 'config.json')
+
+  ipcMain.handle('horsefarm:save-project-ids', async (_, ids: string[]) => {
+    try {
+      await fs.ensureDir(HF_CONFIG_DIR)
+      await fs.writeJson(HF_PROJECT_IDS_PATH, { ids, updatedAt: new Date().toISOString() })
+      return { success: true }
+    } catch { return { success: false } }
+  })
+
+  ipcMain.handle('horsefarm:load-project-ids', async () => {
+    try {
+      if (!await fs.pathExists(HF_PROJECT_IDS_PATH)) return { success: true, ids: [] }
+      const data = await fs.readJson(HF_PROJECT_IDS_PATH)
+      return { success: true, ids: Array.isArray(data.ids) ? data.ids : [] }
+    } catch { return { success: true, ids: [] } }
+  })
+
+  ipcMain.handle('horsefarm:save-config', async (_, config: any) => {
+    try {
+      await fs.ensureDir(HF_CONFIG_DIR)
+      await fs.writeJson(HF_CONFIG_PATH, { ...config, updatedAt: new Date().toISOString() })
+      return { success: true }
+    } catch (error) { return { success: false, message: String(error) } }
+  })
+
+  ipcMain.handle('horsefarm:load-config', async () => {
+    try {
+      if (!await fs.pathExists(HF_CONFIG_PATH)) {
+        return { success: true, config: { projectIds: [], apiKeys: [], settings: { defaultModel: 'deepseek-v4-pro', defaultTemperature: 0.7, defaultMaxTokens: 4096, pollingIntervalMs: 5000, maxConcurrentTasks: 3 } } }
+      }
+      const config = await fs.readJson(HF_CONFIG_PATH)
+      return { success: true, config: config || { projectIds: [], apiKeys: [], settings: {} } }
+    } catch { return { success: true, config: { projectIds: [], apiKeys: [], settings: {} } } }
+  })
+
 } // end registerIPCHandlers
 
 // ==================== Git Bridge ====================
