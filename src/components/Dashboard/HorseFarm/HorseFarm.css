@@ -589,6 +589,44 @@
   font-size: 14px;
 }
 
+/* Init Log Viewer */
+.hf-init-log-viewer {
+  padding: 16px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  min-height: 200px;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.hf-init-log-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hf-init-log-line {
+  font-size: 12px;
+  font-family: Consolas, 'Courier New', monospace;
+  color: #374151;
+  padding: 3px 8px;
+  background: #f9fafb;
+  border-radius: 4px;
+  border-left: 3px solid #e5e7eb;
+  line-height: 1.5;
+}
+
+.hf-init-log-line:nth-child(odd) {
+  background: #f3f4f6;
+}
+
+/* Loading pulse */
+@keyframes hf-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 /* Loading */
 .hf-loading {
   display: flex;

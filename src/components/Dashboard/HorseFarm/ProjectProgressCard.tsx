@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useI18n } from '../../../i18n'
 import type { HorseFarmProject, HFTask } from '../../../types/horseFarm'
 import type { Project } from '../../../context/AppContext'
+import type { InitProgress } from './HorseFarm'
 import PreProjectWorkflow from './PreProjectWorkflow'
 import TaskTracker from './TaskTracker'
 
@@ -16,7 +17,10 @@ interface ProjectProgressCardProps {
   onStartWorkflow: () => void
   onViewMindMap: () => void
   onViewKB: () => void
+  onViewInitLog: () => void
   detailProjectPath: string | null
+  detailPanelType: string | null
+  initProgress?: InitProgress
   updateRequirements: (requirements: string) => void
   updateSummary: (summary: string) => void
   setPhase: (phase: HorseFarmProject['phase']) => void
@@ -36,7 +40,7 @@ const phaseLabels: Record<string, string> = {
 
 export default function ProjectProgressCard({
   hfProject, project, isActive, progress,
-  onSelect, onRemove, onOpen, onStartWorkflow, onViewMindMap, onViewKB, detailProjectPath,
+  onSelect, onRemove, onOpen, onStartWorkflow, onViewMindMap, onViewKB, onViewInitLog, detailProjectPath, detailPanelType, initProgress,
   updateRequirements, updateSummary, setPhase, setMindmapPath, setKnowledgeBasePath,
   addSystemMessage, addTask, updateTask, removeTask,
 }: ProjectProgressCardProps) {
@@ -69,11 +73,35 @@ export default function ProjectProgressCard({
           />
         </div>
 
-        <div className="hf-task-summary">
-          {t.horseFarm.tasksCompleted
-            .replace('{done}', String(hfProject.tasks.filter(t => t.status === 'completed').length))
-            .replace('{total}', String(hfProject.tasks.length))}
-        </div>
+        {initProgress && (initProgress.status === 'running' || initProgress.status === 'queued') && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '2px 0' }}>
+            <span style={{ fontSize: '11px', color: '#7c3aed', fontWeight: 500 }}>
+              {initProgress.status === 'queued' ? '⏳' : '🔄'} {initProgress.status === 'queued' ? '等待中' : '初始化中...'}
+            </span>
+            <div className="hf-progress-bar" style={{ flex: 1 }}>
+              <div
+                className="hf-progress-fill"
+                style={{
+                  width: initProgress.kbResult ? '70%' : '30%',
+                  animation: initProgress.status === 'running' ? 'hf-pulse 1.5s ease-in-out infinite' : undefined,
+                }}
+              />
+            </div>
+          </div>
+        )}
+        {initProgress && initProgress.status === 'done' && (
+          <div style={{ fontSize: '11px', color: '#059669', fontWeight: 500 }}>✅ 初始化完成</div>
+        )}
+        {initProgress && initProgress.status === 'error' && (
+          <div style={{ fontSize: '11px', color: '#dc2626', fontWeight: 500 }}>❌ 初始化失败</div>
+        )}
+        {!initProgress && (
+          <div className="hf-task-summary">
+            {t.horseFarm.tasksCompleted
+              .replace('{done}', String(hfProject.tasks.filter(t => t.status === 'completed').length))
+              .replace('{total}', String(hfProject.tasks.length))}
+          </div>
+        )}
 
         <div className="hf-card-actions">
           <button onClick={onOpen}>{t.horseFarm.openProject}</button>
@@ -86,11 +114,16 @@ export default function ProjectProgressCard({
               {expanded ? '收起' : '任务'}
             </button>
           )}
+          {initProgress && (
+            <button onClick={(e) => { e.stopPropagation(); onViewInitLog() }}
+              style={{ color: detailPanelType === 'initLog' && detailProjectPath === hfProject.projectPath ? '#7c3aed' : '#6b7280', fontWeight: detailPanelType === 'initLog' && detailProjectPath === hfProject.projectPath ? 600 : 400 }}
+            >📋</button>
+          )}
           <button onClick={(e) => { e.stopPropagation(); onViewMindMap() }}
-            style={{ color: detailProjectPath === hfProject.projectPath ? '#7c3aed' : '#6b7280', fontWeight: detailProjectPath === hfProject.projectPath ? 600 : 400 }}
+            style={{ color: detailPanelType === 'mindmap' && detailProjectPath === hfProject.projectPath ? '#7c3aed' : '#6b7280', fontWeight: detailPanelType === 'mindmap' && detailProjectPath === hfProject.projectPath ? 600 : 400 }}
           >🧠</button>
           <button onClick={(e) => { e.stopPropagation(); onViewKB() }}
-            style={{ color: detailProjectPath === hfProject.projectPath ? '#059669' : '#6b7280', fontWeight: detailProjectPath === hfProject.projectPath ? 600 : 400 }}
+            style={{ color: detailPanelType === 'kb' && detailProjectPath === hfProject.projectPath ? '#059669' : '#6b7280', fontWeight: detailPanelType === 'kb' && detailProjectPath === hfProject.projectPath ? 600 : 400 }}
           >📄</button>
           <button onClick={(e) => { e.stopPropagation(); onRemove() }} style={{ color: '#9ca3af' }}>
             {t.horseFarm.removeFromFarm}

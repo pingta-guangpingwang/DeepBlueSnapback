@@ -11,6 +11,13 @@ import KnowledgeBaseViewer from './KnowledgeBaseViewer'
 import HorseFarmSettings from './HorseFarmSettings'
 import './HorseFarm.css'
 
+export interface InitProgress {
+  status: 'queued' | 'running' | 'done' | 'exists' | 'error'
+  log: string[]
+  kbResult: string
+  mindmapResult: string
+}
+
 export default function HorseFarm() {
   const [state, dispatch] = useAppState()
   const { t } = useI18n()
@@ -21,11 +28,11 @@ export default function HorseFarm() {
     settings: { ...DEFAULT_API_CONFIG },
   })
   const [detailPanel, setDetailPanel] = useState<{
-    type: 'mindmap' | 'kb' | null
+    type: 'mindmap' | 'kb' | 'initLog' | null
     projectPath: string | null
   }>({ type: null, projectPath: null })
   const [initializing, setInitializing] = useState(false)
-  const [initStatuses, setInitStatuses] = useState<Array<{ name: string; kb: string; mindmap: string }>>([])
+  const [initProgress, setInitProgress] = useState<Record<string, InitProgress>>({})
 
   useEffect(() => {
     window.electronAPI.loadHorseFarmConfig().then(result => {
@@ -56,30 +63,98 @@ export default function HorseFarm() {
     return msgs
   }, [hf.globalCommands, hf.hfProjects, state.horseFarmProjectIds])
 
+  const addLog = (path: string, msg: string) => {
+    setInitProgress(prev => ({
+      ...prev,
+      [path]: {
+        ...prev[path],
+        log: [...(prev[path]?.log || []), new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' ' + msg],
+      },
+    }))
+  }
+
   const handleInitializeAll = async () => {
     if (state.horseFarmProjectIds.length === 0) return
     setInitializing(true)
-    setInitStatuses([])
-    const projList = state.horseFarmProjectIds.map(id => {
+
+    // Initialize all projects as queued
+    const initial: Record<string, InitProgress> = {}
+    for (const id of state.horseFarmProjectIds) {
       const proj = hf.hfProjects[id]
-      return { path: id, name: proj?.projectName || id.split('\\').pop() || id }
-    })
-    try {
-      const result = await window.electronAPI.initializeAllProjects(projList)
-      if (result.success && result.results) {
-        setInitStatuses(result.results)
-        // Update HF project paths for generated files
-        for (const r of result.results) {
-          if (r.kb === 'generated') hf.setKnowledgeBasePath(r.path, r.path + '\\DBHT-KNOWLEDGEBASE.md')
-          if (r.mindmap === 'generated') hf.setMindmapPath(r.path, r.path + '\\.dbvs-mindmap.json')
-        }
-        dispatch({ type: 'SET_MESSAGE', payload: t.horseFarm.initDone })
-      }
-    } catch (err) {
-      dispatch({ type: 'SET_MESSAGE', payload: t.horseFarm.initFailed + String(err) })
+      const name = proj?.projectName || id.split('\\').pop() || id
+      initial[id] = { status: 'queued', log: [name + ': queued'], kbResult: '', mindmapResult: '' }
     }
+    setInitProgress(initial)
+
+    // Process each project sequentially
+    for (const id of state.horseFarmProjectIds) {
+      const proj = hf.hfProjects[id]
+      const name = proj?.projectName || id.split('\\').pop() || id
+
+      // Mark running
+      setInitProgress(prev => ({ ...prev, [id]: { ...prev[id], status: 'running' } }))
+
+      // Generate Knowledge Base
+      addLog(id, 'Checking knowledge base...')
+      try {
+        const kbResult = await window.electronAPI.readKnowledgeBase(id)
+        if (kbResult.success) {
+          addLog(id, 'Knowledge base already exists, using existing')
+          setInitProgress(prev => ({ ...prev, [id]: { ...prev[id], kbResult: 'exists' } }))
+        } else {
+          addLog(id, 'Generating knowledge base...')
+          const genKb = await window.electronAPI.generateKnowledgeBase(id, name, '', '')
+          if (genKb.success && genKb.filePath) {
+            hf.setKnowledgeBasePath(id, genKb.filePath)
+            addLog(id, 'Knowledge base generated: ' + genKb.filePath)
+            setInitProgress(prev => ({ ...prev, [id]: { ...prev[id], kbResult: 'generated' } }))
+          } else {
+            addLog(id, 'KB generation failed: ' + (genKb.message || 'unknown'))
+            setInitProgress(prev => ({ ...prev, [id]: { ...prev[id], kbResult: 'failed' } }))
+          }
+        }
+      } catch (err) {
+        addLog(id, 'KB error: ' + String(err))
+        setInitProgress(prev => ({ ...prev, [id]: { ...prev[id], kbResult: 'error' } }))
+      }
+
+      // Generate Mind Map
+      addLog(id, 'Checking mind map...')
+      try {
+        const mindmapPath = id + '\\.dbvs-mindmap.json'
+        const mmResult = await window.electronAPI.readMindMapFile(mindmapPath)
+        if (mmResult.success) {
+          addLog(id, 'Mind map already exists, using existing')
+          setInitProgress(prev => ({ ...prev, [id]: { ...prev[id], mindmapResult: 'exists' } }))
+        } else {
+          addLog(id, 'Scanning project structure...')
+          const genMm = await window.electronAPI.generateMindMap(id, '')
+          if (genMm.success && genMm.filePath) {
+            hf.setMindmapPath(id, genMm.filePath)
+            addLog(id, 'Mind map generated: ' + genMm.filePath)
+            setInitProgress(prev => ({ ...prev, [id]: { ...prev[id], mindmapResult: 'generated' } }))
+          } else {
+            addLog(id, 'Mind map generation failed: ' + (genMm.message || 'unknown'))
+            setInitProgress(prev => ({ ...prev, [id]: { ...prev[id], mindmapResult: 'failed' } }))
+          }
+        }
+      } catch (err) {
+        addLog(id, 'Mind map error: ' + String(err))
+        setInitProgress(prev => ({ ...prev, [id]: { ...prev[id], mindmapResult: 'error' } }))
+      }
+
+      // Mark done
+      addLog(id, 'Done.')
+      setInitProgress(prev => ({ ...prev, [id]: { ...prev[id], status: 'done' } }))
+    }
+
     setInitializing(false)
+    dispatch({ type: 'SET_MESSAGE', payload: t.horseFarm.initDone })
   }
+
+  // Count init progress
+  const initDone = Object.values(initProgress).filter(p => p.status === 'done').length
+  const initTotal = Object.keys(initProgress).length
 
   return (
     <div className="hf-container">
@@ -103,10 +178,10 @@ export default function HorseFarm() {
           ))}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingRight: '16px' }}>
-          {initStatuses.length > 0 && (
-            <div style={{ fontSize: '11px', color: '#6b7280', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {initStatuses.map(s => `${s.name}: ${s.kb === 'exists' ? '✓' : s.kb === 'generated' ? '+' : '✗'}`).join('  ')}
-            </div>
+          {initializing && (
+            <span style={{ fontSize: '12px', color: '#7c3aed', fontWeight: 500 }}>
+              {initDone}/{initTotal}
+            </span>
           )}
           <button
             onClick={handleInitializeAll}
@@ -124,7 +199,6 @@ export default function HorseFarm() {
         </div>
       ) : (
         <div className="hf-main-layout">
-          {/* Left: Project List */}
           <div className="hf-left-panel">
             <ProjectList
               projectIds={state.horseFarmProjectIds}
@@ -132,6 +206,11 @@ export default function HorseFarm() {
               activeProject={state.horseFarmActiveProject}
               projects={state.projects}
               detailProjectPath={detailPanel.projectPath}
+              detailPanelType={detailPanel.type}
+              initProgress={initProgress}
+              onViewMindMap={(path) => setDetailPanel({ type: 'mindmap', projectPath: path })}
+              onViewKB={(path) => setDetailPanel({ type: 'kb', projectPath: path })}
+              onViewInitLog={(path) => setDetailPanel({ type: 'initLog', projectPath: path })}
               onSelectProject={(path) => dispatch({ type: 'SET_HORSE_FARM_ACTIVE_PROJECT', payload: path })}
               onRemoveProject={(path) => dispatch({ type: 'REMOVE_FROM_HORSE_FARM', payload: path })}
               onStartWorkflow={(path) => {
@@ -147,8 +226,6 @@ export default function HorseFarm() {
                   dispatch({ type: 'SET_ACTIVE_TAB', payload: 'overview' })
                 }
               }}
-              onViewMindMap={(path) => setDetailPanel({ type: 'mindmap', projectPath: path })}
-              onViewKB={(path) => setDetailPanel({ type: 'kb', projectPath: path })}
               getProgress={hf.getProjectProgress}
               updateRequirements={hf.updateRequirements}
               updateSummary={hf.updateSummary}
@@ -162,7 +239,6 @@ export default function HorseFarm() {
             />
           </div>
 
-          {/* Right: Detail Panel */}
           <div className="hf-right-panel">
             {detailPanel.type === 'mindmap' && detailPanel.projectPath && (
               <MindMapViewer
@@ -175,6 +251,18 @@ export default function HorseFarm() {
                 activeProject={detailPanel.projectPath}
                 hfProjects={hf.hfProjects}
               />
+            )}
+            {detailPanel.type === 'initLog' && detailPanel.projectPath && initProgress[detailPanel.projectPath] && (
+              <div className="hf-init-log-viewer">
+                <h4 style={{ margin: '0 0 12px', fontSize: '14px', color: '#1f2937' }}>
+                  Init Log — {hf.hfProjects[detailPanel.projectPath]?.projectName || detailPanel.projectPath.split('\\').pop()}
+                </h4>
+                <div className="hf-init-log-lines">
+                  {initProgress[detailPanel.projectPath].log.map((line, i) => (
+                    <div key={i} className="hf-init-log-line">{line}</div>
+                  ))}
+                </div>
+              </div>
             )}
             {!detailPanel.type && (
               <div className="hf-detail-empty">

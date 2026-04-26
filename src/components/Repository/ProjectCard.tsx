@@ -54,7 +54,7 @@ export default function ProjectCard({ project, onEnter, onCommit, onRemove, sele
 
   return (
     <div className="project-card" style={{ position: 'relative' }}>
-      {showCheckbox && (
+      {(showCheckbox && !isInFarm) && (
         <div style={{ position: 'absolute', top: '8px', left: '10px', zIndex: 1 }}>
           <input
             type="checkbox"
@@ -64,7 +64,7 @@ export default function ProjectCard({ project, onEnter, onCommit, onRemove, sele
           />
         </div>
       )}
-      <div className="project-info" style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, flex: 1, paddingLeft: showCheckbox ? '28px' : '0' }}>
+      <div className="project-info" style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, flex: 1, paddingLeft: (showCheckbox && !isInFarm) ? '28px' : '0' }}>
         <h3 style={{ margin: 0, whiteSpace: 'nowrap', fontSize: '14px' }}>{project.name}</h3>
         <span style={{ fontSize: '12px', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {project.path}

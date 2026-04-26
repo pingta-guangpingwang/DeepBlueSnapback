@@ -2,6 +2,7 @@ import { useI18n } from '../../../i18n'
 import { useAppState } from '../../../context/AppContext'
 import type { HorseFarmProject, HFTask } from '../../../types/horseFarm'
 import type { Project } from '../../../context/AppContext'
+import type { InitProgress } from './HorseFarm'
 import ProjectProgressCard from './ProjectProgressCard'
 
 interface ProjectListProps {
@@ -10,12 +11,15 @@ interface ProjectListProps {
   activeProject: string | null
   projects: Project[]
   detailProjectPath: string | null
+  detailPanelType: string | null
+  initProgress: Record<string, InitProgress>
   onSelectProject: (path: string) => void
   onRemoveProject: (path: string) => void
   onStartWorkflow: (path: string) => void
   onOpenProject: (path: string) => void
   onViewMindMap: (path: string) => void
   onViewKB: (path: string) => void
+  onViewInitLog: (path: string) => void
   getProgress: (path: string) => number
   updateRequirements: (path: string, requirements: string) => void
   updateSummary: (path: string, summary: string) => void
@@ -29,8 +33,8 @@ interface ProjectListProps {
 }
 
 export default function ProjectList({
-  projectIds, hfProjects, activeProject, projects, detailProjectPath,
-  onSelectProject, onRemoveProject, onOpenProject, onViewMindMap, onViewKB,
+  projectIds, hfProjects, activeProject, projects, detailProjectPath, detailPanelType, initProgress,
+  onSelectProject, onRemoveProject, onOpenProject, onViewMindMap, onViewKB, onViewInitLog,
   getProgress, updateRequirements, updateSummary, setPhase,
   setMindmapPath, setKnowledgeBasePath, addSystemMessage,
   addTask, updateTask, removeTask,
@@ -87,12 +91,15 @@ export default function ProjectList({
             isActive={activeProject === id}
             progress={getProgress(id)}
             detailProjectPath={detailProjectPath}
+            detailPanelType={detailPanelType}
+            initProgress={initProgress[id]}
             onSelect={() => onSelectProject(id)}
             onRemove={() => onRemoveProject(id)}
             onOpen={() => onOpenProject(id)}
             onStartWorkflow={() => onSelectProject(id)}
             onViewMindMap={() => onViewMindMap(id)}
             onViewKB={() => onViewKB(id)}
+            onViewInitLog={() => onViewInitLog(id)}
             updateRequirements={(req) => updateRequirements(id, req)}
             updateSummary={(sum) => updateSummary(id, sum)}
             setPhase={(p) => setPhase(id, p)}
