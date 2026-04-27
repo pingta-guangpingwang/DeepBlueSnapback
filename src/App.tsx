@@ -1,20 +1,34 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAppState } from './context/AppContext'
-import { useI18n } from './i18n'
+import { useI18n, type Locale } from './i18n'
 import TitleBar from './components/Layout/TitleBar'
 import RootSetup from './components/Setup/RootSetup'
 import RepoList from './components/Repository/RepoList'
 import Dashboard from './components/Dashboard/Dashboard'
-import HorseFarm from './components/Dashboard/HorseFarm/HorseFarm'
 import CommitPanel from './components/Dashboard/CommitPanel'
 import DiffViewer from './components/Dashboard/DiffViewer'
 import GitRemoteModal from './components/Dashboard/GitRemoteModal'
 import ConflictModal from './components/Dashboard/ConflictModal'
 import OnboardingGuide from './components/Onboarding/OnboardingGuide'
 
+const LOCALE_KEY = 'dbht-locale'
+
+function hasSavedLocale(): boolean {
+  try {
+    const v = localStorage.getItem(LOCALE_KEY)
+    return v === 'en' || v === 'zh'
+  } catch { return false }
+}
+
 function App() {
   const [state, dispatch] = useAppState()
-  const { t } = useI18n()
+  const { t, setLocale } = useI18n()
+  const [showLangPicker, setShowLangPicker] = useState(!hasSavedLocale())
+
+  const handleSelectLanguage = (lang: Locale) => {
+    setLocale(lang)
+    setShowLangPicker(false)
+  }
 
   // Initialize: load root repository config
   useEffect(() => {
@@ -34,13 +48,6 @@ function App() {
         // Check and fill missing DBHT-GUIDE.md for all projects
         try {
           await window.electronAPI.ensureProjectDocs(result.rootPath)
-        } catch { /* ignore */ }
-        // Load saved Horse Farm project IDs (always dispatch to mark loaded)
-        try {
-          const hfResult = await window.electronAPI.loadHorseFarmProjectIds()
-          if (hfResult.success) {
-            dispatch({ type: 'SET_HORSE_FARM_PROJECT_IDS', payload: hfResult.ids || [] })
-          }
         } catch { /* ignore */ }
       } else {
         dispatch({ type: 'SET_CURRENT_VIEW', payload: 'repositories' })
@@ -147,6 +154,84 @@ function App() {
     return () => { unsub() }
   }, [dispatch, state.isRootRepoConfigured, state.rootRepositoryPath])
 
+  // ---- Mandatory Language Picker (first launch) ----
+  if (showLangPicker) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 99999,
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif',
+      }}>
+        <div style={{ textAlign: 'center', maxWidth: '480px', padding: '40px' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🌐</div>
+          <h1 style={{
+            color: '#f1f5f9', fontSize: '28px', fontWeight: 700, margin: '0 0 8px',
+            letterSpacing: '0.5px',
+          }}>
+            DBHT / 深蓝驭溯
+          </h1>
+          <p style={{ color: '#94a3b8', fontSize: '14px', margin: '0 0 8px', lineHeight: 1.6 }}>
+            Choose Your Language
+          </p>
+          <p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 40px' }}>
+            请选择界面语言以继续
+          </p>
+          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+            <button
+              onClick={() => handleSelectLanguage('en')}
+              style={{
+                width: '180px', padding: '20px 24px',
+                border: '2px solid #334155', borderRadius: '16px',
+                background: 'rgba(255,255,255,0.04)',
+                color: '#f1f5f9', cursor: 'pointer',
+                fontSize: '16px', fontWeight: 600,
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(99,102,241,0.15)'
+                e.currentTarget.style.borderColor = '#6366f1'
+                e.currentTarget.style.transform = 'translateY(-2px)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
+                e.currentTarget.style.borderColor = '#334155'
+                e.currentTarget.style.transform = ''
+              }}
+            >
+              <div style={{ fontSize: '32px', marginBottom: '8px' }}>🇺🇸</div>
+              English
+            </button>
+            <button
+              onClick={() => handleSelectLanguage('zh')}
+              style={{
+                width: '180px', padding: '20px 24px',
+                border: '2px solid #334155', borderRadius: '16px',
+                background: 'rgba(255,255,255,0.04)',
+                color: '#f1f5f9', cursor: 'pointer',
+                fontSize: '16px', fontWeight: 600,
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(99,102,241,0.15)'
+                e.currentTarget.style.borderColor = '#6366f1'
+                e.currentTarget.style.transform = 'translateY(-2px)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
+                e.currentTarget.style.borderColor = '#334155'
+                e.currentTarget.style.transform = ''
+              }}
+            >
+              <div style={{ fontSize: '32px', marginBottom: '8px' }}>🇨🇳</div>
+              中文
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // If not configured, show setup
   if (!state.isRootRepoConfigured || state.currentView === 'setup') {
     return (
@@ -166,26 +251,6 @@ function App() {
         {state.commitPanelProject && <CommitPanel />}
         {state.diffModalFile && <DiffViewer />}
         {state.showOnboarding && <OnboardingGuide />}
-      </>
-    )
-  }
-
-  // Horse Farm view (standalone multi-project management)
-  if (state.currentView === 'horseFarm') {
-    return (
-      <>
-        <TitleBar />
-        <div className="horsefarm-page">
-          <header className="dashboard-header draggable-header">
-            <div className="header-left">
-              <button className="back-button" onClick={() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'repositories' })}>
-                {t.dashboard.back}
-              </button>
-              <h1>{t.horseFarm.tabLabel}</h1>
-            </div>
-          </header>
-          <HorseFarm />
-        </div>
       </>
     )
   }

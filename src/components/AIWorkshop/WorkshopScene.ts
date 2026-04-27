@@ -3,6 +3,10 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js'
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
 import type { DBVSVisualFile, CharacterAction, ModuleStatus, TaskDifficulty } from '../../types/ai-workshop'
 
 // Layout
@@ -14,6 +18,8 @@ const GROUND_SIZE = 28
 const MOVE_DURATION = 0.8
 const UAL1_URL = './assets/models/ual1.glb'
 const FADE_DURATION = 0.15
+const STAR_COUNT = 600
+const PARTICLE_COUNT = 120
 
 // Action → clip mapping (use looping clips, NOT hit reactions)
 const ACTION_CLIPS: Record<CharacterAction, string> = {
@@ -40,7 +46,8 @@ interface RoomEntry {
   group: THREE.Group
   box: THREE.Mesh
   mat: THREE.MeshStandardMaterial
-  label: CSS2DObject
+  ring: THREE.Mesh
+  ringMat: THREE.MeshBasicMaterial
   light: THREE.PointLight | null
 }
 
@@ -90,6 +97,7 @@ export class WorkshopScene {
   private scene: THREE.Scene
   private camera: THREE.PerspectiveCamera
   private controls: OrbitControls
+  private composer: EffectComposer
   private clock = new THREE.Clock()
 
   private rooms = new Map<string, RoomEntry>()
@@ -106,6 +114,10 @@ export class WorkshopScene {
   private glbCache: GLBCache | null = null
   private glbLoadPromise: Promise<GLBCache | null> | null = null
   private disposed = false
+
+  private stars: THREE.Points
+  private particles: THREE.Points
+  private connectionLines: THREE.Group = new THREE.Group()
 
   private roomGeo: THREE.BoxGeometry
   private easyGeo: THREE.SphereGeometry
@@ -186,6 +198,17 @@ export class WorkshopScene {
     ;(grid.material as THREE.Material).transparent = true
     this.scene.add(grid)
 
+    // Star field
+    this.stars = this.createStarField()
+    this.scene.add(this.stars)
+
+    // Floating particles
+    this.particles = this.createParticles()
+    this.scene.add(this.particles)
+
+    // Connection lines between rooms (rebuilt on layout change)
+    this.scene.add(this.connectionLines)
+
     // Shared geometries
     this.roomGeo = new THREE.BoxGeometry(ROOM_SIZE, ROOM_HEIGHT, ROOM_SIZE)
     this.easyGeo = new THREE.SphereGeometry(0.2, 10, 8)
@@ -193,6 +216,13 @@ export class WorkshopScene {
     this.hardGeo = new THREE.ConeGeometry(0.22, 0.45, 8)
 
     this.gltfLoader = new GLTFLoader()
+
+    // Post-processing bloom
+    this.composer = new EffectComposer(this.renderer)
+    this.composer.addPass(new RenderPass(this.scene, this.camera))
+    const bloom = new UnrealBloomPass(new THREE.Vector2(w, h), 0.6, 0.4, 0.85)
+    this.composer.addPass(bloom)
+    this.composer.addPass(new OutputPass())
 
     // Start loading GLB immediately
     this.loadMannequinModel()
@@ -218,6 +248,7 @@ export class WorkshopScene {
     this.camera.aspect = w / h
     this.camera.updateProjectionMatrix()
     this.renderer.setSize(w, h)
+    this.composer.setSize(w, h)
     this.cssRenderer.setSize(w, h)
   }
 
@@ -241,10 +272,16 @@ export class WorkshopScene {
       })
       this.glbCache = null
     }
+    this.stars.geometry.dispose()
+    ;(this.stars.material as THREE.Material).dispose()
+    this.particles.geometry.dispose()
+    ;(this.particles.material as THREE.Material).dispose()
+    this.rebuildConnections() // clears and disposes
     this.roomGeo.dispose()
     this.easyGeo.dispose()
     this.medGeo.dispose()
     this.hardGeo.dispose()
+    this.composer.dispose()
     this.renderer.dispose()
     this.renderer.domElement.remove()
     this.cssRenderer.domElement.remove()
@@ -262,6 +299,71 @@ export class WorkshopScene {
       const x = (col - (cols - 1) / 2) * ROOM_SPACING
       const z = (row - (Math.ceil(n / cols) - 1) / 2) * ROOM_SPACING
       this.layout.set(modules[i].id, new THREE.Vector3(x, ROOM_Y, z))
+    }
+    this.rebuildConnections()
+  }
+
+  // ---- Atmosphere ----
+
+  private createStarField(): THREE.Points {
+    const positions = new Float32Array(STAR_COUNT * 3)
+    for (let i = 0; i < STAR_COUNT; i++) {
+      const r = 40 + Math.random() * 60
+      const theta = Math.random() * Math.PI * 2
+      const phi = Math.random() * Math.PI
+      positions[i * 3]     = r * Math.sin(phi) * Math.cos(theta)
+      positions[i * 3 + 1] = r * Math.cos(phi) * 0.6 + 10
+      positions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta)
+    }
+    const geo = new THREE.BufferGeometry()
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    const mat = new THREE.PointsMaterial({ color: 0xaaccff, size: 0.3, transparent: true, opacity: 0.7, sizeAttenuation: true })
+    return new THREE.Points(geo, mat)
+  }
+
+  private createParticles(): THREE.Points {
+    const positions = new Float32Array(PARTICLE_COUNT * 3)
+    const colors = new Float32Array(PARTICLE_COUNT * 3)
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      positions[i * 3]     = (Math.random() - 0.5) * GROUND_SIZE * 0.8
+      positions[i * 3 + 1] = 0.5 + Math.random() * 8
+      positions[i * 3 + 2] = (Math.random() - 0.5) * GROUND_SIZE * 0.8
+      const c = new THREE.Color().setHSL(0.55 + Math.random() * 0.15, 0.8, 0.6 + Math.random() * 0.3)
+      colors[i * 3]     = c.r
+      colors[i * 3 + 1] = c.g
+      colors[i * 3 + 2] = c.b
+    }
+    const geo = new THREE.BufferGeometry()
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+    const mat = new THREE.PointsMaterial({ size: 0.12, transparent: true, opacity: 0.6, vertexColors: true, sizeAttenuation: true, blending: THREE.AdditiveBlending, depthWrite: false })
+    return new THREE.Points(geo, mat)
+  }
+
+  private rebuildConnections(): void {
+    while (this.connectionLines.children.length > 0) {
+      const child = this.connectionLines.children[0]
+      this.connectionLines.remove(child)
+      if (child instanceof THREE.Line) {
+        child.geometry.dispose()
+        ;(child.material as THREE.Material).dispose()
+      }
+    }
+    const positions = Array.from(this.layout.entries())
+    for (let i = 0; i < positions.length; i++) {
+      for (let j = i + 1; j < positions.length; j++) {
+        const [, a] = positions[i]
+        const [, b] = positions[j]
+        const dist = a.distanceTo(b)
+        if (dist < ROOM_SPACING * 1.6) {
+          const geo = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(a.x, 0.02, a.z),
+            new THREE.Vector3(b.x, 0.02, b.z),
+          ])
+          const mat = new THREE.LineBasicMaterial({ color: 0x1e5a8f, transparent: true, opacity: 0.25 })
+          this.connectionLines.add(new THREE.Line(geo, mat))
+        }
+      }
     }
   }
 
@@ -303,9 +405,13 @@ export class WorkshopScene {
     const edgesMat = new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.3 })
     group.add(new THREE.LineSegments(edgesGeo, edgesMat))
 
-    const label = this.createLabel(mod.name, '9px', '#c8d6e5')
-    label.position.set(0, -ROOM_HEIGHT / 2 - 0.15, ROOM_SIZE / 2 + 0.1)
-    group.add(label)
+    // Glowing ring around the platform
+    const ringGeo = new THREE.TorusGeometry(ROOM_SIZE / 2 + 0.15, 0.04, 8, 32)
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.35 })
+    const ring = new THREE.Mesh(ringGeo, ringMat)
+    ring.rotation.x = -Math.PI / 2
+    ring.position.y = ROOM_HEIGHT / 2 + 0.01
+    group.add(ring)
 
     let light: THREE.PointLight | null = null
     if (isActive) {
@@ -315,13 +421,15 @@ export class WorkshopScene {
     }
 
     this.scene.add(group)
-    return { group, box, mat, label, light }
+    return { group, box, mat, ring, ringMat, light }
   }
 
   private updateRoomStyle(entry: RoomEntry, status: ModuleStatus, isActive: boolean): void {
     const c = ROOM_COLORS[status]
     entry.mat.color.setHex(isActive ? 0x1e3a5f : c.color)
     entry.mat.emissive.setHex(isActive ? 0x1a3a6f : c.emissive)
+    entry.ringMat.color.setHex(isActive ? 0x60a5fa : status === 'active' ? 0x22d3ee : status === 'complete' ? 0x4ade80 : 0x3b82f6)
+    entry.ringMat.opacity = isActive ? 0.7 : 0.3
     if (isActive && !entry.light) {
       entry.light = new THREE.PointLight(0x3b82f6, 0.4, 4)
       entry.light.position.set(0, 0.6, 0)
@@ -628,7 +736,7 @@ export class WorkshopScene {
     hpFill.position.z = 0.001
     group.add(hpFill)
 
-    const label = this.createLabel(task.description, '8px', '#94a3b8')
+    const label = this.createPanelLabel(task.description, '9px', '#e2e8f0', 'rgba(30,10,10,0.7)', '1px solid rgba(239,68,68,0.25)')
     label.position.set(0, 1.3, 0)
     group.add(label)
 
@@ -655,6 +763,13 @@ export class WorkshopScene {
     return new CSS2DObject(div)
   }
 
+  private createPanelLabel(text: string, size: string, color: string, bg: string, border: string): CSS2DObject {
+    const div = document.createElement('div')
+    div.textContent = text
+    div.style.cssText = `color:${color};font-size:${size};font-weight:600;letter-spacing:0.5px;font-family:-apple-system,sans-serif;background:${bg};border:${border};padding:3px 10px;border-radius:3px;white-space:nowrap;pointer-events:none;user-select:none;text-shadow:0 1px 2px rgba(0,0,0,0.6);`
+    return new CSS2DObject(div)
+  }
+
   // ---- Animation ----
 
   private playCharacterAction(entry: CharacterEntry, actionName: CharacterAction): void {
@@ -675,6 +790,18 @@ export class WorkshopScene {
     const dt = this.clock.getDelta()
     const t = this.clock.elapsedTime
     this.controls.update()
+
+    // Slow rotate star field
+    this.stars.rotation.y += dt * 0.005
+
+    // Animate particles (gentle upward drift + horizontal sway)
+    const posArr = this.particles.geometry.attributes.position.array as Float32Array
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      posArr[i * 3 + 1] += dt * (0.08 + Math.sin(i) * 0.03)
+      if (posArr[i * 3 + 1] > 10) posArr[i * 3 + 1] = 0.3
+      posArr[i * 3] += Math.sin(t * 0.5 + i * 0.3) * dt * 0.02
+    }
+    this.particles.geometry.attributes.position.needsUpdate = true
 
     // Auto-revert to follow
     if (this.cameraMode === 'free' && t - this.lastInteraction > 5) {
@@ -733,9 +860,12 @@ export class WorkshopScene {
     // Room pulse
     for (const [, r] of this.rooms) {
       r.mat.emissiveIntensity = r.mat.emissive.getHex() !== 0 ? 0.15 + Math.sin(t * 3) * 0.1 : 0
+      r.ringMat.opacity = r.ringMat.opacity > 0.5
+        ? 0.5 + Math.sin(t * 4) * 0.25
+        : 0.2 + Math.sin(t * 2 + r.group.position.x) * 0.1
     }
 
-    this.renderer.render(this.scene, this.camera)
+    this.composer.render()
     this.cssRenderer.render(this.scene, this.camera)
   }
 

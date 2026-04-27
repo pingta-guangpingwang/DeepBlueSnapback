@@ -5,6 +5,13 @@ import HUD from '../AIWorkshop/HUD'
 import WorkshopCanvas from '../AIWorkshop/WorkshopCanvas'
 import EventLog from '../AIWorkshop/EventLog'
 
+const STATUS_ICON: Record<string, string> = {
+  empty: '⬜',
+  active: '🟦',
+  complete: '🟩',
+  building: '🟧',
+}
+
 export default function AIWorkshop() {
   const [state] = useAppState()
   const { data, isStale, isSynced } = useAIWorkshop(state.projectPath ?? '')
@@ -23,6 +30,18 @@ export default function AIWorkshop() {
       />
       <div className="ws-main-area">
         <WorkshopCanvas data={data} cameraMode={cameraMode} />
+        <div className="ws-module-panel">
+          <div className="ws-module-title">Modules</div>
+          {data.modules.map(m => (
+            <div
+              key={m.id}
+              className={`ws-module-item ${data.character.position === m.id ? 'ws-module-active' : ''}`}
+            >
+              <span className="ws-module-dot">{STATUS_ICON[m.status] ?? '⬜'}</span>
+              <span className="ws-module-name">{m.name}</span>
+            </div>
+          ))}
+        </div>
         <EventLog data={data} />
       </div>
       {!isSynced && (

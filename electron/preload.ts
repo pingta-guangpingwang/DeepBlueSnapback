@@ -169,31 +169,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   ensureWorkshopAssets: () =>
     ipcRenderer.invoke('workshop:ensure-assets'),
 
-  // Horse Farm
-  saveHorseFarmData: (projectPath: string, data: { requirements?: string; summary?: string }) =>
-    ipcRenderer.invoke('horsefarm:save-data', projectPath, data),
-  loadHorseFarmData: (projectPath: string) =>
-    ipcRenderer.invoke('horsefarm:load-data', projectPath),
-  generateProjectSummary: (projectPath: string, requirements: string) =>
-    ipcRenderer.invoke('horsefarm:generate-summary', projectPath, requirements),
-  generateMindMap: (projectPath: string, summary: string) =>
-    ipcRenderer.invoke('horsefarm:generate-mindmap', projectPath, summary),
-  generateKnowledgeBase: (projectPath: string, projectName: string, summary: string, requirements: string) =>
-    ipcRenderer.invoke('horsefarm:generate-kb', projectPath, projectName, summary, requirements),
-  readMindMapFile: (filePath: string) =>
-    ipcRenderer.invoke('horsefarm:read-mindmap', filePath),
-  readKnowledgeBase: (projectPath: string) =>
-    ipcRenderer.invoke('horsefarm:read-kb', projectPath),
-  saveHorseFarmConfig: (config: any) =>
-    ipcRenderer.invoke('horsefarm:save-config', config),
-  loadHorseFarmConfig: () =>
-    ipcRenderer.invoke('horsefarm:load-config'),
-  saveHorseFarmProjectIds: (ids: string[]) =>
-    ipcRenderer.invoke('horsefarm:save-project-ids', ids),
-  loadHorseFarmProjectIds: () =>
-    ipcRenderer.invoke('horsefarm:load-project-ids'),
-  initializeAllProjects: (projects: Array<{ path: string; name: string }>) =>
-    ipcRenderer.invoke('horsefarm:initialize-all', projects),
 })
 
 // 类型声明

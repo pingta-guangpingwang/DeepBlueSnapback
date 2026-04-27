@@ -4,11 +4,10 @@ import Overview from './Overview'
 import FileExplorer from './FileExplorer'
 import History from './History'
 import AIWorkshop from './AIWorkshop'
-import HorseFarm from './HorseFarm/HorseFarm'
 import Settings from './Settings'
 import About from './About'
 
-type TabKey = 'overview' | 'files' | 'history' | 'workshop' | 'horseFarm' | 'settings' | 'about'
+type TabKey = 'overview' | 'files' | 'history' | 'workshop' | 'settings' | 'about'
 
 export default function Dashboard() {
   const [state, dispatch] = useAppState()
@@ -19,7 +18,6 @@ export default function Dashboard() {
     { key: 'files', label: t.tabs.files },
     { key: 'history', label: t.tabs.history },
     { key: 'workshop', label: t.tabs.workshop },
-    { key: 'horseFarm', label: t.tabs.horseFarm },
     { key: 'settings', label: t.tabs.settings },
     { key: 'about', label: t.tabs.about },
   ]
@@ -60,7 +58,6 @@ export default function Dashboard() {
         {state.activeTab === 'files' && <FileExplorer />}
         {state.activeTab === 'history' && <History />}
         {state.activeTab === 'workshop' && <AIWorkshop />}
-        {state.activeTab === 'horseFarm' && <HorseFarm />}
         {state.activeTab === 'settings' && <Settings />}
         {state.activeTab === 'about' && <About />}
       </main>
