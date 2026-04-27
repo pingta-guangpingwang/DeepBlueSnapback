@@ -1586,36 +1586,231 @@ AI 智能体在开发过程中必须遵循以下规则：
     electron_1.ipcMain.handle('horsefarm:generate-mindmap', async (_, projectPath, summary) => {
         try {
             const files = await fs.readdir(projectPath);
-            const visibleFiles = files.filter(f => !f.startsWith('.') && f !== 'node_modules');
-            const moduleNodes = [];
-            for (const f of visibleFiles) {
-                const fullPath = path.join(projectPath, f);
-                const stat = await fs.stat(fullPath);
-                const childNodes = [];
-                if (stat.isDirectory()) {
+            const visibleFiles = files.filter(f => !f.startsWith('.') && f !== 'node_modules' && f !== '__pycache__');
+            // ---- Helper: recursively build design tree from directory ----
+            const DESIGN_PATTERNS = {
+                src: { label: '源代码 (src)', type: 'module', status: 'in_progress' },
+                public: { label: '静态资源 (public)', type: 'module', status: 'pending' },
+                tests: { label: '测试 (tests)', type: 'module', status: 'pending' },
+                test: { label: '测试 (test)', type: 'module', status: 'pending' },
+                docs: { label: '文档 (docs)', type: 'file', status: 'pending' },
+                config: { label: '配置', type: 'file', status: 'pending' },
+                scripts: { label: '脚本 (scripts)', type: 'module', status: 'pending' },
+                dist: { label: '构建输出 (dist)', type: 'file', status: 'pending' },
+                build: { label: '构建配置 (build)', type: 'file', status: 'pending' },
+                components: { label: '组件', type: 'module', status: 'in_progress' },
+                pages: { label: '页面', type: 'module', status: 'pending' },
+                views: { label: '视图', type: 'module', status: 'pending' },
+                routes: { label: '路由', type: 'module', status: 'pending' },
+                hooks: { label: 'Hooks', type: 'module', status: 'pending' },
+                utils: { label: '工具函数', type: 'module', status: 'pending' },
+                services: { label: '服务层', type: 'module', status: 'pending' },
+                api: { label: 'API 接口', type: 'module', status: 'pending' },
+                store: { label: '状态管理', type: 'module', status: 'pending' },
+                context: { label: '上下文', type: 'module', status: 'pending' },
+                types: { label: '类型定义', type: 'module', status: 'pending' },
+                models: { label: '数据模型', type: 'module', status: 'pending' },
+                assets: { label: '资源文件', type: 'module', status: 'pending' },
+                styles: { label: '样式', type: 'module', status: 'pending' },
+                css: { label: '样式表', type: 'file', status: 'pending' },
+            };
+            let counter = 1;
+            const nextId = () => `mm-${counter++}`;
+            const buildNode = async (dirPath, dirName, depth) => {
+                const pattern = DESIGN_PATTERNS[dirName];
+                const nodeType = pattern?.type || (depth === 0 ? 'root' : depth <= 1 ? 'module' : depth <= 2 ? 'task' : 'file');
+                const nodeStatus = pattern?.status || 'pending';
+                const nodeLabel = pattern?.label || dirName;
+                const children = [];
+                if (depth < 3) {
                     try {
-                        const subFiles = await fs.readdir(fullPath);
-                        for (const sf of subFiles.filter(s => !s.startsWith('.'))) {
-                            childNodes.push({
-                                id: `${f}-${sf}`,
-                                label: sf,
+                        const entries = await fs.readdir(dirPath);
+                        const dirs = [];
+                        const importantFiles = [];
+                        for (const entry of entries.filter(e => !e.startsWith('.') && e !== 'node_modules')) {
+                            const fullPath = path.join(dirPath, entry);
+                            try {
+                                const stat = await fs.stat(fullPath);
+                                if (stat.isDirectory()) {
+                                    dirs.push(entry);
+                                }
+                                else if (depth < 2 && ['.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.rs', '.java', '.vue', '.svelte'].some(ext => entry.endsWith(ext))) {
+                                    importantFiles.push(entry);
+                                }
+                            }
+                            catch { /* skip unreadable */ }
+                        }
+                        // Sort: known patterns first, then alphabetical
+                        const sortedDirs = dirs.sort((a, b) => {
+                            const aKnown = DESIGN_PATTERNS[a] ? 0 : 1;
+                            const bKnown = DESIGN_PATTERNS[b] ? 0 : 1;
+                            if (aKnown !== bKnown)
+                                return aKnown - bKnown;
+                            return a.localeCompare(b);
+                        });
+                        for (const dir of sortedDirs.slice(0, 12)) {
+                            children.push(await buildNode(path.join(dirPath, dir), dir, depth + 1));
+                        }
+                        // Add key files as leaf nodes at depth 1
+                        for (const file of importantFiles.slice(0, 8)) {
+                            children.push({
+                                id: nextId(),
+                                label: file,
                                 type: 'file',
                                 status: 'pending',
                                 progress: 0,
                                 children: [],
+                                metadata: { description: `Key file: ${file}` },
                             });
                         }
                     }
-                    catch { /* ignore */ }
+                    catch { /* skip unreadable */ }
                 }
-                moduleNodes.push({
-                    id: f,
-                    label: f,
-                    type: stat.isDirectory() ? 'module' : 'file',
-                    status: 'pending',
+                return {
+                    id: nextId(),
+                    label: nodeLabel,
+                    type: nodeType,
+                    status: nodeStatus,
                     progress: 0,
-                    children: childNodes,
-                    metadata: stat.isDirectory() ? { description: `Module: ${f}` } : undefined,
+                    children,
+                    metadata: depth === 0 ? { description: summary || 'Project root' }
+                        : depth === 1 ? { description: `Module: ${nodeLabel}` }
+                            : undefined,
+                };
+            };
+            // ---- Detect project type ----
+            const detectProjectType = async () => {
+                const types = [];
+                for (const f of visibleFiles) {
+                    if (f === 'package.json') {
+                        try {
+                            const pkg = await fs.readJson(path.join(projectPath, f));
+                            if (pkg.dependencies?.react)
+                                types.push('React');
+                            if (pkg.dependencies?.vue)
+                                types.push('Vue');
+                            if (pkg.dependencies?.next)
+                                types.push('Next.js');
+                            if (pkg.dependencies?.express || pkg.dependencies?.koa)
+                                types.push('Express/Koa');
+                            if (pkg.dependencies?.electron)
+                                types.push('Electron');
+                            if (pkg.devDependencies?.typescript)
+                                types.push('TypeScript');
+                            if (pkg.devDependencies?.vite)
+                                types.push('Vite');
+                        }
+                        catch { /* ignore */ }
+                    }
+                    if (f === 'tsconfig.json')
+                        types.push('TypeScript');
+                    if (f === 'vite.config.ts' || f === 'vite.config.js')
+                        types.push('Vite');
+                    if (f.endsWith('.py'))
+                        types.push('Python');
+                    if (f === 'Cargo.toml')
+                        types.push('Rust');
+                    if (f === 'go.mod')
+                        types.push('Go');
+                    if (f === 'pom.xml' || f.endsWith('.gradle'))
+                        types.push('Java');
+                }
+                return [...new Set(types)];
+            };
+            const projectTypes = await detectProjectType();
+            const techStack = projectTypes.length > 0 ? projectTypes.join(' + ') : 'Unknown';
+            // ---- Build root node ----
+            const rootChildren = [];
+            // 1. 技术栈概览
+            const techChildren = projectTypes.map(t => ({
+                id: nextId(),
+                label: t,
+                type: 'concept',
+                status: 'completed',
+                progress: 100,
+                children: [],
+                metadata: { description: `Technology: ${t}` },
+            }));
+            rootChildren.push({
+                id: nextId(),
+                label: '技术栈',
+                type: 'module',
+                status: 'completed',
+                progress: 100,
+                children: techChildren,
+                metadata: { description: `Detected: ${techStack}` },
+            });
+            // 2. 架构设计 — scan src/ if exists, else top-level dirs
+            const srcPath = path.join(projectPath, 'src');
+            const hasSrc = visibleFiles.includes('src');
+            const scanRoot = hasSrc ? srcPath : projectPath;
+            if (hasSrc) {
+                // Add src as architecture module
+                const srcNode = await buildNode(srcPath, 'src', 1);
+                srcNode.label = '源代码架构 (src)';
+                srcNode.type = 'module';
+                srcNode.status = 'in_progress';
+                rootChildren.push(srcNode);
+            }
+            // Add other top-level dirs as sibling modules
+            for (const f of visibleFiles) {
+                const fullPath = path.join(projectPath, f);
+                try {
+                    const stat = await fs.stat(fullPath);
+                    if (stat.isDirectory() && f !== 'src' && f !== 'node_modules') {
+                        const known = DESIGN_PATTERNS[f];
+                        const node = await buildNode(fullPath, f, 1);
+                        if (known) {
+                            node.label = known.label;
+                            node.type = known.type;
+                        }
+                        rootChildren.push(node);
+                    }
+                }
+                catch { /* ignore */ }
+            }
+            // 3. 关键配置文件
+            const configFiles = ['package.json', 'tsconfig.json', 'vite.config.ts', 'vite.config.js',
+                'electron-builder.yml', 'webpack.config.js', '.eslintrc.js', '.eslintrc.json',
+                'tailwind.config.js', 'postcss.config.js', 'docker-compose.yml', 'Dockerfile',
+                'Makefile', 'README.md', 'CHANGELOG.md', 'LICENSE',
+            ];
+            const foundConfigs = visibleFiles.filter(f => configFiles.includes(f));
+            if (foundConfigs.length > 0) {
+                rootChildren.push({
+                    id: nextId(),
+                    label: '配置文件',
+                    type: 'module',
+                    status: 'pending',
+                    progress: 100,
+                    children: foundConfigs.map(f => ({
+                        id: nextId(),
+                        label: f,
+                        type: 'file',
+                        status: 'completed',
+                        progress: 100,
+                        children: [],
+                        metadata: { description: `Config: ${f}` },
+                    })),
+                    metadata: { description: 'Key configuration files' },
+                });
+            }
+            // 4. 开发任务 (from summary)
+            if (summary && summary.length > 10) {
+                const taskChildren = [
+                    { id: nextId(), label: '环境搭建与配置', type: 'task', status: 'completed', progress: 100, children: [], },
+                    { id: nextId(), label: '核心模块开发', type: 'task', status: 'in_progress', progress: 30, children: [], },
+                    { id: nextId(), label: '测试与质量保障', type: 'task', status: 'pending', progress: 0, children: [], },
+                    { id: nextId(), label: '文档与部署', type: 'task', status: 'pending', progress: 0, children: [], },
+                ];
+                rootChildren.push({
+                    id: nextId(),
+                    label: '开发阶段',
+                    type: 'module',
+                    status: 'in_progress',
+                    progress: 25,
+                    children: taskChildren,
+                    metadata: { description: 'Development phases' },
                 });
             }
             const mindMapData = {
@@ -1628,7 +1823,7 @@ AI 智能体在开发过程中必须遵循以下规则：
                     type: 'root',
                     status: 'in_progress',
                     progress: 0,
-                    children: moduleNodes,
+                    children: rootChildren,
                 },
             };
             const mindmapPath = path.join(projectPath, '.dbvs-mindmap.json');
