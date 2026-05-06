@@ -221,6 +221,41 @@ netstat -ano | findstr :3005
 taskkill /PID <pid> /F
 ```
 
+## 最近更新 (2026年4-5月)
+
+### 🐴 驾驭工程 → DeepBlueGodHarnessFarm（独立应用）
+- 驾驭工程从 DBHT 中拆分，成为独立 Electron 应用 **DeepBlueGodHarnessFarm**
+- 通过文件系统读取 DBHT 项目数据，两个应用零耦合
+- 功能：项目列表、思维导图、知识库、任务追踪、指挥中心、API Key 配置、版本沙箱
+
+### 🧠 思维导图查看器
+- 树形布局思维导图，SVG 连线 + 平滑动画
+- 拖拽平移、滚轮缩放、点击折叠/展开分支
+- 自动生成项目设计框架，不再是单纯的文件列表
+
+### 🔒 项目备注
+- 每个项目卡片上直接显示备注（最多一行，可点击查看全部）
+- 双击弹出编辑器，自动保存到项目目录的 `.dbvs-horsefarm-notes.md` 文件
+- DBHT 和 DeepBlueGodHarnessFarm 共享同一个备注文件，实时同步
+
+### 🌐 首次启动语言选择
+- 首次打开应用时强制弹出语言选择对话框（English / 中文）
+- 暗色渐变背景 + 国旗按钮动画 — 选择语言后才能进入
+
+### 📦 内置 Node.js 22
+- Node.js 22.19.0 便携版内置在 `nodejs/` 目录
+- `start.bat` 自动配置 PATH，不依赖系统安装的 Node.js
+
+### 🏗️ 版本沙箱（DeepBlueGodHarnessFarm）
+- 任务开始前自动快照、任务完成提交、AI 会话回滚
+- 任务版本历史查看器 — AI 生成的每一行代码都可追溯
+- 通过 DBHT CLI (`dbgvs`) 驱动，零代码耦合
+
+### 🔧 CLI 增强
+- AI 标记提交：`--ai <tool> --session <id> --summary <text>`
+- `rollback-ai` 命令：按 AI 会话批量回滚
+- 结构化历史输出：`getHistoryStructured()`
+
 ## 联系与支持
 
 DBHT 是一款完全免费的开源软件，如果你觉得它对你有帮助，欢迎打赏支持，你的鼓励是我持续更新的动力。

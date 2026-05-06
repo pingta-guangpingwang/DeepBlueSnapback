@@ -224,6 +224,41 @@ netstat -ano | findstr :3005
 taskkill /PID <pid> /F
 ```
 
+## Recent Updates (Apr–May 2026)
+
+### 🐴 Horse Farm → DeepBlueGodHarnessFarm (Independent App)
+- Horse Farm (multi-project development management) extracted into standalone Electron app **DeepBlueGodHarnessFarm / 驾驭工程**
+- Reads DBHT project data from filesystem — zero coupling between the two apps
+- Features: project list, mind map viewer, knowledge base, task tracker, command center, API key config, version sandbox
+
+### 🧠 Rich Mind Map Viewer
+- Tree-layout mind map with SVG connectors and smooth animation
+- Drag to pan, scroll to zoom, click to collapse/expand branches
+- Auto-generates project design framework from directory structure, not just file listing
+
+### 🔒 Project Notes
+- Per-project user notes displayed inline on project cards
+- Double-click to open editor popup, auto-saved to `.dbvs-horsefarm-notes.md` in project root
+- Notes sync automatically between DBHT and DeepBlueGodHarnessFarm
+
+### 🌐 First-Launch Language Picker
+- Mandatory language selection dialog on first app launch (English / 中文)
+- Dark gradient overlay with animated flag buttons — blocks UI until language chosen
+
+### 📦 Bundled Node.js 22
+- Node.js 22.19.0 portable bundled in `nodejs/` directory
+- `start.bat` prepends bundled Node to PATH — zero dependency on system Node.js
+
+### 🏗️ Version Sandbox (DeepBlueGodHarnessFarm)
+- Snapshot before AI task, commit on task complete, rollback by AI session
+- Task version history viewer — full traceability of AI-generated changes
+- Powered by DBHT CLI (`dbgvs`) — zero code coupling
+
+### 🔧 CLI Improvements
+- AI-tagged commits with `--ai <tool> --session <id> --summary <text>`
+- `rollback-ai` command to batch revert all commits from one AI session
+- Structured history output with `getHistoryStructured()`
+
 ## Contact & Support
 
 DBHT is free and open-source software. If you find it helpful, your support is greatly appreciated!
