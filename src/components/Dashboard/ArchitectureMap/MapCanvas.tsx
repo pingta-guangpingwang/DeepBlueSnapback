@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect, type MouseEvent, type WheelEvent } from 'react'
+import { useI18n } from '../../../i18n'
 import type { GraphNode, GraphEdge, NodePosition } from '../../../types/graph'
 import { NodeRenderer } from './NodeRenderer'
 import { EdgeRenderer } from './EdgeRenderer'
@@ -9,16 +10,20 @@ interface MapCanvasProps {
   edges: GraphEdge[]
   selectedNode: string | null
   collapsedNodes: Set<string>
+  depth: number
   onSelectNode: (id: string | null) => void
   onToggleCollapse: (id: string) => void
+  onHoverNode: (id: string | null) => void
+  onHoverEdge: (id: string | null) => void
   loading: boolean
   error: string | null
 }
 
 export function MapCanvas({
-  rootNode, positions, edges, selectedNode, collapsedNodes,
-  onSelectNode, onToggleCollapse, loading, error,
+  rootNode, positions, edges, selectedNode, collapsedNodes, depth,
+  onSelectNode, onToggleCollapse, onHoverNode, onHoverEdge, loading, error,
 }: MapCanvasProps) {
+  const { t } = useI18n()
   const containerRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(0.92)
   const [panX, setPanX] = useState(16)
@@ -30,19 +35,21 @@ export function MapCanvas({
 
   const positionMap = new Map(positions.map(p => [p.id, p]))
 
-  // Collapse filter: hide children of collapsed nodes
+  // Collapse filter + depth cap
   const visibleNodeIds = new Set<string>()
-  function collectVisible(node: GraphNode, parentCollapsed: boolean): void {
+  function collectVisible(node: GraphNode, parentCollapsed: boolean, currentDepth: number): void {
     if (parentCollapsed) return
+    // depth: -1 = unlimited, otherwise stop at depth limit
+    if (depth > 0 && currentDepth > depth) return
     visibleNodeIds.add(node.id)
     if (node.children) {
       const isCollapsed = collapsedNodes.has(node.id)
       for (const child of node.children) {
-        collectVisible(child, isCollapsed)
+        collectVisible(child, isCollapsed, currentDepth + 1)
       }
     }
   }
-  if (rootNode) collectVisible(rootNode, false)
+  if (rootNode) collectVisible(rootNode, false, 1)
 
   const visiblePositions = positions.filter(p => visibleNodeIds.has(p.id))
   const visibleEdges = edges.filter(e =>
@@ -74,11 +81,20 @@ export function MapCanvas({
     setDragging(false)
   }, [])
 
-  // Global mouse up
   useEffect(() => {
     window.addEventListener('mouseup', handleMouseUp)
     return () => window.removeEventListener('mouseup', handleMouseUp)
   }, [handleMouseUp])
+
+  const handleNodeHover = useCallback((id: string | null) => {
+    setHoveredNode(id)
+    onHoverNode(id)
+  }, [onHoverNode])
+
+  const handleEdgeHover = useCallback((id: string | null) => {
+    setHoveredEdge(id)
+    onHoverEdge(id)
+  }, [onHoverEdge])
 
   const handleZoomIn = () => setScale(prev => Math.min(3, prev + 0.15))
   const handleZoomOut = () => setScale(prev => Math.max(0.2, prev - 0.15))
@@ -87,7 +103,7 @@ export function MapCanvas({
   if (loading) {
     return (
       <div className="map-canvas" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="map-loading">Building architecture map...</div>
+        <div className="map-loading">{t.graph.buildingMap}</div>
       </div>
     )
   }
@@ -95,9 +111,20 @@ export function MapCanvas({
   if (error) {
     return (
       <div className="map-canvas" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="map-error">Failed to load: {error}</div>
+        <div className="map-error">{t.graph.loadFailed.replace('{error}', error)}</div>
       </div>
     )
+  }
+
+  // Highlight incident edges for selected/hovered node
+  const incidentEdgeIds = new Set<string>()
+  const activeNodeId = hoveredNode || selectedNode
+  if (activeNodeId) {
+    edges.forEach(e => {
+      if (e.source === activeNodeId || e.target === activeNodeId) {
+        incidentEdgeIds.add(e.id)
+      }
+    })
   }
 
   return (
@@ -120,7 +147,32 @@ export function MapCanvas({
           left: 0,
         }}
       >
-        {/* SVG edge layer */}
+        {/* HTML node layer — rendered FIRST so SVG edges paint on top */}
+        {visiblePositions.map(pos => {
+          const node = findNode(rootNode, pos.id)
+          if (!node) return null
+          return (
+            <div
+              key={pos.id}
+              data-node="true"
+              onClick={() => onSelectNode(pos.id)}
+              onDoubleClick={() => onToggleCollapse(pos.id)}
+              onMouseEnter={() => handleNodeHover(pos.id)}
+              onMouseLeave={() => handleNodeHover(null)}
+            >
+              <NodeRenderer
+                node={node}
+                position={pos}
+                isSelected={selectedNode === pos.id}
+                isCollapsed={collapsedNodes.has(pos.id) || (depth > 0 && pos.level >= depth && (node.children?.length ?? 0) > 0)}
+                isHighRisk={edges.some(e => e.type === 'circular' && (e.source === pos.id || e.target === pos.id))}
+                scale={scale}
+              />
+            </div>
+          )
+        })}
+
+        {/* SVG edge layer — rendered SECOND so edges paint ABOVE nodes */}
         <svg
           className="map-edge-layer"
           style={{
@@ -135,60 +187,43 @@ export function MapCanvas({
             const sp = positionMap.get(edge.source)
             const tp = positionMap.get(edge.target)
             if (!sp || !tp) return null
+            const isIncident = incidentEdgeIds.has(edge.id)
             return (
-              <EdgeRenderer
+              <g
                 key={edge.id}
-                edge={edge}
-                sourceX={sp.x}
-                sourceY={sp.y}
-                sourceW={sp.width}
-                sourceH={sp.height}
-                targetX={tp.x}
-                targetY={tp.y}
-                targetW={tp.width}
-                targetH={tp.height}
-                scale={scale}
-              />
+                style={{ pointerEvents: 'stroke' }}
+                onMouseEnter={() => handleEdgeHover(edge.id)}
+                onMouseLeave={() => handleEdgeHover(null)}
+              >
+                <EdgeRenderer
+                  edge={edge}
+                  sourceX={sp.x}
+                  sourceY={sp.y}
+                  sourceW={sp.width}
+                  sourceH={sp.height}
+                  targetX={tp.x}
+                  targetY={tp.y}
+                  targetW={tp.width}
+                  targetH={tp.height}
+                  scale={scale}
+                  highlighted={isIncident}
+                />
+              </g>
             )
           })}
         </svg>
-
-        {/* HTML node layer */}
-        {visiblePositions.map(pos => {
-          const node = findNode(rootNode, pos.id)
-          if (!node) return null
-          return (
-            <div
-              key={pos.id}
-              data-node="true"
-              onClick={() => onSelectNode(pos.id)}
-              onDoubleClick={() => onToggleCollapse(pos.id)}
-              onMouseEnter={() => setHoveredNode(pos.id)}
-              onMouseLeave={() => setHoveredNode(null)}
-            >
-              <NodeRenderer
-                node={node}
-                position={pos}
-                isSelected={selectedNode === pos.id}
-                isCollapsed={collapsedNodes.has(pos.id)}
-                isHighRisk={edges.some(e => e.type === 'circular' && (e.source === pos.id || e.target === pos.id))}
-                scale={scale}
-              />
-            </div>
-          )
-        })}
       </div>
 
       {/* Zoom controls */}
       <div className="map-zoom-controls">
-        <button onClick={handleZoomIn} title="Zoom in">+</button>
-        <button onClick={handleZoomReset} title="Reset zoom">⊙</button>
-        <button onClick={handleZoomOut} title="Zoom out">−</button>
+        <button onClick={handleZoomIn} title={t.graph.zoomIn}>+</button>
+        <button onClick={handleZoomReset} title={t.graph.zoomReset}>⊙</button>
+        <button onClick={handleZoomOut} title={t.graph.zoomOut}>−</button>
       </div>
 
-      {/* Mini map hint */}
+      {/* Stats bar */}
       <div className="map-stats">
-        {visiblePositions.length} nodes · {visibleEdges.length} edges
+        {visiblePositions.length} {t.graph.nodes} · {visibleEdges.length} {t.graph.edges}
       </div>
     </div>
   )

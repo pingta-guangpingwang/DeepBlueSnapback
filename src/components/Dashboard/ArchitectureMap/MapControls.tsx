@@ -1,3 +1,4 @@
+import { useI18n } from '../../../i18n'
 import type { GraphViewMode, GraphFilter } from '../../../types/graph'
 
 interface MapControlsProps {
@@ -10,16 +11,20 @@ interface MapControlsProps {
 }
 
 const VIEW_MODES: Array<{ key: GraphViewMode; label: string; desc: string }> = [
-  { key: 'module', label: 'Modules', desc: 'Folder/file tree structure' },
-  { key: 'calls', label: 'Call Graph', desc: 'Function call relationships' },
-  { key: 'inheritance', label: 'Inheritance', desc: 'Class hierarchy' },
-  { key: 'circular', label: 'Circular Deps', desc: 'Dependency cycles' },
-  { key: 'unused', label: 'Orphans', desc: 'Unused/dead code' },
+  { key: 'module', label: 'moduleView', desc: 'moduleViewDesc' },
+  { key: 'calls', label: 'callsView', desc: 'callsViewDesc' },
+  { key: 'inheritance', label: 'inheritanceView', desc: 'inheritanceViewDesc' },
+  { key: 'circular', label: 'circularView', desc: 'circularViewDesc' },
+  { key: 'unused', label: 'unusedView', desc: 'unusedViewDesc' },
 ]
 
 export function MapControls({
   viewMode, filter, onViewModeChange, onFilterChange, onRefresh, loading,
 }: MapControlsProps) {
+  const { t } = useI18n()
+
+  const gt = (key: string): string => (t.graph as Record<string, string>)[key] || key
+
   return (
     <div className="map-controls">
       <div className="map-controls-row">
@@ -29,9 +34,9 @@ export function MapControls({
               key={m.key}
               className={`map-view-btn ${viewMode === m.key ? 'active' : ''}`}
               onClick={() => onViewModeChange(m.key)}
-              title={m.desc}
+              title={gt(m.desc)}
             >
-              {m.label}
+              {gt(m.label)}
             </button>
           ))}
         </div>
@@ -41,7 +46,7 @@ export function MapControls({
             onClick={onRefresh}
             disabled={loading}
           >
-            {loading ? 'Loading...' : '↻ Refresh'}
+            {loading ? t.graph.loading : `↻ ${t.graph.refresh}`}
           </button>
         </div>
       </div>
@@ -49,7 +54,7 @@ export function MapControls({
         <input
           type="text"
           className="map-search-input"
-          placeholder="Search node..."
+          placeholder={t.graph.searchPlaceholder}
           value={filter.searchQuery}
           onChange={e => onFilterChange({ searchQuery: e.target.value })}
         />
@@ -59,15 +64,15 @@ export function MapControls({
             checked={filter.onlyHighRisk}
             onChange={e => onFilterChange({ onlyHighRisk: e.target.checked })}
           />
-          High risk only
+          {t.graph.highRiskOnly}
         </label>
         <label className="map-filter-weight">
-          Min weight:
+          {t.graph.minWeight}:
           <select
             value={filter.minEdgeWeight}
             onChange={e => onFilterChange({ minEdgeWeight: Number(e.target.value) })}
           >
-            <option value={0}>All</option>
+            <option value={0}>{t.graph.all}</option>
             <option value={1}>≥ 1</option>
             <option value={3}>≥ 3</option>
             <option value={5}>≥ 5</option>

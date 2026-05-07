@@ -100,6 +100,8 @@ interface UseArchitectureGraphReturn {
   setFilter: (filter: Partial<GraphFilter>) => void
   setSelectedNode: (nodeId: string | null) => void
   toggleNodeCollapse: (nodeId: string) => void
+  depth: number
+  setDepth: (depth: number) => void
   resetView: () => void
 }
 
@@ -117,6 +119,7 @@ export function useArchitectureGraph(): UseArchitectureGraphReturn {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
+  const [depth, setDepth] = useState<number>(1) // -1 = unlimited, default 1
   const collapsedNodes = useRef<Set<string>>(new Set())
 
   const applyLayout = useCallback((g: ArchitectureGraph, mode: GraphViewMode) => {
@@ -217,6 +220,8 @@ export function useArchitectureGraph(): UseArchitectureGraphReturn {
     setFilter,
     setSelectedNode,
     toggleNodeCollapse,
+    depth,
+    setDepth,
     resetView,
   }
 }

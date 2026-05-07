@@ -1,3 +1,4 @@
+import { useI18n } from '../../../i18n'
 import type { GraphNode, GraphEdge } from '../../../types/graph'
 
 interface MapTooltipProps {
@@ -9,6 +10,8 @@ interface MapTooltipProps {
 }
 
 export function MapTooltip({ node, edge, x, y, visible }: MapTooltipProps) {
+  const { t } = useI18n()
+
   if (!visible || (!node && !edge)) return null
 
   return (
@@ -23,15 +26,17 @@ export function MapTooltip({ node, edge, x, y, visible }: MapTooltipProps) {
             <span className="map-tooltip-label">{node.label}</span>
           </div>
           <div className="map-tooltip-stats">
-            <span>Files: {node.fileCount}</span>
-            <span>Lines: {node.lineCount.toLocaleString()}</span>
-            <span>Exports: {node.exportsCount}</span>
+            <span>{t.graph.nodeFiles}: {node.fileCount}</span>
+            <span>{t.graph.nodeLines}: {node.lineCount.toLocaleString()}</span>
+            <span>{t.graph.nodeExports}: {node.exportsCount}</span>
           </div>
           {node.path && (
             <div className="map-tooltip-path">{node.path}</div>
           )}
           {node.children && node.children.length > 0 && (
-            <div className="map-tooltip-hint">Double-click to {node.collapsed ? 'expand' : 'collapse'}</div>
+            <div className="map-tooltip-hint">
+              {t.graph.doubleClickHint.replace('{action}', t.graph.expand)}
+            </div>
           )}
         </div>
       )}
@@ -42,14 +47,14 @@ export function MapTooltip({ node, edge, x, y, visible }: MapTooltipProps) {
             {edge.label && <span className="map-tooltip-label">{edge.label}</span>}
           </div>
           <div className="map-tooltip-stats">
-            <span>Weight: {edge.weight}</span>
-            <span>Files: {edge.files.length}</span>
+            <span>{t.graph.nodeIncoming}: {edge.weight}</span>
+            <span>{t.graph.nodeFiles}: {edge.files.length}</span>
           </div>
           <div className="map-tooltip-files">
             {edge.files.slice(0, 3).map(f => (
               <div key={f} className="map-tooltip-file">{f}</div>
             ))}
-            {edge.files.length > 3 && <div className="map-tooltip-more">+{edge.files.length - 3} more</div>}
+            {edge.files.length > 3 && <div className="map-tooltip-more">+{edge.files.length - 3} {t.graph.more}</div>}
           </div>
         </div>
       )}

@@ -1,38 +1,42 @@
+import { useI18n } from '../../../i18n'
+
 export function MapLegend() {
+  const { t } = useI18n()
+
   return (
     <div className="map-legend">
       <div className="map-legend-section">
-        <span className="map-legend-title">Nodes</span>
+        <span className="map-legend-title">{String(t.graph.legendNodes)}</span>
         <div className="map-legend-item">
-          <span className="map-legend-swatch" style={{ background: '#1e3a5f', borderColor: '#3b82f6' }} />
-          <span>Building (root folder)</span>
+          <span className="map-legend-swatch" style={{ background: '#142c5e', borderColor: '#4da2ff' }} />
+          <span>{String(t.graph.building)}</span>
         </div>
         <div className="map-legend-item">
-          <span className="map-legend-swatch" style={{ background: '#1e293b', borderColor: '#475569' }} />
-          <span>Floor (subdirectory)</span>
+          <span className="map-legend-swatch" style={{ background: '#162542', borderColor: '#5b7fbf' }} />
+          <span>{String(t.graph.floor)}</span>
         </div>
         <div className="map-legend-item">
-          <span className="map-legend-swatch" style={{ background: '#0f172a', borderColor: '#334155' }} />
-          <span>Room (source file)</span>
+          <span className="map-legend-swatch" style={{ background: '#111c2e', borderColor: '#3e5270' }} />
+          <span>{String(t.graph.room)}</span>
         </div>
       </div>
       <div className="map-legend-section">
-        <span className="map-legend-title">Edges</span>
+        <span className="map-legend-title">{String(t.graph.legendEdges)}</span>
         <div className="map-legend-item">
-          <span className="map-legend-line" style={{ background: '#3b82f6' }} />
-          <span>Pipeline (import)</span>
+          <span className="map-legend-line" style={{ background: '#5ea8ff' }} />
+          <span>{String(t.graph.pipeline)}</span>
         </div>
         <div className="map-legend-item">
-          <span className="map-legend-line" style={{ background: '#8b5cf6', borderStyle: 'dashed' }} />
-          <span>Hierarchy (extends)</span>
+          <span className="map-legend-line" style={{ background: '#a78bfa', borderStyle: 'dashed' }} />
+          <span>{String(t.graph.hierarchy)}</span>
         </div>
         <div className="map-legend-item">
-          <span className="map-legend-line" style={{ background: '#10b981', borderStyle: 'dotted' }} />
-          <span>Flow (call)</span>
+          <span className="map-legend-line" style={{ background: '#34d399', borderStyle: 'dotted' }} />
+          <span>{String(t.graph.flow)}</span>
         </div>
         <div className="map-legend-item">
-          <span className="map-legend-line" style={{ background: '#ef4444' }} />
-          <span className="map-legend-highlight">Circular (cycle)</span>
+          <span className="map-legend-line" style={{ background: '#ff5555' }} />
+          <span className="map-legend-highlight">{String(t.graph.circular)}</span>
         </div>
       </div>
     </div>

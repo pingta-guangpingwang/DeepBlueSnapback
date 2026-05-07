@@ -11,6 +11,7 @@ interface EdgeRendererProps {
   targetW: number
   targetH: number
   scale: number
+  highlighted?: boolean
 }
 
 const EDGE_COLORS: Record<string, string> = {
@@ -31,12 +32,13 @@ export function EdgeRenderer({
   edge,
   sourceX, sourceY, sourceW, sourceH,
   targetX, targetY, targetW, targetH,
-  scale,
+  scale, highlighted,
 }: EdgeRendererProps) {
   const color = EDGE_COLORS[edge.type] || '#8899aa'
   const dash = EDGE_DASH[edge.type] || ''
-  const strokeWidth = edge.type === 'circular' ? 2.5 : edge.type === 'pipeline' ? 1.3 : 1
-  const opacity = edge.type === 'flow' ? 0.55 : edge.type === 'circular' ? 0.95 : 0.75
+  const baseStroke = edge.type === 'circular' ? 2.5 : edge.type === 'pipeline' ? 1.3 : 1
+  const strokeWidth = highlighted ? baseStroke + 1.5 : baseStroke
+  const opacity = highlighted ? 1 : (edge.type === 'flow' ? 0.55 : edge.type === 'circular' ? 0.95 : 0.75)
 
   // Connect from right center of source to left center of target
   const sx = sourceX + sourceW
@@ -80,13 +82,16 @@ export function EdgeRenderer({
       {edge.label && scale > 0.5 && (
         <text
           x={(sx + tx) / 2}
-          y={(sy + ty) / 2 - 5}
+          y={(sy + ty) / 2 - 10}
           fill={color}
           fontSize={Math.max(8, 9.5 * scale)}
           textAnchor="middle"
-          opacity={0.8}
+          opacity={highlighted ? 1 : 0.85}
           fontFamily="'Segoe UI', system-ui, sans-serif"
           fontWeight={500}
+          paintOrder="stroke"
+          stroke="rgba(0,0,0,0.7)"
+          strokeWidth={2.5}
         >
           {edge.label.length > 20 ? edge.label.slice(0, 18) + '...' : edge.label}
         </text>

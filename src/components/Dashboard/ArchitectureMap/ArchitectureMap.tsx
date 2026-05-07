@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { useI18n } from '../../../i18n'
 import { useAppState } from '../../../context/AppContext'
 import { useArchitectureGraph } from '../../../hooks/useArchitectureGraph'
 import { useGraphComparison } from '../../../hooks/useGraphComparison'
@@ -10,10 +11,11 @@ import { GraphDiffView } from '../GraphDiffView'
 import type { GraphNode, GraphEdge } from '../../../types/graph'
 
 export function ArchitectureMap() {
+  const { t } = useI18n()
   const [state] = useAppState()
   const {
     graph, positions, edges, viewMode, filter, loading, error, selectedNode,
-    loadGraph, setViewMode, setFilter, setSelectedNode, toggleNodeCollapse, resetView,
+    loadGraph, setViewMode, setFilter, setSelectedNode, toggleNodeCollapse, depth, setDepth, resetView,
   } = useArchitectureGraph()
 
   const { diff, loading: cmpLoading, error: cmpError, versionA, versionB, compareVersions, clearComparison } = useGraphComparison()
@@ -52,7 +54,41 @@ export function ArchitectureMap() {
     clearComparison()
   }, [clearComparison])
 
-  // Load graph on mount using AppContext state
+  // Tooltip handlers for node/edge hover
+  const handleHoverNode = useCallback((nodeId: string | null) => {
+    if (!nodeId || !graph) {
+      setTooltip(prev => ({ ...prev, node: null, visible: false }))
+      return
+    }
+    const node = findNodeById(graph.rootNode, nodeId)
+    if (node) {
+      setTooltip({ node, edge: null, x: 0, y: 0, visible: true })
+    }
+  }, [graph])
+
+  const handleHoverEdge = useCallback((edgeId: string | null) => {
+    if (!edgeId || !graph) {
+      setTooltip(prev => ({ ...prev, edge: null, visible: false }))
+      return
+    }
+    const edge = graph.edges.find(e => e.id === edgeId)
+    if (edge) {
+      setTooltip({ node: null, edge, x: 0, y: 0, visible: true })
+    }
+  }, [graph])
+
+  // Mouse move for tooltip positioning
+  useEffect(() => {
+    const handleMouseMove = (e: globalThis.MouseEvent) => {
+      if (tooltip.visible) {
+        setTooltip(prev => ({ ...prev, x: e.clientX, y: e.clientY }))
+      }
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    return () => window.removeEventListener('mousemove', handleMouseMove)
+  }, [tooltip.visible])
+
+  // Load graph on mount
   useEffect(() => {
     if (didLoad.current) return
     if (!state.repoPath || !state.projectPath) return
@@ -62,7 +98,6 @@ export function ArchitectureMap() {
       const bridge = (window as any).electronAPI
       if (!bridge) return
       try {
-        // Get latest commit ID from history
         const histResult = await bridge.getHistoryStructured(state.repoPath)
         let commitId = 'unknown'
         if (histResult?.success && histResult.commits?.length > 0) {
@@ -94,6 +129,8 @@ export function ArchitectureMap() {
     setSelectedNode(id)
   }
 
+  const depthOptions = [1, 2, 3, 4, 5, -1]
+
   return (
     <div className="architecture-map">
       <MapControls
@@ -105,19 +142,33 @@ export function ArchitectureMap() {
         loading={loading}
       />
 
+      {/* Depth slider */}
+      <div className="map-depth-slider">
+        <span className="map-depth-label">{t.graph.depth}:</span>
+        {depthOptions.map(d => (
+          <button
+            key={d}
+            className={`map-depth-btn ${depth === d ? 'active' : ''}`}
+            onClick={() => setDepth(d)}
+          >
+            {d === -1 ? t.graph.depthAll : d}
+          </button>
+        ))}
+      </div>
+
       {/* Graph version comparison */}
       {availableVersions.length > 1 && (
         <div className="map-compare-bar">
-          <span className="map-compare-label">Compare:</span>
+          <span className="map-compare-label">{t.graph.compareLabel}</span>
           <select value={cmpVersionA} onChange={e => setCmpVersionA(e.target.value)}>
-            <option value="">Select version A...</option>
+            <option value="">{t.graph.selectVersionA}</option>
             {availableVersions.map(v => (
               <option key={v} value={v}>{v.slice(0, 14)}</option>
             ))}
           </select>
           <span className="map-compare-vs">vs</span>
           <select value={cmpVersionB} onChange={e => setCmpVersionB(e.target.value)}>
-            <option value="">Select version B...</option>
+            <option value="">{t.graph.selectVersionB}</option>
             {availableVersions.map(v => (
               <option key={v} value={v}>{v.slice(0, 14)}</option>
             ))}
@@ -126,7 +177,7 @@ export function ArchitectureMap() {
             onClick={handleCompare}
             disabled={!cmpVersionA || !cmpVersionB || cmpLoading}
           >
-            Compare
+            {t.graph.compare}
           </button>
         </div>
       )}
@@ -138,13 +189,27 @@ export function ArchitectureMap() {
           edges={edges}
           selectedNode={selectedNode}
           collapsedNodes={collapsedNodesRef.current}
+          depth={depth}
           onSelectNode={handleSelectNode}
           onToggleCollapse={handleToggleCollapse}
+          onHoverNode={handleHoverNode}
+          onHoverEdge={handleHoverEdge}
           loading={loading}
           error={error}
         />
 
         <MapLegend />
+
+        {/* Floating detail panel */}
+        {selectedNode && graph && !showCompare && (
+          <div className="map-detail-panel">
+            <NodeDetailPanel
+              nodeId={selectedNode}
+              graph={graph}
+              onClose={() => setSelectedNode(null)}
+            />
+          </div>
+        )}
       </div>
 
       <MapTooltip
@@ -164,17 +229,6 @@ export function ArchitectureMap() {
         versionB={versionB}
         onClose={handleCloseCompare}
       />
-
-      {/* Selected node detail panel */}
-      {selectedNode && graph && !showCompare && (
-        <div className="map-detail-panel">
-          <NodeDetailPanel
-            nodeId={selectedNode}
-            graph={graph}
-            onClose={() => setSelectedNode(null)}
-          />
-        </div>
-      )}
     </div>
   )
 }
@@ -182,6 +236,7 @@ export function ArchitectureMap() {
 function NodeDetailPanel({ nodeId, graph, onClose }: {
   nodeId: string; graph: { rootNode: GraphNode; edges: GraphEdge[] }; onClose: () => void
 }) {
+  const { t } = useI18n()
   const node = findNodeById(graph.rootNode, nodeId)
   if (!node) return null
 
@@ -197,43 +252,43 @@ function NodeDetailPanel({ nodeId, graph, onClose }: {
       </div>
       <div className="node-detail-stats">
         <div className="node-detail-stat">
-          <span className="stat-label">Type</span>
+          <span className="stat-label">{t.graph.nodeType}</span>
           <span className="stat-value">{node.type}</span>
         </div>
         <div className="node-detail-stat">
-          <span className="stat-label">Path</span>
+          <span className="stat-label">{t.graph.path}</span>
           <span className="stat-value mono">{node.path}</span>
         </div>
         <div className="node-detail-stat">
-          <span className="stat-label">Files</span>
+          <span className="stat-label">{t.graph.nodeFiles}</span>
           <span className="stat-value">{node.fileCount}</span>
         </div>
         <div className="node-detail-stat">
-          <span className="stat-label">Lines</span>
+          <span className="stat-label">{t.graph.nodeLines}</span>
           <span className="stat-value">{node.lineCount.toLocaleString()}</span>
         </div>
         <div className="node-detail-stat">
-          <span className="stat-label">Exports</span>
+          <span className="stat-label">{t.graph.nodeExports}</span>
           <span className="stat-value">{node.exportsCount}</span>
         </div>
         <div className="node-detail-stat">
-          <span className="stat-label">Incoming</span>
-          <span className="stat-value">{incomingEdges.length} deps</span>
+          <span className="stat-label">{t.graph.nodeIncoming}</span>
+          <span className="stat-value">{incomingEdges.length} {t.graph.deps}</span>
         </div>
         <div className="node-detail-stat">
-          <span className="stat-label">Outgoing</span>
-          <span className="stat-value">{outgoingEdges.length} deps</span>
+          <span className="stat-label">{t.graph.nodeOutgoing}</span>
+          <span className="stat-value">{outgoingEdges.length} {t.graph.deps}</span>
         </div>
         {circularEdges.length > 0 && (
           <div className="node-detail-stat warning">
-            <span className="stat-label">⤾ Circular</span>
-            <span className="stat-value">{circularEdges.length} cycles</span>
+            <span className="stat-label">⤾ {t.graph.nodeCircular}</span>
+            <span className="stat-value">{circularEdges.length} {t.graph.cycles}</span>
           </div>
         )}
       </div>
       {outgoingEdges.length > 0 && (
         <div className="node-detail-edges">
-          <span className="node-detail-subtitle">Dependencies ({outgoingEdges.length})</span>
+          <span className="node-detail-subtitle">{t.graph.dependencies} ({outgoingEdges.length})</span>
           <div className="node-detail-edge-list">
             {outgoingEdges.slice(0, 20).map(e => (
               <div key={e.id} className={`node-detail-edge edge-${e.type}`}>
@@ -242,7 +297,7 @@ function NodeDetailPanel({ nodeId, graph, onClose }: {
                 {e.label && <span className="edge-label">→ {e.label}</span>}
               </div>
             ))}
-            {outgoingEdges.length > 20 && <div className="node-detail-more">+{outgoingEdges.length - 20} more</div>}
+            {outgoingEdges.length > 20 && <div className="node-detail-more">+{outgoingEdges.length - 20} {t.graph.more}</div>}
           </div>
         </div>
       )}
