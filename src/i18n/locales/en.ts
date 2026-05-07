@@ -128,6 +128,23 @@ const en = {
     filesCount: 'Files',
     linesCount: 'Lines',
     exportsCount: 'Exports',
+    devView: 'Dev View',
+    simpleView: 'Simple View',
+  },
+
+  // Simple view (building metaphor)
+  simpleView: {
+    title: 'Project City',
+    buildings: 'Buildings',
+    floors: 'Floors',
+    rooms: 'Rooms',
+    pipes: 'Pipes',
+    lines: 'Lines',
+    moreFloors: 'more floors',
+    connectedTo: 'Connected to',
+    pipelines: 'Pipelines',
+    backToCity: 'Back to City View',
+    emptyHint: 'No buildings found. Add files to the project to see the city view.',
   },
 
   // Health tab

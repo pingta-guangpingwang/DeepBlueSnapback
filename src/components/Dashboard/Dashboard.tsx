@@ -6,6 +6,7 @@ import History from './History'
 import Settings from './Settings'
 import About from './About'
 import { ArchitectureMap } from './ArchitectureMap/ArchitectureMap'
+import SimpleView from './SimpleView'
 import HealthDashboard from './HealthDashboard'
 
 type TabKey = 'overview' | 'files' | 'graph' | 'health' | 'history' | 'settings' | 'about'
@@ -58,7 +59,25 @@ export default function Dashboard() {
       <main className="dashboard-content">
         {state.activeTab === 'overview' && <Overview />}
         {state.activeTab === 'files' && <FileExplorer />}
-        {state.activeTab === 'graph' && <ArchitectureMap />}
+        {state.activeTab === 'graph' && (
+          <>
+            <div className="graph-view-toggle">
+              <button
+                className={`graph-toggle-btn ${!state.simpleView ? 'active' : ''}`}
+                onClick={() => dispatch({ type: 'SET_SIMPLE_VIEW', payload: false })}
+              >
+                {t.graph.devView || 'Dev View'}
+              </button>
+              <button
+                className={`graph-toggle-btn ${state.simpleView ? 'active' : ''}`}
+                onClick={() => dispatch({ type: 'SET_SIMPLE_VIEW', payload: true })}
+              >
+                {t.graph.simpleView || 'Simple View'}
+              </button>
+            </div>
+            {state.simpleView ? <SimpleView /> : <ArchitectureMap />}
+          </>
+        )}
         {state.activeTab === 'health' && <HealthDashboard />}
         {state.activeTab === 'history' && <History />}
         {state.activeTab === 'settings' && <Settings />}

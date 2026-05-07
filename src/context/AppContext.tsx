@@ -64,6 +64,9 @@ export interface AppState {
   // 新手引导
   showOnboarding: boolean
 
+  // 简单视图
+  simpleView: boolean
+
   // Git 远程同步
   gitSyncStatus: GitSyncStatus | null
   gitConflicts: ConflictFile[]
@@ -116,6 +119,7 @@ export type AppAction =
   | { type: 'SET_GIT_AUTHOR_NAME'; payload: string }
   | { type: 'SET_GIT_AUTHOR_EMAIL'; payload: string }
   | { type: 'SET_SHOW_ONBOARDING'; payload: boolean }
+  | { type: 'SET_SIMPLE_VIEW'; payload: boolean }
 
 // --- Initial state ---
 
@@ -169,6 +173,8 @@ const initialState: AppState = {
   gitAuthorEmail: '',
 
   showOnboarding: false,
+
+  simpleView: false,
 }
 
 // --- Reducer ---
@@ -287,6 +293,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, gitAuthorEmail: action.payload }
     case 'SET_SHOW_ONBOARDING':
       return { ...state, showOnboarding: action.payload }
+    case 'SET_SIMPLE_VIEW':
+      return { ...state, simpleView: action.payload }
     default:
       return state
   }

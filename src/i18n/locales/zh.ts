@@ -130,6 +130,23 @@ const zh: Translations = {
     filesCount: '文件数',
     linesCount: '行数',
     exportsCount: '导出数',
+    devView: '开发视图',
+    simpleView: '简单视图',
+  },
+
+  // Simple view (building metaphor)
+  simpleView: {
+    title: '项目城市',
+    buildings: '建筑',
+    floors: '楼层',
+    rooms: '房间',
+    pipes: '管道',
+    lines: '行',
+    moreFloors: '更多楼层',
+    connectedTo: '连接至',
+    pipelines: '管线',
+    backToCity: '返回城市视图',
+    emptyHint: '未发现建筑。向项目添加文件即可查看城市视图。',
   },
 
   // Health tab
