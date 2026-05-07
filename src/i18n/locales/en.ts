@@ -211,6 +211,7 @@ const en = {
     analyzing: 'Analyzing...',
     clear: 'Clear Report',
     emptyHint: 'Click "Analyze Health" to run a code quality analysis on the latest version.',
+    noCommits: 'No commits yet. Save a version first before running health analysis.',
     summary: 'Summary',
     issues: 'Top Issues',
     suggestions: 'Suggestions',

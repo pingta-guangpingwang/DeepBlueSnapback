@@ -213,6 +213,7 @@ const zh: Translations = {
     analyzing: '分析中...',
     clear: '清除报告',
     emptyHint: '点击"分析健康度"对最新版本进行代码质量分析。',
+    noCommits: '还没有提交版本。请先保存一次版本再进行健康分析。',
     summary: '概览',
     issues: '问题模块',
     suggestions: '优化建议',

@@ -169,7 +169,7 @@ export default function HealthDashboard() {
       {!report && !loading && !error && (
         <div className="health-empty">
           <div className="health-empty-icon">🩺</div>
-          <p>{t.health.emptyHint}</p>
+          <p>{lastCommitId ? t.health.emptyHint : t.health.noCommits}</p>
         </div>
       )}
 
