@@ -136,14 +136,16 @@ export function ArchitectureMap() {
   const handleOpenFile = useCallback(async (nodeId: string) => {
     if (!state.projectPath || !graph) return
     const node = findNodeById(graph.rootNode, nodeId)
-    if (!node || node.type !== 'room') return
+    // Only open true leaf rooms (no children, represents an actual source file)
+    if (!node || node.type !== 'room' || (node.children && node.children.length > 0)) return
 
     setFileViewer({ visible: true, node, content: '', loading: true, error: null })
 
     try {
-      const fullPath = (window as any).electronAPI?.joinPath
-        ? await (window as any).electronAPI.joinPath(state.projectPath, node.path)
-        : state.projectPath + '/' + node.path
+      // Normalize path: use forward slashes, strip leading slash
+      const relPath = node.path.replace(/\\/g, '/').replace(/^\//, '')
+      const projectPath = state.projectPath.replace(/\\/g, '/')
+      const fullPath = projectPath + '/' + relPath
       const result = await (window as any).electronAPI?.readFile(fullPath)
       if (result?.success) {
         setFileViewer(prev => ({ ...prev, content: result.content || '', loading: false }))

@@ -1,10 +1,11 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type { ArchitectureGraph, GraphNode, GraphEdge, GraphViewMode, GraphFilter, NodePosition, EdgePath } from '../types/graph'
 
 // ==================== Layout Engine ====================
 
 // Simple tree layout for module/architecture view
-function computeTreeLayout(graph: ArchitectureGraph): NodePosition[] {
+// maxDepth: -1 = unlimited, >0 = treat nodes at this level as leaves
+function computeTreeLayout(graph: ArchitectureGraph, maxDepth = -1): NodePosition[] {
   const positions: NodePosition[] = []
   const levelHeight = 168
   const nodeWidth = 140
@@ -13,10 +14,13 @@ function computeTreeLayout(graph: ArchitectureGraph): NodePosition[] {
   const basePadding = 20
 
   function walk(node: GraphNode, level: number, xOffset: number, siblings: number): number {
+    // At depth limit, treat as leaf (no children)
+    const hasChildren = (maxDepth <= 0 || level < maxDepth) && node.children && node.children.length > 0
+
     let totalWidth = 0
-    if (node.children && node.children.length > 0) {
-      for (const child of node.children) {
-        totalWidth += walk(child, level + 1, xOffset + totalWidth, node.children.length)
+    if (hasChildren) {
+      for (const child of node.children!) {
+        totalWidth += walk(child, level + 1, xOffset + totalWidth, node.children!.length)
       }
     } else {
       totalWidth = nodeWidth + levelGap
@@ -122,9 +126,9 @@ export function useArchitectureGraph(): UseArchitectureGraphReturn {
   const [depth, setDepth] = useState<number>(1) // -1 = unlimited, default 1
   const collapsedNodes = useRef<Set<string>>(new Set())
 
-  const applyLayout = useCallback((g: ArchitectureGraph, mode: GraphViewMode) => {
+  const applyLayout = useCallback((g: ArchitectureGraph, mode: GraphViewMode, maxDepth = -1) => {
     if (mode === 'module' || mode === 'unused') {
-      const pos = computeTreeLayout(g)
+      const pos = computeTreeLayout(g, maxDepth)
       setPositions(pos)
       setEdges(mode === 'unused' ? [] : g.edges)
     } else {
@@ -133,6 +137,18 @@ export function useArchitectureGraph(): UseArchitectureGraphReturn {
       setEdges(filteredEdges)
     }
   }, [])
+
+  // Re-layout tree when depth changes (clusters nodes to fit the visible range)
+  const layoutDepthRef = useRef(-999)
+  useEffect(() => {
+    if (!graph) return
+    if (layoutDepthRef.current === depth && viewMode !== 'module' && viewMode !== 'unused') return
+    layoutDepthRef.current = depth
+    if (viewMode === 'module' || viewMode === 'unused') {
+      const pos = computeTreeLayout(graph, depth)
+      setPositions(pos)
+    }
+  }, [depth, viewMode, graph])
 
   const loadGraph = useCallback(async (
     repoPath: string,
