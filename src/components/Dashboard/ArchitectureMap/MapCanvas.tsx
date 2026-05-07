@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect, type MouseEvent, type WheelEvent } from 'react'
+import { useRef, useState, useCallback, useEffect, type MouseEvent } from 'react'
 import { useI18n } from '../../../i18n'
 import type { GraphNode, GraphEdge, NodePosition } from '../../../types/graph'
 import { NodeRenderer } from './NodeRenderer'
@@ -56,10 +56,17 @@ export function MapCanvas({
     visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
   )
 
-  const handleWheel = useCallback((e: WheelEvent) => {
-    e.preventDefault()
-    const delta = e.deltaY > 0 ? -0.08 : 0.08
-    setScale(prev => Math.max(0.2, Math.min(3, prev + delta)))
+  // Manual wheel listener with { passive: false } to allow preventDefault
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const onWheel = (e: globalThis.WheelEvent) => {
+      e.preventDefault()
+      const delta = e.deltaY > 0 ? -0.08 : 0.08
+      setScale(prev => Math.max(0.2, Math.min(3, prev + delta)))
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
   }, [])
 
   const handleMouseDown = useCallback((e: MouseEvent) => {
@@ -131,7 +138,6 @@ export function MapCanvas({
     <div
       ref={containerRef}
       className="map-canvas"
-      onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
