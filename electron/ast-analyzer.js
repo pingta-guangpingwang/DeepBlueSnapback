@@ -238,7 +238,9 @@ async function parseFile(filePath, projectRoot) {
         hash,
     };
 }
-async function scanDirectory(dirPath, projectRoot, cacheDir, results, errors, stats) {
+async function scanDirectory(dirPath, projectRoot, cacheDir, results, errors, stats, depth = 0) {
+    if (depth > 30)
+        return; // prevent runaway recursion
     let entries;
     try {
         entries = await fs.readdir(dirPath, { withFileTypes: true });
@@ -251,9 +253,11 @@ async function scanDirectory(dirPath, projectRoot, cacheDir, results, errors, st
         const fullPath = path.join(dirPath, entry.name);
         const baseName = entry.name;
         if (entry.isDirectory()) {
-            if (SKIP_DIRS.has(baseName) || baseName.startsWith('.'))
+            if (SKIP_DIRS.has(baseName) || baseName.startsWith('.')) {
+                stats.skippedDirs++;
                 continue;
-            await scanDirectory(fullPath, projectRoot, cacheDir, results, errors, stats);
+            }
+            await scanDirectory(fullPath, projectRoot, cacheDir, results, errors, stats, depth + 1);
             continue;
         }
         if (!entry.isFile())
@@ -297,7 +301,7 @@ async function scanDirectory(dirPath, projectRoot, cacheDir, results, errors, st
 async function parseProject(projectPath, repoPath) {
     const results = [];
     const errors = [];
-    const stats = { total: 0, cached: 0 };
+    const stats = { total: 0, cached: 0, skippedDirs: 0 };
     // Setup cache directory inside the root repository (graph data dir)
     const rootPath = path.resolve(repoPath, '..', '..'); // repoPath = <root>/repositories/<name>
     let cacheDir = null;
@@ -334,6 +338,8 @@ async function parseProject(projectPath, repoPath) {
         errors,
         totalFiles: stats.total,
         cachedFiles: stats.cached,
+        skippedDirs: stats.skippedDirs,
+        scannedPath: projectPath,
     };
 }
 // ==================== Singleton for IPC ====================

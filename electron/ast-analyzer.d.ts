@@ -33,6 +33,8 @@ export interface ParseResult {
     errors: string[];
     totalFiles: number;
     cachedFiles: number;
+    skippedDirs: number;
+    scannedPath: string;
 }
 export declare function parseProject(projectPath: string, repoPath: string): Promise<ParseResult>;
 export declare function getCachedParseResult(): ParseResult | null;

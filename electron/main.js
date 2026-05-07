@@ -1508,7 +1508,7 @@ AI 智能体在开发过程中必须遵循以下规则：
             return result;
         }
         catch (error) {
-            return { success: false, files: [], errors: [String(error)], totalFiles: 0, cachedFiles: 0 };
+            return { success: false, files: [], errors: [String(error)], totalFiles: 0, cachedFiles: 0, skippedDirs: 0, scannedPath: workingCopyPath };
         }
     });
     // 构建架构图谱
@@ -1516,7 +1516,18 @@ AI 智能体在开发过程中必须遵循以下规则：
         try {
             const parseResult = await (0, ast_analyzer_1.parseProject)(workingCopyPath, repoPath);
             if (!parseResult.success || parseResult.files.length === 0) {
-                return { success: false, message: 'No source files to analyze' };
+                let detail = `No source files found\nPath: ${parseResult.scannedPath || workingCopyPath}`;
+                if (parseResult.errors.length > 0) {
+                    detail += `\nErrors: ${parseResult.errors.slice(0, 5).join('; ')}`;
+                }
+                if (parseResult.skippedDirs > 0) {
+                    detail += `\nSkipped ${parseResult.skippedDirs} directories (filtered by name)`;
+                }
+                if (parseResult.totalFiles > 0) {
+                    detail += `\nScanned ${parseResult.totalFiles} files but none matched source types (.ts/.tsx/.js/.jsx)`;
+                }
+                detail += `\nTip: Ensure the project directory contains TypeScript/JavaScript source files and nested folders are not in the skip list.`;
+                return { success: false, message: detail };
             }
             const graph = (0, graph_builder_1.buildGraph)(parseResult, {
                 projectName,
