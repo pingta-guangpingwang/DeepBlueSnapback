@@ -15,7 +15,7 @@ export interface Project {
 export interface AppState {
   // Navigation
   currentView: 'setup' | 'repositories' | 'dashboard'
-  activeTab: 'overview' | 'files' | 'history' | 'settings' | 'about'
+  activeTab: 'overview' | 'files' | 'graph' | 'history' | 'settings' | 'about'
 
   // Root repository
   rootRepositoryPath: string
