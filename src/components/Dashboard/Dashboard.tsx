@@ -3,11 +3,10 @@ import { useI18n } from '../../i18n'
 import Overview from './Overview'
 import FileExplorer from './FileExplorer'
 import History from './History'
-import AIWorkshop from './AIWorkshop'
 import Settings from './Settings'
 import About from './About'
 
-type TabKey = 'overview' | 'files' | 'history' | 'workshop' | 'settings' | 'about'
+type TabKey = 'overview' | 'files' | 'history' | 'settings' | 'about'
 
 export default function Dashboard() {
   const [state, dispatch] = useAppState()
@@ -17,7 +16,6 @@ export default function Dashboard() {
     { key: 'overview', label: t.tabs.overview },
     { key: 'files', label: t.tabs.files },
     { key: 'history', label: t.tabs.history },
-    { key: 'workshop', label: t.tabs.workshop },
     { key: 'settings', label: t.tabs.settings },
     { key: 'about', label: t.tabs.about },
   ]
@@ -57,7 +55,6 @@ export default function Dashboard() {
         {state.activeTab === 'overview' && <Overview />}
         {state.activeTab === 'files' && <FileExplorer />}
         {state.activeTab === 'history' && <History />}
-        {state.activeTab === 'workshop' && <AIWorkshop />}
         {state.activeTab === 'settings' && <Settings />}
         {state.activeTab === 'about' && <About />}
       </main>

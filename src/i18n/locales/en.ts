@@ -49,7 +49,6 @@ const en = {
     overview: 'Overview',
     files: 'Files',
     history: 'History',
-    workshop: 'AI Workshop',
     settings: 'Settings',
     about: 'About',
   },
@@ -557,6 +556,12 @@ const en = {
     remove: 'Remove',
     confirmRemove: 'Remove from project list? Files and repository will not be deleted.',
     lastUpdate: 'Last update',
+    notesPlaceholder: 'Double-click to add notes...',
+    notesEditorTitle: 'Project Notes',
+    notesSave: 'Save',
+    notesCancel: 'Cancel',
+    notesViewAll: 'View all',
+    notesHint: 'Notes auto-saved to .dbvs-horsefarm-notes.md in the project directory, shared with Harness Farm.',
   },
 
   // App-level messages

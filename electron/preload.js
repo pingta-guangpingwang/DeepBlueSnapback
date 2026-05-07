@@ -116,9 +116,4 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     ensureProjectDocs: (rootPath) => electron_1.ipcRenderer.invoke('dbgvs:ensure-project-docs', rootPath),
     // 新手引导
     getOnboardingStatus: () => electron_1.ipcRenderer.invoke('dbgvs:get-onboarding-status'),
-    setOnboardingCompleted: (completed) => electron_1.ipcRenderer.invoke('dbgvs:set-onboarding-completed', completed),
-    // AI Workshop
-    readVisualFile: (projectPath) => electron_1.ipcRenderer.invoke('ai-workshop:read-visual-file', projectPath),
-    scanProjectDirs: (projectPath) => electron_1.ipcRenderer.invoke('ai-workshop:scan-project-dirs', projectPath),
-    ensureWorkshopAssets: () => electron_1.ipcRenderer.invoke('workshop:ensure-assets'),
-});
+    setOnboardingCompleted: (completed) => electron_1.ipcRenderer.invoke('dbgvs:set-onboarding-completed', completed),});

@@ -51,7 +51,6 @@ const zh: Translations = {
     overview: '概览',
     files: '文件',
     history: '历史',
-    workshop: 'AI工作小世界',
     settings: '设置',
     about: '关于',
   },
@@ -551,6 +550,12 @@ const zh: Translations = {
     remove: '移除',
     confirmRemove: '确认从列表移除？文件和仓库不会被删除。',
     lastUpdate: '上次更新',
+    notesPlaceholder: '双击添加项目备注...',
+    notesEditorTitle: '项目备注',
+    notesSave: '保存',
+    notesCancel: '取消',
+    notesViewAll: '查看全部',
+    notesHint: '备注自动保存到项目目录下的 .dbvs-horsefarm-notes.md，与驾驭工程共享',
   },
 
   // App-level messages
