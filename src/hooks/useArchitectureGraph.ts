@@ -5,42 +5,70 @@ import type { ArchitectureGraph, GraphNode, GraphEdge, GraphViewMode, GraphFilte
 
 // Simple tree layout for module/architecture view
 // maxDepth: -1 = unlimited, >0 = treat nodes at this level as leaves
+// Uses standard mind-map right-tree layout: root at left, children expand to the right
 function computeTreeLayout(graph: ArchitectureGraph, maxDepth = -1): NodePosition[] {
   const positions: NodePosition[] = []
-  const levelHeight = 168
-  const nodeWidth = 140
+  const levelHeight = 56      // vertical spacing between parent-child levels
+  const nodeWidth = 130
   const nodeHeight = 28
-  const levelGap = 84
-  const basePadding = 20
+  const siblingGap = 16       // vertical gap between adjacent siblings at same level
+  const basePadding = 24
 
-  function walk(node: GraphNode, level: number, xOffset: number, siblings: number): number {
-    // At depth limit, treat as leaf (no children)
+  // First pass: compute subtree heights (total vertical span including descendants)
+  // This allows us to center each node within its subtree's vertical extent
+  function computeHeights(node: GraphNode, level: number): number {
+    const hasChildren = (maxDepth <= 0 || level < maxDepth) && node.children && node.children.length > 0
+    if (!hasChildren || !node.children || node.children.length === 0) {
+      return nodeHeight
+    }
+    let total = 0
+    for (let i = 0; i < node.children.length; i++) {
+      total += computeHeights(node.children[i], level + 1)
+      if (i < node.children.length - 1) total += siblingGap
+    }
+    return Math.max(total, nodeHeight)
+  }
+
+  // Second pass: assign positions
+  function walk(node: GraphNode, level: number, yOffset: number): number {
     const hasChildren = (maxDepth <= 0 || level < maxDepth) && node.children && node.children.length > 0
 
-    let totalWidth = 0
-    if (hasChildren) {
-      for (const child of node.children!) {
-        totalWidth += walk(child, level + 1, xOffset + totalWidth, node.children!.length)
+    // Compute vertical center of self vs subtree
+    const myHeight = nodeHeight
+    let subtreeHeight = myHeight
+    if (hasChildren && node.children && node.children.length > 0) {
+      subtreeHeight = 0
+      for (let i = 0; i < node.children.length; i++) {
+        subtreeHeight += computeHeights(node.children[i], level + 1)
+        if (i < node.children.length - 1) subtreeHeight += siblingGap
       }
-    } else {
-      totalWidth = nodeWidth + levelGap
     }
 
-    const x = xOffset + totalWidth / 2 - nodeWidth / 2
-    const y = level * levelHeight
+    // Center self vertically within allocated space
+    const selfY = yOffset + (subtreeHeight - myHeight) / 2
+
     positions.push({
       id: node.id,
-      x,
-      y,
+      x: level * (nodeWidth + 64), // horizontal spacing: node + gap to next level
+      y: selfY,
       width: nodeWidth,
       height: nodeHeight,
       level,
     })
 
-    return Math.max(totalWidth, nodeWidth + levelGap)
+    if (hasChildren && node.children && node.children.length > 0) {
+      let childY = yOffset
+      for (const child of node.children) {
+        const ch = computeHeights(child, level + 1)
+        walk(child, level + 1, childY)
+        childY += ch + siblingGap
+      }
+    }
+
+    return subtreeHeight
   }
 
-  walk(graph.rootNode, 0, basePadding, 1)
+  walk(graph.rootNode, 0, basePadding)
   return positions
 }
 
@@ -61,8 +89,8 @@ function computeForceLayout(
   collect(graph.rootNode)
 
   const cols = Math.ceil(Math.sqrt(nodeList.length))
-  const gapX = 465
-  const gapY = 132
+  const gapX = 180
+  const gapY = 56
 
   const positions: NodePosition[] = nodeList.map((node, i) => ({
     id: node.id,
@@ -123,8 +151,12 @@ export function useArchitectureGraph(): UseArchitectureGraphReturn {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
-  const [depth, setDepth] = useState<number>(1) // -1 = unlimited, default 1
+  const [depth, setDepthState] = useState<number>(1) // -1 = unlimited, default 1
   const collapsedNodes = useRef<Set<string>>(new Set())
+  // Refs to keep latest values accessible in callbacks without stale closures
+  const graphRef = useRef<ArchitectureGraph | null>(null)
+  const viewModeRef = useRef<GraphViewMode>('module')
+  const depthRef = useRef<number>(1)
 
   const applyLayout = useCallback((g: ArchitectureGraph, mode: GraphViewMode, maxDepth = -1) => {
     if (mode === 'module' || mode === 'unused') {
@@ -138,17 +170,20 @@ export function useArchitectureGraph(): UseArchitectureGraphReturn {
     }
   }, [])
 
-  // Re-layout tree when depth changes (clusters nodes to fit the visible range)
-  const layoutDepthRef = useRef(-999)
-  useEffect(() => {
-    if (!graph) return
-    if (layoutDepthRef.current === depth && viewMode !== 'module' && viewMode !== 'unused') return
-    layoutDepthRef.current = depth
-    if (viewMode === 'module' || viewMode === 'unused') {
-      const pos = computeTreeLayout(graph, depth)
-      setPositions(pos)
+  // Direct setDepth that immediately recomputes layout (no stale useEffect delay)
+  const setDepth = useCallback((d: number) => {
+    setDepthState(d)
+    depthRef.current = d
+    const g = graphRef.current
+    const vm = viewModeRef.current
+    if (g && (vm === 'module' || vm === 'unused')) {
+      setPositions(computeTreeLayout(g, d))
     }
-  }, [depth, viewMode, graph])
+  }, [])
+
+  // Keep refs in sync
+  useEffect(() => { graphRef.current = graph }, [graph])
+  useEffect(() => { viewModeRef.current = viewMode }, [viewMode])
 
   const loadGraph = useCallback(async (
     repoPath: string,
@@ -164,7 +199,7 @@ export function useArchitectureGraph(): UseArchitectureGraphReturn {
       if (result.success && result.graph) {
         const g = result.graph as unknown as ArchitectureGraph
         setGraph(g)
-        applyLayout(g, viewMode)
+        applyLayout(g, viewMode, depthRef.current)
       } else {
         setError(result.message || 'Failed to build graph')
       }
@@ -183,7 +218,7 @@ export function useArchitectureGraph(): UseArchitectureGraphReturn {
       if (result.success && result.graph) {
         const g = result.graph as unknown as ArchitectureGraph
         setGraph(g)
-        applyLayout(g, viewMode)
+        applyLayout(g, viewMode, depthRef.current)
       } else {
         setError(result.message || 'Graph not found')
       }
@@ -211,12 +246,14 @@ export function useArchitectureGraph(): UseArchitectureGraphReturn {
   }, [graph])
 
   const resetView = useCallback(() => {
-    if (graph) {
-      applyLayout(graph, viewMode)
+    const g = graphRef.current
+    const vm = viewModeRef.current
+    if (g) {
+      applyLayout(g, vm, depthRef.current)
       collapsedNodes.current.clear()
       setSelectedNode(null)
     }
-  }, [graph, viewMode, applyLayout])
+  }, [applyLayout])
 
   return {
     graph,
@@ -231,7 +268,9 @@ export function useArchitectureGraph(): UseArchitectureGraphReturn {
     loadGraphForVersion,
     setViewMode: (mode: GraphViewMode) => {
       setViewMode(mode)
-      if (graph) applyLayout(graph, mode)
+      viewModeRef.current = mode
+      const g = graphRef.current
+      if (g) applyLayout(g, mode, depthRef.current)
     },
     setFilter,
     setSelectedNode,

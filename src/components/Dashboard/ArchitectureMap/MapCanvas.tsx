@@ -68,14 +68,14 @@ export function MapCanvas({
   }
 
   // Auto-fit: recompute zoom/pan to frame visible nodes
-  useEffect(() => {
-    if (!needsAutoFit.current || !containerRef.current || visiblePositions.length === 0) return
-    needsAutoFit.current = false
-
+  const applyAutoFit = useCallback(() => {
+    if (!containerRef.current || visiblePositions.length === 0) return
     const el = containerRef.current
     const cw = el.clientWidth
     const ch = el.clientHeight
-    if (cw === 0 || ch === 0) return
+    if (cw === 0 || ch === 0) return // container not laid out yet — don't clear needsAutoFit
+
+    needsAutoFit.current = false
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
     for (const p of visiblePositions) {
@@ -92,7 +92,56 @@ export function MapCanvas({
     setScale(fitScale)
     setPanX((cw - bboxW * fitScale) / 2 - (minX - padding) * fitScale)
     setPanY((ch - bboxH * fitScale) / 2 - (minY - padding) * fitScale)
-  }, [visiblePositions, fitVersion])
+  }, [visiblePositions])
+
+  // Run auto-fit when visiblePositions change or fitVersion is bumped
+  useEffect(() => {
+    if (!needsAutoFit.current) return
+    applyAutoFit()
+  }, [visiblePositions, fitVersion, applyAutoFit])
+
+  // Retry auto-fit after paint when container dimensions become available
+  useEffect(() => {
+    if (!needsAutoFit.current || !containerRef.current || visiblePositions.length === 0) return
+    const el = containerRef.current
+    if (el.clientWidth > 0 && el.clientHeight > 0) return // already sized
+
+    // Container has no dimensions yet — retry after layout
+    let attempts = 0
+    const maxAttempts = 10
+    const tryFit = () => {
+      if (!needsAutoFit.current || attempts >= maxAttempts) return
+      if (el.clientWidth > 0 && el.clientHeight > 0) {
+        applyAutoFit()
+      } else {
+        attempts++
+        requestAnimationFrame(tryFit)
+      }
+    }
+    requestAnimationFrame(tryFit)
+  }, [visiblePositions, fitVersion, applyAutoFit])
+
+  // ResizeObserver: re-fit when container size changes (e.g. detail panel opens)
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    let lastW = el.clientWidth
+    let lastH = el.clientHeight
+    const observer = new ResizeObserver(() => {
+      const w = el.clientWidth
+      const h = el.clientHeight
+      if (w !== lastW || h !== lastH) {
+        lastW = w; lastH = h
+        if (w > 0 && h > 0 && visiblePositions.length > 0) {
+          needsAutoFit.current = true
+          // Use a microtask to avoid triggering during render
+          requestAnimationFrame(() => setFitVersion(v => v + 1))
+        }
+      }
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [visiblePositions.length])
 
   // Manual wheel listener with { passive: false } to allow preventDefault
   useEffect(() => {
@@ -149,7 +198,7 @@ export function MapCanvas({
 
   if (loading) {
     return (
-      <div className="map-canvas" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div ref={containerRef} className="map-canvas" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="map-loading">{t.graph.buildingMap}</div>
       </div>
     )
@@ -157,7 +206,7 @@ export function MapCanvas({
 
   if (error) {
     return (
-      <div className="map-canvas" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div ref={containerRef} className="map-canvas" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="map-error">{t.graph.loadFailed.replace('{error}', error)}</div>
       </div>
     )
