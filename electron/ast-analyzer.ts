@@ -46,6 +46,7 @@ export interface ParseResult {
   totalFiles: number
   cachedFiles: number
   skippedDirs: number
+  skippedDirNames: string[]
   scannedPath: string
 }
 
@@ -54,12 +55,17 @@ export interface ParseResult {
 // File extensions to parse
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'])
 
-// Directories to skip
+// Directories to skip — only truly universal non-source dirs
+// DBHT-internal dirs (objects, commits, graphs, etc.) are NOT skipped globally
+// because they could be legitimate project directories outside of .dbvs
 const SKIP_DIRS = new Set([
-  'node_modules', '.git', '.dbvs', '.svn', 'dist', 'build',
-  '.next', '.nuxt', 'coverage', '__pycache__', 'vendor',
+  'node_modules', '.git', '.dbvs', '.svn',
+  '.next', '.nuxt', '__pycache__',
+])
+
+// DBHT-internal directory names that are only skipped inside .dbvs
+const DBHT_META_DIRS = new Set([
   'objects', 'commits', 'graphs', 'quality', 'analysis-cache',
-  'tmp', '.cache'
 ])
 
 // Binary / non-source file extensions
@@ -283,7 +289,7 @@ async function scanDirectory(
   cacheDir: string | null,
   results: ParsedFile[],
   errors: string[],
-  stats: { total: number; cached: number; skippedDirs: number },
+  stats: { total: number; cached: number; skippedDirs: number; skippedDirNames: string[] },
   depth: number = 0
 ): Promise<void> {
   if (depth > 30) return // prevent runaway recursion
@@ -301,8 +307,20 @@ async function scanDirectory(
     const baseName = entry.name
 
     if (entry.isDirectory()) {
-      if (SKIP_DIRS.has(baseName) || baseName.startsWith('.')) {
+      if (baseName.startsWith('.')) {
         stats.skippedDirs++
+        stats.skippedDirNames.push(baseName)
+        continue
+      }
+      if (SKIP_DIRS.has(baseName)) {
+        stats.skippedDirs++
+        stats.skippedDirNames.push(baseName)
+        continue
+      }
+      // Only skip DBHT meta dirs when inside .dbvs
+      if (DBHT_META_DIRS.has(baseName) && path.basename(dirPath) === '.dbvs') {
+        stats.skippedDirs++
+        stats.skippedDirNames.push(baseName)
         continue
       }
       await scanDirectory(fullPath, projectRoot, cacheDir, results, errors, stats, depth + 1)
@@ -356,7 +374,7 @@ export async function parseProject(
 ): Promise<ParseResult> {
   const results: ParsedFile[] = []
   const errors: string[] = []
-  const stats = { total: 0, cached: 0, skippedDirs: 0 }
+  const stats = { total: 0, cached: 0, skippedDirs: 0, skippedDirNames: [] as string[] }
 
   // Setup cache directory inside the root repository (graph data dir)
   const rootPath = path.resolve(repoPath, '..', '..') // repoPath = <root>/repositories/<name>
@@ -396,6 +414,7 @@ export async function parseProject(
     totalFiles: stats.total,
     cachedFiles: stats.cached,
     skippedDirs: stats.skippedDirs,
+    skippedDirNames: stats.skippedDirNames,
     scannedPath: projectPath,
   }
 }

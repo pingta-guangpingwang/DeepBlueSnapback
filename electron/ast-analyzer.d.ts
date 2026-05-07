@@ -34,6 +34,7 @@ export interface ParseResult {
     totalFiles: number;
     cachedFiles: number;
     skippedDirs: number;
+    skippedDirNames: string[];
     scannedPath: string;
 }
 export declare function parseProject(projectPath: string, repoPath: string): Promise<ParseResult>;

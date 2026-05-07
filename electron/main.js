@@ -1508,7 +1508,7 @@ AI 智能体在开发过程中必须遵循以下规则：
             return result;
         }
         catch (error) {
-            return { success: false, files: [], errors: [String(error)], totalFiles: 0, cachedFiles: 0, skippedDirs: 0, scannedPath: workingCopyPath };
+            return { success: false, files: [], errors: [String(error)], totalFiles: 0, cachedFiles: 0, skippedDirs: 0, skippedDirNames: [], scannedPath: workingCopyPath };
         }
     });
     // 构建架构图谱
@@ -1521,7 +1521,10 @@ AI 智能体在开发过程中必须遵循以下规则：
                     detail += `\nErrors: ${parseResult.errors.slice(0, 5).join('; ')}`;
                 }
                 if (parseResult.skippedDirs > 0) {
-                    detail += `\nSkipped ${parseResult.skippedDirs} directories (filtered by name)`;
+                    const names = parseResult.skippedDirNames?.length
+                        ? parseResult.skippedDirNames.join(', ')
+                        : 'unknown';
+                    detail += `\nSkipped ${parseResult.skippedDirs} directories: ${names}`;
                 }
                 if (parseResult.totalFiles > 0) {
                     detail += `\nScanned ${parseResult.totalFiles} files but none matched source types (.ts/.tsx/.js/.jsx)`;
