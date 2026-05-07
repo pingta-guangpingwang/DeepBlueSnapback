@@ -183,6 +183,27 @@ const zh: Translations = {
     needsAttention: '需关注',
     noIssues: '未发现问题，架构看起来很健康！',
     noSuggestions: '暂无建议，一切看起来不错！',
+    // Grade labels
+    grade_a: '优秀 — 架构结构良好',
+    grade_b: '良好 — 存在少量改进空间',
+    grade_c: '一般 — 存在部分技术债务',
+    grade_d: '较差 — 需要大幅重构',
+    grade_f: '严重 — 架构健康度告急',
+    // Suggestion codes
+    sug_god_modules_title: '检测到 {count} 个上帝模块',
+    sug_god_modules_desc: '模块职责过多（>500 行或 >15 个导出）。建议拆分为更小、更聚焦的模块，每个模块应承担单一职责。',
+    sug_orphan_modules_title: '发现 {count} 个孤儿模块',
+    sug_orphan_modules_desc: '文件没有任何入或出依赖关系。可能是未使用的死代码，或需要重新集成到依赖图中。',
+    sug_pain_zone_title: '{count} 个模块处于痛区',
+    sug_pain_zone_desc: '模块的不稳定性与抽象度不匹配。不稳定的模块应当抽象，稳定的模块应当具体。请检查各模块的 D 指标。',
+    sug_circular_deps_title: '{count} 个循环依赖',
+    sug_circular_deps_desc: '循环依赖造成紧耦合，使测试和重构变得困难。通过提取接口或依赖反转来打破循环。',
+    sug_high_complexity_title: '平均复杂度偏高',
+    sug_high_complexity_desc: '平均圈复杂度为 {value}。建议将复杂逻辑提取为更小的函数，降低嵌套深度。',
+    sug_clone_groups_title: '检测到 {count} 个代码克隆组',
+    sug_clone_groups_desc: '不同目录中存在同名文件，可能表示代码重复。建议将共享逻辑提取到公共模块。',
+    sug_healthy_title: '架构状态良好',
+    sug_healthy_desc: '未检测到明显问题。继续保持良好实践：保持模块小巧、管理好依赖关系、定期重构。',
   },
 
   // Overview tab

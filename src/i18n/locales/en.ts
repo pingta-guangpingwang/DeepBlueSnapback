@@ -181,6 +181,27 @@ const en = {
     needsAttention: 'Needs attention',
     noIssues: 'No issues found. Architecture looks healthy!',
     noSuggestions: 'No suggestions. Everything looks good!',
+    // Grade labels
+    grade_a: 'Excellent — architecture is well-structured',
+    grade_b: 'Good — minor improvements possible',
+    grade_c: 'Acceptable — some technical debt present',
+    grade_d: 'Poor — significant refactoring needed',
+    grade_f: 'Critical — architecture health is failing',
+    // Suggestion codes
+    sug_god_modules_title: '{count} God Module(s) Detected',
+    sug_god_modules_desc: 'Modules with excessive responsibilities (>500 lines or >15 exports). Consider splitting into smaller, focused modules. Each module should have a single responsibility.',
+    sug_orphan_modules_title: '{count} Orphan Module(s) Found',
+    sug_orphan_modules_desc: 'Files with no incoming or outgoing dependencies. These may be unused dead code, or need to be integrated into the dependency graph.',
+    sug_pain_zone_title: '{count} Module(s) in Pain Zone',
+    sug_pain_zone_desc: 'Modules with unbalanced instability vs abstractness. Unstable modules should be abstract, stable modules should be concrete. Review the D-metric for each module.',
+    sug_circular_deps_title: '{count} Circular Dependencies',
+    sug_circular_deps_desc: 'Cycles create tight coupling and make testing/refactoring difficult. Break cycles by extracting interfaces or using dependency inversion.',
+    sug_high_complexity_title: 'High Average Complexity',
+    sug_high_complexity_desc: 'Average cyclomatic complexity is {value}. Extract complex logic into smaller functions and reduce nesting depth.',
+    sug_clone_groups_title: '{count} Clone Group(s) Detected',
+    sug_clone_groups_desc: 'Files with the same name in different directories may indicate code duplication. Consider extracting shared logic into a shared module.',
+    sug_healthy_title: 'Architecture looks healthy',
+    sug_healthy_desc: 'No significant issues detected. Continue following good practices: keep modules small, manage dependencies, and refactor regularly.',
   },
 
   // Overview tab

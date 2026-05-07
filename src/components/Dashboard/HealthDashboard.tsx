@@ -87,13 +87,27 @@ function IssueRow({ issue, index }: { issue: import('../../types/health').Qualit
 }
 
 function SuggestionCard({ s }: { s: import('../../types/health').Suggestion }) {
+  const { t } = useI18n()
   const levelIcons: Record<string, string> = { critical: '🔴', warning: '🟡', info: '🔵' }
+
+  // Build i18n keys from suggestion code
+  const titleKey = `sug_${s.code}_title` as keyof typeof t.health
+  const descKey = `sug_${s.code}_desc` as keyof typeof t.health
+  let title = String(t.health[titleKey] || s.code)
+  let desc = String(t.health[descKey] || '')
+
+  // Replace params like {count}, {value}
+  for (const [k, v] of Object.entries(s.params)) {
+    title = title.replace(`{${k}}`, String(v))
+    desc = desc.replace(`{${k}}`, String(v))
+  }
+
   return (
     <div className={`health-suggestion health-suggestion-${s.level}`}>
       <span className="health-suggestion-icon">{levelIcons[s.level]}</span>
       <div className="health-suggestion-body">
-        <span className="health-suggestion-title">{s.title}</span>
-        <span className="health-suggestion-desc">{s.description}</span>
+        <span className="health-suggestion-title">{title}</span>
+        <span className="health-suggestion-desc">{desc}</span>
         {s.module && <code className="health-suggestion-module">{s.module}</code>}
       </div>
     </div>
@@ -172,7 +186,7 @@ export default function HealthDashboard() {
             <RingScore score={report.score} grade={report.grade} />
             <div className="health-score-meta">
               <span className="health-grade-label" style={{ color: gradeColors?.text, background: gradeColors?.bg }}>
-                {report.gradeLabel}
+                {String((t.health as Record<string, string>)[report.gradeLabel] || report.gradeLabel)}
               </span>
               <span className="health-timestamp">
                 {new Date(report.timestamp).toLocaleString()}

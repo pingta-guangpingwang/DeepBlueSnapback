@@ -32,8 +32,8 @@ export interface HealthSummary {
 
 export interface Suggestion {
   level: 'critical' | 'warning' | 'info'
-  title: string
-  description: string
+  code: string
+  params: Record<string, string | number>
   module?: string
 }
 
