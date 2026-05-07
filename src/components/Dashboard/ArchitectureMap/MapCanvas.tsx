@@ -252,7 +252,8 @@ export function MapCanvas({
               data-node="true"
               onClick={() => onSelectNode(pos.id)}
               onDoubleClick={() => {
-                if (node.type === 'room') onOpenFile(pos.id)
+                const isLeafRoom = node.type === 'room' && (!node.children || node.children.length === 0)
+                if (isLeafRoom) onOpenFile(pos.id)
                 else onToggleCollapse(pos.id)
               }}
               onMouseEnter={() => handleNodeHover(pos.id)}
