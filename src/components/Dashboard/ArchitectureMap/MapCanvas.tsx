@@ -292,19 +292,16 @@ export function MapCanvas({
           const offset = dragOffsets.current.get(pos.id)
           const oX = offset?.dx ?? 0
           const oY = offset?.dy ?? 0
+          // Apply drag offset by patching the position passed to NodeRenderer
+          const adjustedPos = oX !== 0 || oY !== 0
+            ? { ...pos, x: pos.x + oX, y: pos.y + oY }
+            : pos
           return (
             <div
               key={pos.id}
               data-node="true"
               data-node-id={pos.id}
               className={`map-node-wrapper${glowingNodes.has(pos.id) ? ' map-node-glow' : ''}`}
-              style={{
-                position: 'absolute',
-                left: pos.x + oX,
-                top: pos.y + oY,
-                width: pos.width,
-                height: pos.height,
-              }}
               onClick={() => { if (!nodeDragMoved.current) onSelectNode(pos.id) }}
               onDoubleClick={() => {
                 const isLeafRoom = node.type === 'room' && (!node.children || node.children.length === 0)
@@ -316,7 +313,7 @@ export function MapCanvas({
             >
               <NodeRenderer
                 node={node}
-                position={pos}
+                position={adjustedPos}
                 isSelected={selectedNode === pos.id}
                 isCollapsed={collapsedNodes.has(pos.id) || (depth > 0 && pos.level >= depth && (node.children?.length ?? 0) > 0)}
                 isHighRisk={edges.some(e => e.type === 'circular' && (e.source === pos.id || e.target === pos.id))}
