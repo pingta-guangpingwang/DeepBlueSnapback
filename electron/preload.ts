@@ -183,6 +183,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getVersionFileContent: (repoPath: string, version: string, filePath: string) =>
     ipcRenderer.invoke('version:get-file-content', repoPath, version, filePath),
 
+  // Quality & health
+  analyzeQuality: (commitId: string) =>
+    ipcRenderer.invoke('quality:analyze', commitId),
+
 })
 
 // 类型声明
@@ -276,6 +280,9 @@ export interface ElectronAPI {
   releaseVersionReadonly: (version: string) => Promise<{ success: boolean; message?: string }>
   getVersionFileList: (repoPath: string, version: string) => Promise<{ success: boolean; files?: Array<{ path: string; hash: string; size: number }>; message?: string }>
   getVersionFileContent: (repoPath: string, version: string, filePath: string) => Promise<{ success: boolean; content?: string; message?: string }>
+
+  // Quality & health
+  analyzeQuality: (commitId: string) => Promise<{ success: boolean; report?: Record<string, unknown>; message?: string }>
 }
 
 export interface FileStatus {

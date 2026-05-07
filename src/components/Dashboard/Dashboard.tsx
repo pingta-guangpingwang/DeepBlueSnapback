@@ -6,8 +6,9 @@ import History from './History'
 import Settings from './Settings'
 import About from './About'
 import { ArchitectureMap } from './ArchitectureMap/ArchitectureMap'
+import HealthDashboard from './HealthDashboard'
 
-type TabKey = 'overview' | 'files' | 'graph' | 'history' | 'settings' | 'about'
+type TabKey = 'overview' | 'files' | 'graph' | 'health' | 'history' | 'settings' | 'about'
 
 export default function Dashboard() {
   const [state, dispatch] = useAppState()
@@ -17,6 +18,7 @@ export default function Dashboard() {
     { key: 'overview', label: t.tabs.overview },
     { key: 'files', label: t.tabs.files },
     { key: 'graph', label: t.tabs.graph },
+    { key: 'health', label: t.tabs.health },
     { key: 'history', label: t.tabs.history },
     { key: 'settings', label: t.tabs.settings },
     { key: 'about', label: t.tabs.about },
@@ -57,6 +59,7 @@ export default function Dashboard() {
         {state.activeTab === 'overview' && <Overview />}
         {state.activeTab === 'files' && <FileExplorer />}
         {state.activeTab === 'graph' && <ArchitectureMap />}
+        {state.activeTab === 'health' && <HealthDashboard />}
         {state.activeTab === 'history' && <History />}
         {state.activeTab === 'settings' && <Settings />}
         {state.activeTab === 'about' && <About />}

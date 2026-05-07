@@ -128,4 +128,6 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     releaseVersionReadonly: (version) => electron_1.ipcRenderer.invoke('version:release-readonly', version),
     getVersionFileList: (repoPath, version) => electron_1.ipcRenderer.invoke('version:get-file-list', repoPath, version),
     getVersionFileContent: (repoPath, version, filePath) => electron_1.ipcRenderer.invoke('version:get-file-content', repoPath, version, filePath),
+    // Quality & health
+    analyzeQuality: (commitId) => electron_1.ipcRenderer.invoke('quality:analyze', commitId),
 });

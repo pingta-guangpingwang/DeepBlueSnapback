@@ -51,6 +51,7 @@ const zh: Translations = {
     overview: '概览',
     files: '文件',
     graph: '图谱',
+    health: '健康',
     history: '历史',
     settings: '设置',
     about: '关于',
@@ -129,6 +130,28 @@ const zh: Translations = {
     filesCount: '文件数',
     linesCount: '行数',
     exportsCount: '导出数',
+  },
+
+  // Health tab
+  health: {
+    title: '架构健康',
+    analyze: '分析健康度',
+    analyzing: '分析中...',
+    clear: '清除报告',
+    emptyHint: '点击"分析健康度"对最新版本进行代码质量分析。',
+    summary: '概览',
+    issues: '问题模块',
+    suggestions: '优化建议',
+    totalModules: '模块总数',
+    godModules: '上帝模块',
+    orphans: '孤儿模块',
+    painZoneModules: '疼痛区',
+    avgComplexity: '平均复杂度',
+    avgCoupling: '平均耦合',
+    cloneGroups: '克隆组',
+    needsAttention: '需关注',
+    noIssues: '未发现问题，架构看起来很健康！',
+    noSuggestions: '暂无建议，一切看起来不错！',
   },
 
   // Overview tab

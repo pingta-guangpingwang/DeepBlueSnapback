@@ -49,6 +49,7 @@ const en = {
     overview: 'Overview',
     files: 'Files',
     graph: 'Graph',
+    health: 'Health',
     history: 'History',
     settings: 'Settings',
     about: 'About',
@@ -127,6 +128,28 @@ const en = {
     filesCount: 'Files',
     linesCount: 'Lines',
     exportsCount: 'Exports',
+  },
+
+  // Health tab
+  health: {
+    title: 'Architecture Health',
+    analyze: 'Analyze Health',
+    analyzing: 'Analyzing...',
+    clear: 'Clear Report',
+    emptyHint: 'Click "Analyze Health" to run a code quality analysis on the latest version.',
+    summary: 'Summary',
+    issues: 'Top Issues',
+    suggestions: 'Suggestions',
+    totalModules: 'Total Modules',
+    godModules: 'God Modules',
+    orphans: 'Orphans',
+    painZoneModules: 'Pain Zone',
+    avgComplexity: 'Avg Complexity',
+    avgCoupling: 'Avg Coupling',
+    cloneGroups: 'Clone Groups',
+    needsAttention: 'Needs attention',
+    noIssues: 'No issues found. Architecture looks healthy!',
+    noSuggestions: 'No suggestions. Everything looks good!',
   },
 
   // Overview tab

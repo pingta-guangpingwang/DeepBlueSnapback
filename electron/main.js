@@ -48,6 +48,7 @@ const ast_analyzer_1 = require("./ast-analyzer");
 const graph_builder_1 = require("./graph-builder");
 const graph_store_1 = require("./graph-store");
 const version_switch_1 = require("./version-switch");
+const health_scorer_1 = require("./health-scorer");
 let mainWindow = null;
 const dbvsRepo = new dbvs_repository_1.DBHTRepository();
 const cliCommand = (0, context_menu_1.parseCommandLine)(process.argv);
@@ -1575,6 +1576,22 @@ AI 智能体在开发过程中必须遵循以下规则：
     });
     electron_1.ipcMain.handle('version:get-file-content', async (_, repoPath, version, filePath) => {
         return await (0, version_switch_1.getVersionFileContent)(repoPath, version, filePath);
+    });
+    // Quality & health analysis
+    electron_1.ipcMain.handle('quality:analyze', async (_, commitId) => {
+        try {
+            const rootPath = await getRootPath();
+            if (!rootPath)
+                return { success: false, message: 'Root path not configured' };
+            const graph = await (0, graph_store_1.loadGraph)(rootPath, commitId);
+            if (!graph)
+                return { success: false, message: 'Graph not found for this version' };
+            const report = (0, health_scorer_1.generateHealthReport)(graph);
+            return { success: true, report };
+        }
+        catch (error) {
+            return { success: false, message: String(error) };
+        }
     });
 } // end registerIPCHandlers
 // ==================== Git Bridge ====================

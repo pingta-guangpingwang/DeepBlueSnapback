@@ -302,6 +302,39 @@ export interface ElectronAPI {
         diff?: Record<string, unknown>;
         message?: string;
     }>;
+    switchToVersionReadonly: (repoPath: string, version: string) => Promise<{
+        success: boolean;
+        viewPath?: string;
+        files?: Array<{
+            path: string;
+            hash: string;
+            size: number;
+        }>;
+        message?: string;
+    }>;
+    releaseVersionReadonly: (version: string) => Promise<{
+        success: boolean;
+        message?: string;
+    }>;
+    getVersionFileList: (repoPath: string, version: string) => Promise<{
+        success: boolean;
+        files?: Array<{
+            path: string;
+            hash: string;
+            size: number;
+        }>;
+        message?: string;
+    }>;
+    getVersionFileContent: (repoPath: string, version: string, filePath: string) => Promise<{
+        success: boolean;
+        content?: string;
+        message?: string;
+    }>;
+    analyzeQuality: (commitId: string) => Promise<{
+        success: boolean;
+        report?: Record<string, unknown>;
+        message?: string;
+    }>;
 }
 export interface FileStatus {
     path: string;
