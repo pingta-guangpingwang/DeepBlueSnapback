@@ -66,12 +66,8 @@ export function MapCanvas({
   }
   if (rootNode) collectVisible(rootNode, false, 1)
 
-  // Track when visible node set changes → trigger auto-fit
+  // Stable key derived from visible node set
   const visibleKey = Array.from(visibleNodeIds).sort().join(',')
-  if (prevVisibleKey.current !== visibleKey) {
-    prevVisibleKey.current = visibleKey
-    needsAutoFit.current = true
-  }
 
   // Memoize so stable reference across renders when the set hasn't changed
   const visiblePositions = useMemo(
@@ -114,6 +110,15 @@ export function MapCanvas({
     setPanX((cw - bboxW * fitScale) / 2 - (minX - padding) * fitScale)
     setPanY((ch - bboxH * fitScale) / 2 - (minY - padding) * fitScale)
   }, [])
+
+  // When visible node set changes, mark dirty and bump fitVersion to trigger auto-fit
+  useEffect(() => {
+    if (prevVisibleKey.current !== visibleKey) {
+      prevVisibleKey.current = visibleKey
+      needsAutoFit.current = true
+      setFitVersion(v => v + 1)
+    }
+  }, [visibleKey])
 
   // Run auto-fit when fitVersion is bumped (visible set change or manual reset)
   useEffect(() => {
