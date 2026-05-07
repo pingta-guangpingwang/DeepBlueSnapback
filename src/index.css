@@ -3733,6 +3733,8 @@ pre {
   overflow: auto;
   background: #0a0f18;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .file-viewer-loading,
@@ -3750,6 +3752,7 @@ pre {
 }
 
 .file-viewer-code {
+  flex: 1;
   margin: 0;
   padding: 16px 20px;
   font-family: 'Cascadia Code', Consolas, 'Courier New', monospace;
@@ -3760,6 +3763,7 @@ pre {
   word-break: break-all;
   tab-size: 2;
   background: #0a0f18;
+  box-sizing: border-box;
 }
 
 .file-viewer-code code {
