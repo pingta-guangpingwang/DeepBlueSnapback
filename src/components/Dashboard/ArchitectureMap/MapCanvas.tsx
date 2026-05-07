@@ -32,6 +32,9 @@ export function MapCanvas({
   const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 })
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
   const [hoveredEdge, setHoveredEdge] = useState<string | null>(null)
+  const [fitVersion, setFitVersion] = useState(0)
+  const needsAutoFit = useRef(true)
+  const prevVisibleKey = useRef('')
 
   const positionMap = new Map(positions.map(p => [p.id, p]))
 
@@ -56,12 +59,47 @@ export function MapCanvas({
     visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
   )
 
+  // Track when visible node set changes → trigger auto-fit
+  const visibleKey = visiblePositions.map(p => p.id).sort().join(',')
+  if (prevVisibleKey.current !== visibleKey) {
+    prevVisibleKey.current = visibleKey
+    needsAutoFit.current = true
+  }
+
+  // Auto-fit: recompute zoom/pan to frame visible nodes
+  useEffect(() => {
+    if (!needsAutoFit.current || !containerRef.current || visiblePositions.length === 0) return
+    needsAutoFit.current = false
+
+    const el = containerRef.current
+    const cw = el.clientWidth
+    const ch = el.clientHeight
+    if (cw === 0 || ch === 0) return
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    for (const p of visiblePositions) {
+      if (p.x < minX) minX = p.x
+      if (p.y < minY) minY = p.y
+      if (p.x + p.width > maxX) maxX = p.x + p.width
+      if (p.y + p.height > maxY) maxY = p.y + p.height
+    }
+
+    const padding = 60
+    const bboxW = maxX - minX + padding * 2
+    const bboxH = maxY - minY + padding * 2
+    const fitScale = Math.max(0.2, Math.min(3, Math.min(cw / bboxW, ch / bboxH)))
+    setScale(fitScale)
+    setPanX((cw - bboxW * fitScale) / 2 - (minX - padding) * fitScale)
+    setPanY((ch - bboxH * fitScale) / 2 - (minY - padding) * fitScale)
+  }, [visiblePositions, fitVersion])
+
   // Manual wheel listener with { passive: false } to allow preventDefault
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
     const onWheel = (e: globalThis.WheelEvent) => {
       e.preventDefault()
+      needsAutoFit.current = false
       const delta = e.deltaY > 0 ? -0.08 : 0.08
       setScale(prev => Math.max(0.2, Math.min(3, prev + delta)))
     }
@@ -71,6 +109,7 @@ export function MapCanvas({
 
   const handleMouseDown = useCallback((e: MouseEvent) => {
     if ((e.target as HTMLElement).closest('[data-node]')) return
+    needsAutoFit.current = false
     setDragging(true)
     dragStart.current = { x: e.clientX, y: e.clientY, panX, panY }
     e.preventDefault()
@@ -103,9 +142,9 @@ export function MapCanvas({
     onHoverEdge(id)
   }, [onHoverEdge])
 
-  const handleZoomIn = () => setScale(prev => Math.min(3, prev + 0.15))
-  const handleZoomOut = () => setScale(prev => Math.max(0.2, prev - 0.15))
-  const handleZoomReset = () => { setScale(0.92); setPanX(16); setPanY(16) }
+  const handleZoomIn = () => { needsAutoFit.current = false; setScale(prev => Math.min(3, prev + 0.15)) }
+  const handleZoomOut = () => { needsAutoFit.current = false; setScale(prev => Math.max(0.2, prev - 0.15)) }
+  const handleZoomReset = () => { needsAutoFit.current = true; setFitVersion(v => v + 1) }
 
   if (loading) {
     return (
