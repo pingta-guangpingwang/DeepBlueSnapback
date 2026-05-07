@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect, type MouseEvent } from 'react
 import { useI18n } from '../../../i18n'
 import type { GraphNode, GraphEdge, NodePosition } from '../../../types/graph'
 import type { FlowDot } from '../../../hooks/useFlowAnimation'
+import { bezierPoint } from '../../../hooks/useFlowAnimation'
 import { NodeRenderer } from './NodeRenderer'
 import { EdgeRenderer } from './EdgeRenderer'
 
@@ -366,19 +367,22 @@ export function MapCanvas({
           })}
 
           {/* Flow animation dots layer */}
-          {flowDots.length > 0 && flowDots.map(dot => (
-            <circle
-              key={dot.id}
-              cx={dot.sourceX + (dot.targetX - dot.sourceX) * dot.progress}
-              cy={dot.sourceY + (dot.targetY - dot.sourceY) * dot.progress}
-              r={3.5}
-              fill={dot.color}
-              className="map-flow-dot"
-              style={{
-                filter: `drop-shadow(0 0 6px ${dot.glowColor}) drop-shadow(0 0 12px ${dot.glowColor})`,
-              }}
-            />
-          ))}
+          {flowDots.length > 0 && flowDots.map(dot => {
+            const pt = bezierPoint(dot)
+            return (
+              <circle
+                key={dot.id}
+                cx={pt.cx}
+                cy={pt.cy}
+                r={3.5}
+                fill={dot.color}
+                className="map-flow-dot"
+                style={{
+                  filter: `drop-shadow(0 0 6px ${dot.glowColor}) drop-shadow(0 0 12px ${dot.glowColor})`,
+                }}
+              />
+            )
+          })}
         </svg>
       </div>
 

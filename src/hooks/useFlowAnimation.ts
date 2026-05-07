@@ -4,19 +4,14 @@ import type { GraphEdge, NodePosition } from '../types/graph'
 export interface FlowDot {
   id: string
   edgeId: string
-  sourceX: number
-  sourceY: number
-  targetX: number
-  targetY: number
-  progress: number // 0→1
+  // Bezier curve control points (matching EdgeRenderer path)
+  sx: number; sy: number     // start: right edge center of source node
+  cp1x: number; cp1y: number // control point 1
+  cp2x: number; cp2y: number // control point 2
+  tx: number; ty: number     // end: left edge center of target node
+  progress: number           // 0→1
   color: string
   glowColor: string
-}
-
-export interface FlowState {
-  active: boolean
-  speed: number // 0.25 ~ 3, default 1
-  mode: 'single' | 'multi'
 }
 
 const EDGE_COLORS: Record<string, { line: string; glow: string }> = {
@@ -24,6 +19,36 @@ const EDGE_COLORS: Record<string, { line: string; glow: string }> = {
   hierarchy: { line: '#a78bfa', glow: '#8b5cf6' },
   flow:      { line: '#34d399', glow: '#10b981' },
   circular:  { line: '#ff5555', glow: '#ef4444' },
+}
+
+/** Compute bezier point at progress t (0→1), matching EdgeRenderer path */
+export function bezierPoint(dot: FlowDot): { cx: number; cy: number } {
+  const { sx, sy, cp1x, cp1y, cp2x, cp2y, tx, ty, progress: t } = dot
+  const mt = 1 - t
+  const mt2 = mt * mt
+  const mt3 = mt2 * mt
+  const t2 = t * t
+  const t3 = t2 * t
+  return {
+    cx: mt3 * sx + 3 * mt2 * t * cp1x + 3 * mt * t2 * cp2x + t3 * tx,
+    cy: mt3 * sy + 3 * mt2 * t * cp1y + 3 * mt * t2 * cp2y + t3 * ty,
+  }
+}
+
+/** Build bezier control points matching EdgeRenderer.tsx */
+function buildBezier(sp: NodePosition, tp: NodePosition) {
+  const sx = sp.x + sp.width        // right edge center of source
+  const sy = sp.y + sp.height / 2
+  const tx = tp.x                   // left edge center of target
+  const ty = tp.y + tp.height / 2
+
+  const dx = Math.abs(tx - sx) * 0.4
+  return {
+    sx, sy,
+    cp1x: sx + dx, cp1y: sy,
+    cp2x: tx - dx, cp2y: ty,
+    tx, ty,
+  }
 }
 
 export function useFlowAnimation(edges: GraphEdge[], positions: NodePosition[]) {
@@ -38,20 +63,7 @@ export function useFlowAnimation(edges: GraphEdge[], positions: NodePosition[]) 
   const dotIdCounter = useRef(0)
   const singlePathIdx = useRef(0)
 
-  // Build position lookup
   const posMap = new Map(positions.map(p => [p.id, p]))
-
-  // Build adjacency: outgoing edges per node
-  const outgoingMap = useRef<Map<string, GraphEdge[]>>(new Map())
-  useEffect(() => {
-    const m = new Map<string, GraphEdge[]>()
-    for (const e of edges) {
-      const list = m.get(e.source) || []
-      list.push(e)
-      m.set(e.source, list)
-    }
-    outgoingMap.current = m
-  }, [edges])
 
   // Animation loop
   useEffect(() => {
@@ -65,11 +77,11 @@ export function useFlowAnimation(edges: GraphEdge[], positions: NodePosition[]) 
     lastTime.current = performance.now()
 
     const tick = (now: number) => {
-      const dt = Math.min((now - lastTime.current) / 1000, 0.1) // cap at 100ms
+      const dt = Math.min((now - lastTime.current) / 1000, 0.1)
       lastTime.current = now
 
       setFlowDots(prev => {
-        const baseSpeed = 0.35 // base: ~3 seconds per edge at speed 1
+        const baseSpeed = 0.35
         const step = baseSpeed * flowSpeed * dt
         const next: FlowDot[] = []
 
@@ -77,28 +89,24 @@ export function useFlowAnimation(edges: GraphEdge[], positions: NodePosition[]) 
           const newProgress = dot.progress + step
           if (newProgress >= 1) {
             // Dot reached target → glow the target node
-            const sp = posMap.get(dot.edgeId.split('->')[1] || '')
-            setGlowingNodes(g => {
-              const nextSet = new Set(g)
-              // Find target node from edge
-              const edge = edges.find(e => e.id === dot.edgeId)
-              if (edge) nextSet.add(edge.target)
-              // Remove after a delay via another mechanism
-              return nextSet
-            })
-            // In multi mode, loop the dot back to start
+            const edge = edges.find(e => e.id === dot.edgeId)
+            if (edge) {
+              setGlowingNodes(g => {
+                const nextSet = new Set(g)
+                nextSet.add(edge.target)
+                return nextSet
+              })
+            }
             if (flowMode === 'multi') {
               next.push({ ...dot, progress: newProgress - 1 })
             }
-            // In single mode, dot is removed; a new one picks the next edge
           } else {
             next.push({ ...dot, progress: newProgress })
           }
         }
 
-        // Spawn new dots if needed
+        // Spawn new dots for uncovered edges (multi mode)
         if (flowMode === 'multi') {
-          // Ensure every visible edge has at least one dot
           const coveredEdges = new Set(next.map(d => d.edgeId))
           for (const edge of edges) {
             if (coveredEdges.has(edge.id)) continue
@@ -106,35 +114,30 @@ export function useFlowAnimation(edges: GraphEdge[], positions: NodePosition[]) 
             const tp = posMap.get(edge.target)
             if (!sp || !tp) continue
             const colors = EDGE_COLORS[edge.type] || EDGE_COLORS.pipeline
+            const bez = buildBezier(sp, tp)
             next.push({
               id: `flow-${dotIdCounter.current++}`,
               edgeId: edge.id,
-              sourceX: sp.x + sp.width / 2,
-              sourceY: sp.y + sp.height / 2,
-              targetX: tp.x + tp.width / 2,
-              targetY: tp.y + tp.height / 2,
-              progress: Math.random(), // stagger start positions
+              ...bez,
+              progress: Math.random(),
               color: colors.line,
               glowColor: colors.glow,
             })
           }
         } else {
-          // Single mode: one dot traversing the graph
+          // Single mode: one dot traversing graph sequentially
           if (next.length === 0 && edges.length > 0) {
-            // Pick next edge in traversal
             const edge = edges[singlePathIdx.current % edges.length]
             singlePathIdx.current++
             const sp = posMap.get(edge.source)
             const tp = posMap.get(edge.target)
             if (sp && tp) {
               const colors = EDGE_COLORS[edge.type] || EDGE_COLORS.pipeline
+              const bez = buildBezier(sp, tp)
               next.push({
                 id: `flow-${dotIdCounter.current++}`,
                 edgeId: edge.id,
-                sourceX: sp.x + sp.width / 2,
-                sourceY: sp.y + sp.height / 2,
-                targetX: tp.x + tp.width / 2,
-                targetY: tp.y + tp.height / 2,
+                ...bez,
                 progress: 0,
                 color: colors.line,
                 glowColor: colors.glow,
