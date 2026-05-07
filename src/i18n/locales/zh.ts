@@ -57,6 +57,45 @@ const zh: Translations = {
     about: '关于',
   },
 
+  // Tab help tooltips
+  tabHelp: {
+    overview: {
+      title: '项目概览',
+      desc: '项目控制中心 — 查看工作副本状态、变更文件、行级差异统计，以及进入提交面板。',
+      tech: 'React 状态管理 · IPC 调用 VCS 引擎 · diff-match-patch · SHA-256 快照追踪',
+    },
+    files: {
+      title: '文件浏览器',
+      desc: '浏览、创建、编辑、删除工作副本中的文件。内置代码编辑器支持语法高亮，方便快速编辑。',
+      tech: 'Electron 文件系统 API · React 文件树 · 代码编辑器 · 实时文件监控',
+    },
+    graph: {
+      title: '架构知识图谱',
+      desc: '交互式代码结构可视化 — 模块为节点，依赖关系为边。支持树状布局、调用图、继承关系和循环依赖检测。同时作为 AI 工具的 RAG 知识库。',
+      tech: 'TypeScript AST 解析 · 树状布局算法 · SVG + HTML 分层渲染 · RAG REST API · 版本间图谱对比',
+    },
+    health: {
+      title: '架构健康',
+      desc: '代码质量分析仪表盘 — 检测上帝模块、孤儿文件、疼痛区和过高的圈复杂度。生成健康评分并提供可操作的建议。',
+      tech: '圈复杂度分析 · Martin 不稳定性/抽象度指标 · 耦合分析 · 克隆检测 · 健康评分算法',
+    },
+    history: {
+      title: '版本历史',
+      desc: '浏览完整的提交时间线，支持文件级差异对比。可回滚到任意历史版本或恢复单个文件。所有回滚操作可撤销。',
+      tech: 'SHA-256 内容寻址存储 · diff-match-patch · isomorphic-git 桥接 · 基于快照的版本管理',
+    },
+    settings: {
+      title: '项目设置',
+      desc: '配置 Git 远程同步、自动快照计划、外部 REST API 服务器、数据校验和版本回滚。',
+      tech: 'Express 5 REST API · Socket.IO · isomorphic-git · Electron IPC · Bearer Token 认证 · Windows 右键菜单集成',
+    },
+    about: {
+      title: '关于 DBHT',
+      desc: '了解 DBHT（深蓝驭溯）— 重温入门指南、联系作者、支持项目。',
+      tech: 'Electron 28 · React 19 · TypeScript · Vite 8 · 本地优先架构 · 免费开源',
+    },
+  },
+
   // Graph tab
   graph: {
     buildingMap: '正在构建架构图谱...',

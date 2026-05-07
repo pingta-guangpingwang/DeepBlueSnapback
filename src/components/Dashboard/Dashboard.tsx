@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react'
 import { useAppState } from '../../context/AppContext'
 import { useI18n } from '../../i18n'
 import Overview from './Overview'
@@ -14,6 +15,8 @@ type TabKey = 'overview' | 'files' | 'graph' | 'health' | 'history' | 'settings'
 export default function Dashboard() {
   const [state, dispatch] = useAppState()
   const { t } = useI18n()
+  const [helpTab, setHelpTab] = useState<TabKey | null>(null)
+  const helpRef = useRef<HTMLDivElement>(null)
 
   const tabs: Array<{ key: TabKey; label: string }> = [
     { key: 'overview', label: t.tabs.overview },
@@ -27,6 +30,26 @@ export default function Dashboard() {
 
   const goBack = () => {
     dispatch({ type: 'SET_CURRENT_VIEW', payload: 'repositories' })
+  }
+
+  // Close help popover on outside click
+  useEffect(() => {
+    if (!helpTab) return
+    const handleClick = (e: MouseEvent) => {
+      if (helpRef.current && !helpRef.current.contains(e.target as Node)) {
+        setHelpTab(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [helpTab])
+
+  const getHelpInfo = (key: TabKey) => {
+    const th = (t as Record<string, Record<string, Record<string, string>>>).tabHelp
+    if (!th) return { title: '', desc: '', tech: '' }
+    const info = th[key]
+    if (!info) return { title: '', desc: '', tech: '' }
+    return { title: String(info.title || ''), desc: String(info.desc || ''), tech: String(info.tech || '') }
   }
 
   return (
@@ -46,13 +69,37 @@ export default function Dashboard() {
 
       <nav className="dashboard-nav">
         {tabs.map(tab => (
-          <button
-            key={tab.key}
-            className={`nav-tab ${state.activeTab === tab.key ? 'active' : ''}`}
-            onClick={() => dispatch({ type: 'SET_ACTIVE_TAB', payload: tab.key })}
-          >
-            {tab.label}
-          </button>
+          <div key={tab.key} className="nav-tab-wrapper">
+            <button
+              className={`nav-tab ${state.activeTab === tab.key ? 'active' : ''}`}
+              onClick={() => dispatch({ type: 'SET_ACTIVE_TAB', payload: tab.key })}
+            >
+              {tab.label}
+            </button>
+            <button
+              className={`nav-tab-help ${helpTab === tab.key ? 'active' : ''}`}
+              onClick={(e) => { e.stopPropagation(); setHelpTab(helpTab === tab.key ? null : tab.key) }}
+              title={String((t as Record<string, Record<string, Record<string, string>>>).tabHelp?.[tab.key]?.title || '')}
+            >
+              ?
+            </button>
+            {helpTab === tab.key && (() => {
+              const info = getHelpInfo(tab.key)
+              return (
+                <div className="nav-tab-help-popover" ref={helpRef}>
+                  <div className="nav-help-header">
+                    <strong>{info.title || tab.label}</strong>
+                    <button className="nav-help-close" onClick={() => setHelpTab(null)}>×</button>
+                  </div>
+                  <p className="nav-help-desc">{info.desc}</p>
+                  <div className="nav-help-tech">
+                    <span className="nav-help-tech-label">Tech Stack</span>
+                    <span className="nav-help-tech-text">{info.tech}</span>
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
         ))}
       </nav>
 

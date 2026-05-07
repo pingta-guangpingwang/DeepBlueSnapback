@@ -663,6 +663,125 @@ input {
   border-bottom-color: #2563eb;
 }
 
+.nav-tab-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.nav-tab-help {
+  background: none;
+  border: 1px solid #d1d5db;
+  color: #9ca3af;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: -8px;
+  margin-right: 4px;
+  padding: 0;
+  line-height: 1;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.nav-tab-help:hover,
+.nav-tab-help.active {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.nav-tab-help-popover {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  min-width: 380px;
+  max-width: 480px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
+  padding: 20px;
+  z-index: 1000;
+  animation: helpPopoverIn 0.15s ease-out;
+}
+
+@keyframes helpPopoverIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.nav-help-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.nav-help-header strong {
+  font-size: 15px;
+  color: #111827;
+}
+
+.nav-help-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.nav-help-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.nav-help-desc {
+  margin: 0 0 14px 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.nav-help-tech {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-help-tech-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #9ca3af;
+}
+
+.nav-help-tech-text {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.5;
+  font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+}
+
 .dashboard-content {
   flex: 1;
   min-height: 0;

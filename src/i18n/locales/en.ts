@@ -55,6 +55,45 @@ const en = {
     about: 'About',
   },
 
+  // Tab help tooltips
+  tabHelp: {
+    overview: {
+      title: 'Project Overview',
+      desc: 'Your project control center — view working copy status, changed files, line-level diff statistics, and access the commit panel.',
+      tech: 'React state management · IPC calls to VCS engine · diff-match-patch · SHA-256 snapshot tracking',
+    },
+    files: {
+      title: 'File Explorer',
+      desc: 'Browse, create, edit, and delete files in the working copy. Built-in code editor with syntax highlighting for quick edits.',
+      tech: 'Electron file system APIs · React file tree · Monaco-like editor · real-time file watching',
+    },
+    graph: {
+      title: 'Architecture Knowledge Graph',
+      desc: 'Interactive visualization of codebase structure — modules as nodes, dependencies as edges. Supports tree layout, call graphs, inheritance, and circular dependency detection. Also serves as a RAG knowledge base for AI tools.',
+      tech: 'TypeScript AST parsing · tree layout algorithm · SVG + HTML layered rendering · RAG REST API · version-to-version graph comparison',
+    },
+    health: {
+      title: 'Architecture Health',
+      desc: 'Code quality analysis dashboard — detects God Modules, orphan files, pain zone modules, and high cyclomatic complexity. Generates a health score with actionable suggestions.',
+      tech: 'Cyclomatic complexity analysis · Martin instability/abstractness metrics · coupling analysis · clone detection · health scoring algorithm',
+    },
+    history: {
+      title: 'Version History',
+      desc: 'Browse complete commit timeline with file-level diffs. Rollback to any previous version or restore individual files. All rollbacks are undoable.',
+      tech: 'SHA-256 content-addressed storage · diff-match-patch · isomorphic-git bridge · snapshot-based versioning',
+    },
+    settings: {
+      title: 'Project Settings',
+      desc: 'Configure Git remote sync, auto-snapshot scheduling, external REST API server, data verification, and version rollback.',
+      tech: 'Express 5 REST API · Socket.IO · isomorphic-git · Electron IPC · Bearer token auth · Windows context menu integration',
+    },
+    about: {
+      title: 'About DBHT',
+      desc: 'Learn about DBHT — DeepBlueHarnessTrace. Revisit the onboarding guide, connect with the author, and support the project.',
+      tech: 'Electron 28 · React 19 · TypeScript · Vite 8 · local-first architecture · free and open-source',
+    },
+  },
+
   // Graph tab
   graph: {
     buildingMap: 'Building architecture map...',
