@@ -279,8 +279,10 @@ async function scanDirectory(dirPath, projectRoot, cacheDir, results, errors, st
         if (!entry.isFile())
             continue;
         const ext = path.extname(baseName).toLowerCase();
-        if (!SOURCE_EXTENSIONS.has(ext))
+        if (!SOURCE_EXTENSIONS.has(ext)) {
+            stats.foundExtensions.add(ext || '(no ext)');
             continue;
+        }
         // Skip .d.ts files
         if (baseName.endsWith('.d.ts'))
             continue;
@@ -317,7 +319,7 @@ async function scanDirectory(dirPath, projectRoot, cacheDir, results, errors, st
 async function parseProject(projectPath, repoPath) {
     const results = [];
     const errors = [];
-    const stats = { total: 0, cached: 0, skippedDirs: 0, skippedDirNames: [] };
+    const stats = { total: 0, cached: 0, skippedDirs: 0, skippedDirNames: [], foundExtensions: new Set() };
     // Setup cache directory inside the root repository (graph data dir)
     const rootPath = path.resolve(repoPath, '..', '..'); // repoPath = <root>/repositories/<name>
     let cacheDir = null;
@@ -356,6 +358,7 @@ async function parseProject(projectPath, repoPath) {
         cachedFiles: stats.cached,
         skippedDirs: stats.skippedDirs,
         skippedDirNames: stats.skippedDirNames,
+        foundExtensions: [...stats.foundExtensions],
         scannedPath: projectPath,
     };
 }

@@ -47,6 +47,7 @@ export interface ParseResult {
   cachedFiles: number
   skippedDirs: number
   skippedDirNames: string[]
+  foundExtensions: string[]
   scannedPath: string
 }
 
@@ -289,7 +290,7 @@ async function scanDirectory(
   cacheDir: string | null,
   results: ParsedFile[],
   errors: string[],
-  stats: { total: number; cached: number; skippedDirs: number; skippedDirNames: string[] },
+  stats: { total: number; cached: number; skippedDirs: number; skippedDirNames: string[]; foundExtensions: Set<string> },
   depth: number = 0
 ): Promise<void> {
   if (depth > 30) return // prevent runaway recursion
@@ -330,7 +331,10 @@ async function scanDirectory(
     if (!entry.isFile()) continue
 
     const ext = path.extname(baseName).toLowerCase()
-    if (!SOURCE_EXTENSIONS.has(ext)) continue
+    if (!SOURCE_EXTENSIONS.has(ext)) {
+      stats.foundExtensions.add(ext || '(no ext)')
+      continue
+    }
 
     // Skip .d.ts files
     if (baseName.endsWith('.d.ts')) continue
@@ -374,7 +378,7 @@ export async function parseProject(
 ): Promise<ParseResult> {
   const results: ParsedFile[] = []
   const errors: string[] = []
-  const stats = { total: 0, cached: 0, skippedDirs: 0, skippedDirNames: [] as string[] }
+  const stats = { total: 0, cached: 0, skippedDirs: 0, skippedDirNames: [] as string[], foundExtensions: new Set<string>() }
 
   // Setup cache directory inside the root repository (graph data dir)
   const rootPath = path.resolve(repoPath, '..', '..') // repoPath = <root>/repositories/<name>
@@ -415,6 +419,7 @@ export async function parseProject(
     cachedFiles: stats.cached,
     skippedDirs: stats.skippedDirs,
     skippedDirNames: stats.skippedDirNames,
+    foundExtensions: [...stats.foundExtensions],
     scannedPath: projectPath,
   }
 }
