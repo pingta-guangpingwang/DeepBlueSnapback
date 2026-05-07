@@ -127,6 +127,13 @@ export interface ElectronAPI {
   // Quality & health
   analyzeQuality: (commitId: string) => Promise<{ success: boolean; report?: Record<string, unknown>; message?: string }>
 
+  // External API
+  externalApiStart: () => Promise<{ success: boolean; message: string; port?: number; address?: string }>
+  externalApiStop: () => Promise<{ success: boolean; message: string }>
+  externalApiStatus: () => Promise<{ running: boolean; port: number }>
+  externalApiGetConfig: () => Promise<{ enabled: boolean; port: number; token: string }>
+  externalApiSaveConfig: (config: { enabled: boolean; port: number; token: string }) => Promise<{ success: boolean; message: string }>
+
 }
 
 declare global {

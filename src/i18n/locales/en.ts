@@ -222,6 +222,16 @@ const en = {
     selectProjectFirst: 'Please select a project first',
     startFailed: 'Start failed: ',
     selectProject: 'Please select a project directory first.',
+    externalApi: 'External API',
+    externalApiDesc: 'REST API for external tools (e.g. AI agents) to query project status, trigger commits, and retrieve health reports. Requires Bearer Token authentication.',
+    apiRunning: 'API server is running',
+    apiStart: 'Start API Server',
+    apiStop: 'Stop API Server',
+    apiStarting: 'Starting...',
+    apiStopping: 'Stopping...',
+    apiSave: 'Save Config',
+    apiPort: 'Port',
+    apiToken: 'Bearer Token (optional)',
   },
 
   // About tab

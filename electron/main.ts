@@ -1671,6 +1671,41 @@ ipcMain.handle('graph:compare', async (_, versionA: string, versionB: string) =>
 	  }
 	})
 
+		// External API
+		let externalApi: typeof import('./external-api') | null = null
+
+		ipcMain.handle('external-api:start', async () => {
+		  const rootPath = await getRootPath()
+		  if (!rootPath) return { success: false, message: 'Root path not configured' }
+		  if (!externalApi) externalApi = await import('./external-api')
+		  return externalApi.startExternalApi(rootPath)
+		})
+
+		ipcMain.handle('external-api:stop', async () => {
+		  if (!externalApi) externalApi = await import('./external-api')
+		  return externalApi.stopExternalApi()
+		})
+
+		ipcMain.handle('external-api:status', async () => {
+		  if (!externalApi) externalApi = await import('./external-api')
+		  return externalApi.getExternalApiStatus()
+		})
+
+		ipcMain.handle('external-api:get-config', async () => {
+		  const rootPath = await getRootPath()
+		  if (!rootPath) return { enabled: false, port: 3281, token: '' }
+		  if (!externalApi) externalApi = await import('./external-api')
+		  return externalApi.loadExternalApiConfig(rootPath)
+		})
+
+		ipcMain.handle('external-api:save-config', async (_, config: { enabled: boolean; port: number; token: string }) => {
+		  const rootPath = await getRootPath()
+		  if (!rootPath) return { success: false, message: 'Root path not configured' }
+		  if (!externalApi) externalApi = await import('./external-api')
+		  externalApi.saveExternalApiConfig(rootPath, config)
+		  return { success: true, message: 'Config saved' }
+		})
+
 } // end registerIPCHandlers
 
 // ==================== Git Bridge ====================

@@ -1,0 +1,296 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getExternalApiConfig = getExternalApiConfig;
+exports.loadExternalApiConfig = loadExternalApiConfig;
+exports.saveExternalApiConfig = saveExternalApiConfig;
+exports.startExternalApi = startExternalApi;
+exports.stopExternalApi = stopExternalApi;
+exports.getExternalApiStatus = getExternalApiStatus;
+const express_1 = __importDefault(require("express"));
+const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
+const dbvs_repository_1 = require("./dbvs-repository");
+const CONFIG_FILENAME = 'external-api.json';
+let server = null;
+let currentConfig = { enabled: false, port: 3281, token: '' };
+function getExternalApiConfig() {
+    return { ...currentConfig };
+}
+function loadExternalApiConfig(rootPath) {
+    try {
+        const configPath = path_1.default.join(rootPath, 'config', CONFIG_FILENAME);
+        if (fs_1.default.existsSync(configPath)) {
+            const data = fs_1.default.readFileSync(configPath, 'utf-8');
+            currentConfig = { ...currentConfig, ...JSON.parse(data) };
+        }
+    }
+    catch { /* use defaults */ }
+    return { ...currentConfig };
+}
+function saveExternalApiConfig(rootPath, config) {
+    const configDir = path_1.default.join(rootPath, 'config');
+    if (!fs_1.default.existsSync(configDir))
+        fs_1.default.mkdirSync(configDir, { recursive: true });
+    fs_1.default.writeFileSync(path_1.default.join(configDir, CONFIG_FILENAME), JSON.stringify(config, null, 2), 'utf-8');
+    currentConfig = { ...config };
+}
+function authMiddleware(req, res, next) {
+    if (!currentConfig.token) {
+        next();
+        return;
+    }
+    const auth = req.headers.authorization;
+    if (!auth || !auth.startsWith('Bearer ') || auth.slice(7) !== currentConfig.token) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Invalid or missing Bearer token' });
+        return;
+    }
+    next();
+}
+function readRegistry(rootPath) {
+    try {
+        const registryPath = path_1.default.join(rootPath, 'config', 'projects.json');
+        if (fs_1.default.existsSync(registryPath)) {
+            const raw = JSON.parse(fs_1.default.readFileSync(registryPath, 'utf-8'));
+            return raw.map((entry) => {
+                if (entry.repoPath)
+                    return entry;
+                // compat with old format
+                return {
+                    name: entry.name,
+                    repoPath: entry.path,
+                    workingCopies: [{ path: entry.path }],
+                    created: entry.created,
+                };
+            });
+        }
+    }
+    catch { /* fall through */ }
+    // Fallback: scan repositories/ directory
+    const reposDir = path_1.default.join(rootPath, 'repositories');
+    const entries = [];
+    if (fs_1.default.existsSync(reposDir)) {
+        try {
+            const dirs = fs_1.default.readdirSync(reposDir);
+            for (const dir of dirs) {
+                const repoPath = path_1.default.join(reposDir, dir);
+                const stat = fs_1.default.statSync(repoPath);
+                if (stat.isDirectory() && fs_1.default.existsSync(path_1.default.join(repoPath, 'config.json'))) {
+                    entries.push({
+                        name: dir, repoPath, workingCopies: [],
+                        created: stat.mtime.toISOString(),
+                    });
+                }
+            }
+        }
+        catch { /* ignore */ }
+    }
+    return entries;
+}
+async function startExternalApi(rootPath) {
+    if (server) {
+        return { success: false, message: `API server is already running on port ${currentConfig.port}` };
+    }
+    const dbvs = new dbvs_repository_1.DBHTRepository();
+    const app = (0, express_1.default)();
+    app.use(express_1.default.json());
+    app.use(authMiddleware);
+    // GET /api/v1/status
+    app.get('/api/v1/status', async (_req, res) => {
+        try {
+            const registry = readRegistry(rootPath);
+            res.json({
+                status: 'running',
+                rootPath,
+                projects: registry.length,
+                timestamp: new Date().toISOString(),
+            });
+        }
+        catch (e) {
+            res.status(500).json({ error: 'Internal error', message: String(e) });
+        }
+    });
+    // GET /api/v1/projects
+    app.get('/api/v1/projects', async (_req, res) => {
+        try {
+            const registry = readRegistry(rootPath);
+            res.json(registry.map(e => ({
+                name: e.name,
+                path: e.repoPath,
+                workingCopies: e.workingCopies.map(w => w.path),
+                gitConfig: e.gitConfig,
+            })));
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // GET /api/v1/projects/:name/graph-versions
+    app.get('/api/v1/projects/:name/graph-versions', async (_req, res) => {
+        try {
+            const graphsDir = path_1.default.join(rootPath, 'graphs');
+            if (!fs_1.default.existsSync(graphsDir)) {
+                res.json({ graphs: [] });
+                return;
+            }
+            const files = fs_1.default.readdirSync(graphsDir).filter(f => f.endsWith('.json'));
+            res.json({ graphs: files.map(f => f.replace('.json', '')) });
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // GET /api/v1/projects/:name/health
+    app.get('/api/v1/projects/:name/health', async (req, res) => {
+        try {
+            const registry = readRegistry(rootPath);
+            const proj = registry.find(e => e.name === req.params.name);
+            if (!proj) {
+                res.status(404).json({ error: 'Project not found' });
+                return;
+            }
+            const history = await dbvs.getHistoryStructured(proj.repoPath);
+            if (!history.success || !history.commits?.length) {
+                res.status(404).json({ error: 'No commits found' });
+                return;
+            }
+            const { loadGraph } = await Promise.resolve().then(() => __importStar(require('./graph-store')));
+            const { generateHealthReport } = await Promise.resolve().then(() => __importStar(require('./health-scorer')));
+            const graph = await loadGraph(rootPath, history.commits[0].id);
+            if (!graph) {
+                res.status(404).json({ error: 'No graph found — run AST analysis first' });
+                return;
+            }
+            const report = generateHealthReport(graph);
+            res.json(report);
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // POST /api/v1/tasks/complete
+    app.post('/api/v1/tasks/complete', async (req, res) => {
+        try {
+            const { projectName, message, author } = req.body;
+            if (!projectName) {
+                res.status(400).json({ error: 'projectName is required' });
+                return;
+            }
+            const registry = readRegistry(rootPath);
+            const proj = registry.find(e => e.name === projectName);
+            if (!proj) {
+                res.status(404).json({ error: 'Project not found' });
+                return;
+            }
+            const wc = proj.workingCopies[0];
+            if (!wc) {
+                res.status(404).json({ error: 'No working copy for project' });
+                return;
+            }
+            const status = await dbvs.getStatus(proj.repoPath, wc.path);
+            const changedFiles = (status.status || []).filter((s) => !s.startsWith('?'));
+            if (changedFiles.length === 0) {
+                res.json({ success: true, message: 'No changes to commit', version: null });
+                return;
+            }
+            const result = await dbvs.commit(proj.repoPath, wc.path, message || '[External API] Task completed — auto snapshot', changedFiles, { author: author || 'external-api' });
+            res.json({ success: result.success, message: result.message });
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // POST /api/v1/projects/:name/commit
+    app.post('/api/v1/projects/:name/commit', async (req, res) => {
+        try {
+            const { message: commitMsg, author, files: specifiedFiles } = req.body;
+            if (!commitMsg) {
+                res.status(400).json({ error: 'message is required' });
+                return;
+            }
+            const registry = readRegistry(rootPath);
+            const proj = registry.find(e => e.name === req.params.name);
+            if (!proj) {
+                res.status(404).json({ error: 'Project not found' });
+                return;
+            }
+            const wc = proj.workingCopies[0];
+            if (!wc) {
+                res.status(404).json({ error: 'No working copy' });
+                return;
+            }
+            const status = await dbvs.getStatus(proj.repoPath, wc.path);
+            let files = specifiedFiles;
+            if (!files || files.length === 0) {
+                files = (status.status || []).filter((s) => !s.startsWith('?'));
+            }
+            if (files.length === 0) {
+                res.json({ success: true, message: 'No files to commit' });
+                return;
+            }
+            const result = await dbvs.commit(proj.repoPath, wc.path, commitMsg, files, {
+                author: author || 'external-api',
+            });
+            res.json({ success: result.success, message: result.message });
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    return new Promise(resolve => {
+        server = app.listen(currentConfig.port, () => {
+            const addr = `http://localhost:${currentConfig.port}`;
+            resolve({ success: true, message: `API server started on ${addr}`, port: currentConfig.port, address: addr });
+        });
+        server.on('error', (err) => {
+            server = null;
+            resolve({ success: false, message: `Failed to start API server: ${err.message}` });
+        });
+    });
+}
+function stopExternalApi() {
+    if (!server) {
+        return { success: false, message: 'API server is not running' };
+    }
+    server.close();
+    server = null;
+    return { success: true, message: 'API server stopped' };
+}
+function getExternalApiStatus() {
+    return { running: server !== null, port: currentConfig.port };
+}

@@ -1593,6 +1593,43 @@ AI 智能体在开发过程中必须遵循以下规则：
             return { success: false, message: String(error) };
         }
     });
+    // External API
+    let externalApi = null;
+    electron_1.ipcMain.handle('external-api:start', async () => {
+        const rootPath = await getRootPath();
+        if (!rootPath)
+            return { success: false, message: 'Root path not configured' };
+        if (!externalApi)
+            externalApi = await Promise.resolve().then(() => __importStar(require('./external-api')));
+        return externalApi.startExternalApi(rootPath);
+    });
+    electron_1.ipcMain.handle('external-api:stop', async () => {
+        if (!externalApi)
+            externalApi = await Promise.resolve().then(() => __importStar(require('./external-api')));
+        return externalApi.stopExternalApi();
+    });
+    electron_1.ipcMain.handle('external-api:status', async () => {
+        if (!externalApi)
+            externalApi = await Promise.resolve().then(() => __importStar(require('./external-api')));
+        return externalApi.getExternalApiStatus();
+    });
+    electron_1.ipcMain.handle('external-api:get-config', async () => {
+        const rootPath = await getRootPath();
+        if (!rootPath)
+            return { enabled: false, port: 3281, token: '' };
+        if (!externalApi)
+            externalApi = await Promise.resolve().then(() => __importStar(require('./external-api')));
+        return externalApi.loadExternalApiConfig(rootPath);
+    });
+    electron_1.ipcMain.handle('external-api:save-config', async (_, config) => {
+        const rootPath = await getRootPath();
+        if (!rootPath)
+            return { success: false, message: 'Root path not configured' };
+        if (!externalApi)
+            externalApi = await Promise.resolve().then(() => __importStar(require('./external-api')));
+        externalApi.saveExternalApiConfig(rootPath, config);
+        return { success: true, message: 'Config saved' };
+    });
 } // end registerIPCHandlers
 // ==================== Git Bridge ====================
 const gitBridge = new git_bridge_1.GitBridge();

@@ -335,6 +335,33 @@ export interface ElectronAPI {
         report?: Record<string, unknown>;
         message?: string;
     }>;
+    externalApiStart: () => Promise<{
+        success: boolean;
+        message: string;
+        port?: number;
+        address?: string;
+    }>;
+    externalApiStop: () => Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    externalApiStatus: () => Promise<{
+        running: boolean;
+        port: number;
+    }>;
+    externalApiGetConfig: () => Promise<{
+        enabled: boolean;
+        port: number;
+        token: string;
+    }>;
+    externalApiSaveConfig: (config: {
+        enabled: boolean;
+        port: number;
+        token: string;
+    }) => Promise<{
+        success: boolean;
+        message: string;
+    }>;
 }
 export interface FileStatus {
     path: string;

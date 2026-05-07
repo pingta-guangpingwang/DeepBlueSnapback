@@ -224,6 +224,16 @@ const zh: Translations = {
     selectProjectFirst: '请先选择项目',
     startFailed: '启动失败：',
     selectProject: '请先选择项目目录。',
+    externalApi: '外部 API',
+    externalApiDesc: '为外部工具（如 AI 智能体）提供 REST API，用于查询项目状态、触发提交、获取健康报告。需要 Bearer Token 认证。',
+    apiRunning: 'API 服务器运行中',
+    apiStart: '启动 API 服务器',
+    apiStop: '停止 API 服务器',
+    apiStarting: '启动中...',
+    apiStopping: '停止中...',
+    apiSave: '保存配置',
+    apiPort: '端口',
+    apiToken: 'Bearer Token（可选）',
   },
 
   // About tab

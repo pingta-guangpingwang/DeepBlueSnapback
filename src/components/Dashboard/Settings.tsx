@@ -3,6 +3,127 @@ import { useAppState } from '../../context/AppContext'
 import { useGit } from '../../hooks/useGit'
 import { useI18n } from '../../i18n'
 
+function ExternalApiSection() {
+  const [running, setRunning] = useState(false)
+  const [port, setPort] = useState(3281)
+  const [token, setToken] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+  const { t } = useI18n()
+
+  useEffect(() => {
+    window.electronAPI.externalApiGetConfig().then(config => {
+      setPort(config.port || 3281)
+      setToken(config.token || '')
+    }).catch(() => {})
+    window.electronAPI.externalApiStatus().then(status => {
+      setRunning(status.running)
+      if (status.port) setPort(status.port)
+    }).catch(() => {})
+  }, [])
+
+  const handleStart = async () => {
+    setLoading(true)
+    setMessage('')
+    await window.electronAPI.externalApiSaveConfig({ enabled: true, port, token })
+    const result = await window.electronAPI.externalApiStart()
+    setMessage(result.message)
+    if (result.success) setRunning(true)
+    setLoading(false)
+  }
+
+  const handleStop = async () => {
+    setLoading(true)
+    setMessage('')
+    const result = await window.electronAPI.externalApiStop()
+    setMessage(result.message)
+    if (result.success) setRunning(false)
+    setLoading(false)
+  }
+
+  const handleSave = async () => {
+    const result = await window.electronAPI.externalApiSaveConfig({ enabled: running, port, token })
+    setMessage(result.message)
+  }
+
+  return (
+    <div className="settings-section">
+      <h3>{t.settings.externalApi}</h3>
+      <p style={{ color: '#6b7280', margin: '0 0 16px', fontSize: '13px' }}>
+        {t.settings.externalApiDesc}
+      </p>
+
+      {running && (
+        <div style={{
+          padding: '10px 14px', background: '#f0fdf4', borderRadius: '6px',
+          border: '1px solid #bbf7d0', marginBottom: '12px',
+        }}>
+          <div style={{ fontSize: '12px', color: '#16a34a', fontWeight: 600, marginBottom: '4px' }}>
+            {t.settings.apiRunning}
+          </div>
+          <code style={{ fontSize: '13px', color: '#166534', fontFamily: 'Consolas, monospace' }}>
+            http://localhost:{port}/api/v1/status
+          </code>
+        </div>
+      )}
+
+      <div className="form-group" style={{ marginBottom: '12px' }}>
+        <label style={{ fontSize: '13px' }}>{t.settings.apiPort}</label>
+        <input
+          type="number"
+          value={port}
+          onChange={e => setPort(Number(e.target.value))}
+          disabled={running}
+          style={{ maxWidth: '200px', fontSize: '13px' }}
+          min={1024}
+          max={65535}
+        />
+      </div>
+
+      <div className="form-group" style={{ marginBottom: '12px' }}>
+        <label style={{ fontSize: '13px' }}>{t.settings.apiToken}</label>
+        <input
+          type="text"
+          value={token}
+          onChange={e => setToken(e.target.value)}
+          placeholder="Bearer Token (leave empty for no auth)"
+          style={{ fontSize: '13px' }}
+        />
+      </div>
+
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        {running ? (
+          <button className="warning-button" onClick={handleStop} disabled={loading}>
+            {loading ? t.settings.apiStopping : t.settings.apiStop}
+          </button>
+        ) : (
+          <button onClick={handleStart} disabled={loading}>
+            {loading ? t.settings.apiStarting : t.settings.apiStart}
+          </button>
+        )}
+        <button
+          onClick={handleSave}
+          style={{ background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db' }}
+          disabled={loading}
+        >
+          {t.settings.apiSave}
+        </button>
+      </div>
+
+      {message && (
+        <div style={{
+          marginTop: '8px', padding: '6px 10px', borderRadius: '6px',
+          background: message.includes('Failed') || message.includes('not') ? '#fee2e2' : '#f0fdf4',
+          color: message.includes('Failed') || message.includes('not') ? '#991b1b' : '#166534',
+          fontSize: '12px',
+        }}>
+          {message}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Settings() {
   const [state, dispatch] = useAppState()
   const { disconnectRemote, loadGitStatus } = useGit()
@@ -154,6 +275,8 @@ export default function Settings() {
         </p>
         <button onClick={handleVerify}>{t.settings.verifyBtn}</button>
       </div>
+
+      <ExternalApiSection />
 
       <div className="settings-section">
         <h3>{t.settings.autoSnapshot}</h3>

@@ -130,4 +130,10 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     getVersionFileContent: (repoPath, version, filePath) => electron_1.ipcRenderer.invoke('version:get-file-content', repoPath, version, filePath),
     // Quality & health
     analyzeQuality: (commitId) => electron_1.ipcRenderer.invoke('quality:analyze', commitId),
+    // External API
+    externalApiStart: () => electron_1.ipcRenderer.invoke('external-api:start'),
+    externalApiStop: () => electron_1.ipcRenderer.invoke('external-api:stop'),
+    externalApiStatus: () => electron_1.ipcRenderer.invoke('external-api:status'),
+    externalApiGetConfig: () => electron_1.ipcRenderer.invoke('external-api:get-config'),
+    externalApiSaveConfig: (config) => electron_1.ipcRenderer.invoke('external-api:save-config', config),
 });
