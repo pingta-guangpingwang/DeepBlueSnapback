@@ -155,8 +155,6 @@ const zh: Translations = {
     comparing: '正在对比图谱...',
     comparisonFailed: '对比失败',
     summary: '概要',
-    nodes: '节点',
-    edges: '边',
     nodesAdded: '新增节点',
     nodesRemoved: '删除节点',
     nodesModified: '变更节点',

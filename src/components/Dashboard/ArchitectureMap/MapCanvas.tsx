@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect, type MouseEvent } from 'react'
+import { useRef, useState, useCallback, useEffect, useMemo, type MouseEvent } from 'react'
 import { useI18n } from '../../../i18n'
 import type { GraphNode, GraphEdge, NodePosition } from '../../../types/graph'
 import type { FlowDot } from '../../../hooks/useFlowAnimation'
@@ -66,21 +66,31 @@ export function MapCanvas({
   }
   if (rootNode) collectVisible(rootNode, false, 1)
 
-  const visiblePositions = positions.filter(p => visibleNodeIds.has(p.id))
-  const visibleEdges = edges.filter(e =>
-    visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)
-  )
-
   // Track when visible node set changes → trigger auto-fit
-  const visibleKey = visiblePositions.map(p => p.id).sort().join(',')
+  const visibleKey = Array.from(visibleNodeIds).sort().join(',')
   if (prevVisibleKey.current !== visibleKey) {
     prevVisibleKey.current = visibleKey
     needsAutoFit.current = true
   }
 
+  // Memoize so stable reference across renders when the set hasn't changed
+  const visiblePositions = useMemo(
+    () => positions.filter(p => visibleNodeIds.has(p.id)),
+    [positions, visibleKey],
+  )
+  const visibleEdges = useMemo(
+    () => edges.filter(e => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)),
+    [edges, visibleKey],
+  )
+
+  // Ref kept in sync so applyAutoFit doesn't recreate on every render
+  const visiblePositionsRef = useRef(visiblePositions)
+  visiblePositionsRef.current = visiblePositions
+
   // Auto-fit: recompute zoom/pan to frame visible nodes
   const applyAutoFit = useCallback(() => {
-    if (!containerRef.current || visiblePositions.length === 0) return
+    const vp = visiblePositionsRef.current
+    if (!containerRef.current || vp.length === 0) return
     const el = containerRef.current
     const cw = el.clientWidth
     const ch = el.clientHeight
@@ -89,7 +99,7 @@ export function MapCanvas({
     needsAutoFit.current = false
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-    for (const p of visiblePositions) {
+    for (const p of vp) {
       if (p.x < minX) minX = p.x
       if (p.y < minY) minY = p.y
       if (p.x + p.width > maxX) maxX = p.x + p.width
@@ -103,19 +113,20 @@ export function MapCanvas({
     setScale(fitScale)
     setPanX((cw - bboxW * fitScale) / 2 - (minX - padding) * fitScale)
     setPanY((ch - bboxH * fitScale) / 2 - (minY - padding) * fitScale)
-  }, [visiblePositions])
+  }, [])
 
-  // Run auto-fit when visiblePositions change or fitVersion is bumped
+  // Run auto-fit when fitVersion is bumped (visible set change or manual reset)
   useEffect(() => {
     if (!needsAutoFit.current) return
     applyAutoFit()
-  }, [visiblePositions, fitVersion, applyAutoFit])
+  }, [fitVersion, applyAutoFit])
 
   // Retry auto-fit after paint when container dimensions become available
   useEffect(() => {
-    if (!needsAutoFit.current || !containerRef.current || visiblePositions.length === 0) return
+    if (!needsAutoFit.current || !containerRef.current) return
     const el = containerRef.current
     if (el.clientWidth > 0 && el.clientHeight > 0) return // already sized
+    if (visiblePositionsRef.current.length === 0) return
 
     // Container has no dimensions yet — retry after layout
     let attempts = 0
@@ -130,7 +141,7 @@ export function MapCanvas({
       }
     }
     requestAnimationFrame(tryFit)
-  }, [visiblePositions, fitVersion, applyAutoFit])
+  }, [fitVersion, applyAutoFit])
 
   // ResizeObserver: re-fit when container size changes (e.g. detail panel opens)
   useEffect(() => {
@@ -143,7 +154,7 @@ export function MapCanvas({
       const h = el.clientHeight
       if (w !== lastW || h !== lastH) {
         lastW = w; lastH = h
-        if (w > 0 && h > 0 && visiblePositions.length > 0) {
+        if (w > 0 && h > 0 && visiblePositionsRef.current.length > 0) {
           needsAutoFit.current = true
           // Use a microtask to avoid triggering during render
           requestAnimationFrame(() => setFitVersion(v => v + 1))
@@ -152,7 +163,7 @@ export function MapCanvas({
     })
     observer.observe(el)
     return () => observer.disconnect()
-  }, [visiblePositions.length])
+  }, [])
 
   // Manual wheel listener with { passive: false } to allow preventDefault
   useEffect(() => {

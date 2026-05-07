@@ -153,8 +153,6 @@ const en = {
     comparing: 'Comparing graphs...',
     comparisonFailed: 'Comparison failed',
     summary: 'Summary',
-    nodes: 'Nodes',
-    edges: 'Edges',
     nodesAdded: 'Nodes Added',
     nodesRemoved: 'Nodes Removed',
     nodesModified: 'Nodes Modified',

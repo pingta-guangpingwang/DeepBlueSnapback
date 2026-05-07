@@ -45,7 +45,7 @@ export default function Dashboard() {
   }, [helpTab])
 
   const getHelpInfo = (key: TabKey) => {
-    const th = (t as Record<string, Record<string, Record<string, string>>>).tabHelp
+    const th = (t as any).tabHelp
     if (!th) return { title: '', desc: '', tech: '' }
     const info = th[key]
     if (!info) return { title: '', desc: '', tech: '' }
@@ -79,7 +79,7 @@ export default function Dashboard() {
             <button
               className={`nav-tab-help ${helpTab === tab.key ? 'active' : ''}`}
               onClick={(e) => { e.stopPropagation(); setHelpTab(helpTab === tab.key ? null : tab.key) }}
-              title={String((t as Record<string, Record<string, Record<string, string>>>).tabHelp?.[tab.key]?.title || '')}
+              title={String((t as any).tabHelp?.[tab.key]?.title || '')}
             >
               ?
             </button>
