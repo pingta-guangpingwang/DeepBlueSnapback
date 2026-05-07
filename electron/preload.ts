@@ -172,6 +172,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('graph:list-versions'),
   compareGraphs: (versionA: string, versionB: string) =>
     ipcRenderer.invoke('graph:compare', versionA, versionB),
+  getRagContext: (commitId: string) =>
+    ipcRenderer.invoke('graph:to-rag-context', commitId),
 
   // Version switching
   switchToVersionReadonly: (repoPath: string, version: string) =>
@@ -288,6 +290,9 @@ export interface ElectronAPI {
   releaseVersionReadonly: (version: string) => Promise<{ success: boolean; message?: string }>
   getVersionFileList: (repoPath: string, version: string) => Promise<{ success: boolean; files?: Array<{ path: string; hash: string; size: number }>; message?: string }>
   getVersionFileContent: (repoPath: string, version: string, filePath: string) => Promise<{ success: boolean; content?: string; message?: string }>
+
+  // Graph
+  getRagContext: (commitId: string) => Promise<{ success: boolean; context?: Record<string, unknown>; message?: string }>
 
   // Quality & health
   analyzeQuality: (commitId: string) => Promise<{ success: boolean; report?: Record<string, unknown>; message?: string }>

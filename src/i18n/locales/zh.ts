@@ -136,6 +136,16 @@ const zh: Translations = {
     exportsCount: '导出数',
     devView: '开发视图',
     simpleView: '简单视图',
+    helpTitle: '知识图谱 & RAG',
+    helpIntro: '架构图谱是代码库的结构化知识图谱。每个节点代表一个模块（建筑）、子目录（楼层）或源文件（房间）。边表示导入、调用、继承和循环依赖关系。',
+    helpHowBuilt: '通过对 TypeScript/JavaScript 源文件进行 AST 分析构建。每次提交存储独立的图谱快照，支持版本间架构对比。',
+    helpRagTitle: 'RAG（检索增强生成）',
+    helpRagDesc: 'AI 工具和 LLM 可以查询此知识图谱来理解项目结构、模块关系和代码健康度。图谱提供的结构化上下文能显著提升 AI 辅助开发的准确性。',
+    helpCliTitle: 'CLI 访问',
+    helpCliDesc: '运行 `npx dbht rag <项目名>` 获取完整知识图谱上下文（结构化 JSON）。可管道传递给 LLM，用于架构感知的代码生成、重构建议和影响分析。',
+    helpApiTitle: 'REST API',
+    helpApiDesc: '在设置中启用外部 API 后，可通过以下端点查询图谱：\nGET /api/v1/projects/:name/rag?q=<查询词>\n返回自然语言摘要、过滤后的节点以及与查询匹配的关键关系。',
+    helpClose: '知道了',
   },
 
   // Simple view (building metaphor)

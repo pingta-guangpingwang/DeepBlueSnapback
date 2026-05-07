@@ -20,6 +20,10 @@ export function ArchitectureMap() {
 
   const { diff, loading: cmpLoading, error: cmpError, versionA, versionB, compareVersions, clearComparison } = useGraphComparison()
   const [showCompare, setShowCompare] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
+  const [fileViewer, setFileViewer] = useState<{
+    visible: boolean; node: GraphNode | null; content: string; loading: boolean; error: string | null
+  }>({ visible: false, node: null, content: '', loading: false, error: null })
   const [availableVersions, setAvailableVersions] = useState<string[]>([])
   const [cmpVersionA, setCmpVersionA] = useState('')
   const [cmpVersionB, setCmpVersionB] = useState('')
@@ -129,6 +133,28 @@ export function ArchitectureMap() {
     setSelectedNode(id)
   }
 
+  const handleOpenFile = useCallback(async (nodeId: string) => {
+    if (!state.projectPath || !graph) return
+    const node = findNodeById(graph.rootNode, nodeId)
+    if (!node || node.type !== 'room') return
+
+    setFileViewer({ visible: true, node, content: '', loading: true, error: null })
+
+    try {
+      const fullPath = (window as any).electronAPI?.joinPath
+        ? await (window as any).electronAPI.joinPath(state.projectPath, node.path)
+        : state.projectPath + '/' + node.path
+      const result = await (window as any).electronAPI?.readFile(fullPath)
+      if (result?.success) {
+        setFileViewer(prev => ({ ...prev, content: result.content || '', loading: false }))
+      } else {
+        setFileViewer(prev => ({ ...prev, error: result?.error || 'Failed to read file', loading: false }))
+      }
+    } catch (err) {
+      setFileViewer(prev => ({ ...prev, error: String(err), loading: false }))
+    }
+  }, [state.projectPath, graph])
+
   const depthOptions = [1, 2, 3, 4, 5, -1]
 
   return (
@@ -154,6 +180,11 @@ export function ArchitectureMap() {
             {d === -1 ? t.graph.depthAll : d}
           </button>
         ))}
+        <button
+          className="map-help-btn"
+          onClick={() => setShowHelp(true)}
+          title={String(t.graph.helpTitle)}
+        >?</button>
       </div>
 
       {/* Graph version comparison */}
@@ -192,6 +223,7 @@ export function ArchitectureMap() {
           depth={depth}
           onSelectNode={handleSelectNode}
           onToggleCollapse={handleToggleCollapse}
+          onOpenFile={handleOpenFile}
           onHoverNode={handleHoverNode}
           onHoverEdge={handleHoverEdge}
           loading={loading}
@@ -229,6 +261,45 @@ export function ArchitectureMap() {
         versionB={versionB}
         onClose={handleCloseCompare}
       />
+
+      {/* Help modal */}
+      {showHelp && (
+        <div className="map-help-overlay" onClick={() => setShowHelp(false)}>
+          <div className="map-help-modal" onClick={e => e.stopPropagation()}>
+            <div className="map-help-header">
+              <h3>{String(t.graph.helpTitle)}</h3>
+              <button onClick={() => setShowHelp(false)}>✕</button>
+            </div>
+            <div className="map-help-body">
+              <p className="map-help-p">{String(t.graph.helpIntro)}</p>
+              <p className="map-help-p">{String(t.graph.helpHowBuilt)}</p>
+              <h4>{String(t.graph.helpRagTitle)}</h4>
+              <p className="map-help-p">{String(t.graph.helpRagDesc)}</p>
+              <h4>{String(t.graph.helpCliTitle)}</h4>
+              <pre className="map-help-code">{String(t.graph.helpCliDesc)}</pre>
+              <h4>{String(t.graph.helpApiTitle)}</h4>
+              <pre className="map-help-code">{String(t.graph.helpApiDesc)}</pre>
+            </div>
+            <div className="map-help-footer">
+              <button className="map-help-close-btn" onClick={() => setShowHelp(false)}>
+                {String(t.graph.helpClose)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* File viewer overlay */}
+      {fileViewer.visible && fileViewer.node && (
+        <FileViewerPanel
+          node={fileViewer.node}
+          content={fileViewer.content}
+          loading={fileViewer.loading}
+          error={fileViewer.error}
+          graph={graph}
+          onClose={() => setFileViewer({ visible: false, node: null, content: '', loading: false, error: null })}
+        />
+      )}
     </div>
   )
 }
@@ -314,4 +385,151 @@ function findNodeById(root: GraphNode, id: string): GraphNode | null {
     }
   }
   return null
+}
+
+function FileViewerPanel({ node, content, loading, error, graph, onClose }: {
+  node: GraphNode
+  content: string
+  loading: boolean
+  error: string | null
+  graph: { rootNode: GraphNode; edges: GraphEdge[] } | null
+  onClose: () => void
+}) {
+  const { t } = useI18n()
+
+  if (!graph) return null
+
+  const incomingEdges = graph.edges.filter(e => e.target === node.id)
+  const outgoingEdges = graph.edges.filter(e => e.source === node.id)
+  const circularEdges = graph.edges.filter(e => e.type === 'circular' && (e.source === node.id || e.target === node.id))
+
+  return (
+    <div className="file-viewer-overlay" onClick={onClose}>
+      <div className="file-viewer" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="file-viewer-header">
+          <div className="file-viewer-title">
+            <span className="file-viewer-icon">{'\u{1F4C4}'}</span>
+            <span className="file-viewer-name">{node.label}</span>
+            <span className="file-viewer-path">{node.path}</span>
+          </div>
+          <button className="file-viewer-close" onClick={onClose}>✕</button>
+        </div>
+
+        {/* Body */}
+        <div className="file-viewer-body">
+          {/* Code panel */}
+          <div className="file-viewer-code-panel">
+            {loading ? (
+              <div className="file-viewer-loading">{t.graph.loading}</div>
+            ) : error ? (
+              <div className="file-viewer-error">{error}</div>
+            ) : (
+              <pre className="file-viewer-code">
+                <code>{content}</code>
+              </pre>
+            )}
+          </div>
+
+          {/* Details side panel */}
+          <div className="file-viewer-details">
+            <div className="fv-detail-section">
+              <h4 className="fv-detail-title">{t.graph.nodeType}</h4>
+              <span className="fv-detail-value fv-type-badge">{node.type}</span>
+            </div>
+
+            <div className="fv-detail-section">
+              <h4 className="fv-detail-title">{t.graph.nodeFiles}</h4>
+              <span className="fv-detail-value">{node.fileCount}</span>
+            </div>
+
+            <div className="fv-detail-section">
+              <h4 className="fv-detail-title">{t.graph.nodeLines}</h4>
+              <span className="fv-detail-value">{node.lineCount.toLocaleString()}</span>
+            </div>
+
+            <div className="fv-detail-section">
+              <h4 className="fv-detail-title">{t.graph.nodeExports}</h4>
+              <span className="fv-detail-value">{node.exportsCount}</span>
+            </div>
+
+            {node.complexity != null && (
+              <div className="fv-detail-section">
+                <h4 className="fv-detail-title">Complexity</h4>
+                <span className="fv-detail-value">{node.complexity}</span>
+              </div>
+            )}
+
+            <div className="fv-detail-divider" />
+
+            <div className="fv-detail-section">
+              <h4 className="fv-detail-title">{t.graph.nodeIncoming}</h4>
+              <span className="fv-detail-value">{incomingEdges.length} {t.graph.deps}</span>
+            </div>
+
+            {incomingEdges.length > 0 && (
+              <div className="fv-edge-list">
+                {incomingEdges.slice(0, 15).map(e => {
+                  const src = findNodeById(graph.rootNode, e.source)
+                  return (
+                    <div key={e.id} className={`fv-edge-item fv-edge-${e.type}`}>
+                      <span className="fv-edge-type">{e.type}</span>
+                      <span className="fv-edge-name">{src?.label || e.source}</span>
+                      {e.label && <span className="fv-edge-label">{e.label}</span>}
+                    </div>
+                  )
+                })}
+                {incomingEdges.length > 15 && <div className="fv-edge-more">+{incomingEdges.length - 15} {t.graph.more}</div>}
+              </div>
+            )}
+
+            <div className="fv-detail-divider" />
+
+            <div className="fv-detail-section">
+              <h4 className="fv-detail-title">{t.graph.nodeOutgoing}</h4>
+              <span className="fv-detail-value">{outgoingEdges.length} {t.graph.deps}</span>
+            </div>
+
+            {outgoingEdges.length > 0 && (
+              <div className="fv-edge-list">
+                {outgoingEdges.slice(0, 15).map(e => {
+                  const tgt = findNodeById(graph.rootNode, e.target)
+                  return (
+                    <div key={e.id} className={`fv-edge-item fv-edge-${e.type}`}>
+                      <span className="fv-edge-type">{e.type}</span>
+                      <span className="fv-edge-name">{tgt?.label || e.target}</span>
+                      {e.label && <span className="fv-edge-label">{e.label}</span>}
+                    </div>
+                  )
+                })}
+                {outgoingEdges.length > 15 && <div className="fv-edge-more">+{outgoingEdges.length - 15} {t.graph.more}</div>}
+              </div>
+            )}
+
+            {circularEdges.length > 0 && (
+              <>
+                <div className="fv-detail-divider" />
+                <div className="fv-detail-section fv-circular">
+                  <h4 className="fv-detail-title">⤾ {t.graph.nodeCircular}</h4>
+                  <span className="fv-detail-value">{circularEdges.length} {t.graph.cycles}</span>
+                </div>
+                <div className="fv-edge-list">
+                  {circularEdges.map(e => (
+                    <div key={e.id} className="fv-edge-item fv-edge-circular">
+                      <span className="fv-edge-type">circular</span>
+                      <span className="fv-edge-name">
+                        {(findNodeById(graph.rootNode, e.source)?.label || e.source).split(':').pop()}
+                        {' ↔ '}
+                        {(findNodeById(graph.rootNode, e.target)?.label || e.target).split(':').pop()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }

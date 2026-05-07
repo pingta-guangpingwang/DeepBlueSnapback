@@ -134,6 +134,16 @@ const en = {
     exportsCount: 'Exports',
     devView: 'Dev View',
     simpleView: 'Simple View',
+    helpTitle: 'Knowledge Graph & RAG',
+    helpIntro: 'The Architecture Map is a structured knowledge graph of your codebase. Each node represents a module (building), subdirectory (floor), or source file (room). Edges show imports, calls, inheritance, and circular dependencies.',
+    helpHowBuilt: 'Built via AST (Abstract Syntax Tree) analysis of your TypeScript/JavaScript source files. Every commit stores an independent graph snapshot, enabling version-to-version architecture comparison.',
+    helpRagTitle: 'RAG (Retrieval-Augmented Generation)',
+    helpRagDesc: 'AI tools and LLMs can query this knowledge graph to understand your project structure, module relationships, and code health. The graph provides structured context that dramatically improves AI-assisted development accuracy.',
+    helpCliTitle: 'CLI Access',
+    helpCliDesc: 'Run `npx dbht rag <project-name>` to get the full knowledge graph context as structured JSON. Pipe to an LLM for architecture-aware code generation, refactoring suggestions, and impact analysis.',
+    helpApiTitle: 'REST API',
+    helpApiDesc: 'When the External API is enabled (Settings), query the graph via:\nGET /api/v1/projects/:name/rag?q=<query>\nReturns natural language summary, filtered nodes, and key relationships matching your query.',
+    helpClose: 'Got it',
   },
 
   // Simple view (building metaphor)

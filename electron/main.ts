@@ -9,6 +9,7 @@ import { GitBridge } from './git-bridge'
 import { LANServer } from './lan-server'
 import { parseCommandLine, registerContextMenu, unregisterContextMenu, isContextMenuRegistered } from './context-menu'
 import { parseProject } from './ast-analyzer'
+import type { GraphNode } from './graph-types'
 import { buildGraph } from './graph-builder'
 import { saveGraph, loadGraph, listGraphs, compareGraphs } from './graph-store'
 import { switchToVersionReadonly, releaseVersionReadonly, getVersionFileList, getVersionFileContent } from './version-switch'
@@ -1623,6 +1624,85 @@ ipcMain.handle('graph:compare', async (_, versionA: string, versionB: string) =>
 
     const diff = compareGraphs(graphA, graphB)
     return { success: true, diff }
+  } catch (error) {
+    return { success: false, message: String(error) }
+  }
+})
+
+// Generate RAG-friendly context from architecture graph
+ipcMain.handle('graph:to-rag-context', async (_, commitId: string) => {
+  try {
+    const rootPath = await getRootPath()
+    if (!rootPath) return { success: false, message: 'Root path not configured' }
+
+    const graph = await loadGraph(rootPath, commitId)
+    if (!graph) return { success: false, message: 'Graph not found' }
+
+    const allNodes: Record<string, unknown>[] = []
+    function collectNodes(node: GraphNode, parentId: string | null, depth: number): void {
+      allNodes.push({
+        id: node.id,
+        label: node.label,
+        type: node.type,
+        path: node.path,
+        fileCount: node.fileCount,
+        lineCount: node.lineCount,
+        exportsCount: node.exportsCount,
+        parentId,
+        depth,
+        childCount: node.children?.length ?? 0,
+      })
+      if (node.children) {
+        for (const child of node.children) {
+          collectNodes(child, node.id, depth + 1)
+        }
+      }
+    }
+    collectNodes(graph.rootNode, null, 1)
+
+    const edgeSummary = { pipeline: 0, hierarchy: 0, flow: 0, circular: 0 }
+    for (const e of graph.edges) {
+      if (e.type in edgeSummary) edgeSummary[e.type as keyof typeof edgeSummary]++
+    }
+
+    const buildings = allNodes.filter(n => n.type === 'building')
+    const floors = allNodes.filter(n => n.type === 'floor')
+    const rooms = allNodes.filter(n => n.type === 'room')
+
+    const summary = [
+      `Project "${graph.projectName}" at commit ${commitId.slice(0, 14)}.`,
+      `Structure: ${buildings.length} buildings (modules), ${floors.length} floors (subdirectories), ${rooms.length} rooms (source files).`,
+      `Total: ${graph.metrics.totalLines.toLocaleString()} lines of code across ${graph.metrics.totalFiles} files.`,
+      `Dependencies: ${edgeSummary.pipeline} imports, ${edgeSummary.hierarchy} inheritances, ${edgeSummary.flow} calls, ${edgeSummary.circular} circular.`,
+      `Circular dependencies detected: ${graph.metrics.circularDepCount}. Orphan modules: ${graph.metrics.orphanCount}.`,
+    ].join('\n')
+
+    const keyRelationships: string[] = []
+    for (const e of graph.edges.slice(0, 50)) {
+      const src = allNodes.find(n => n.id === e.source)
+      const tgt = allNodes.find(n => n.id === e.target)
+      if (src && tgt) {
+        keyRelationships.push(`[${e.type}] ${String(src.label)} -> ${String(tgt.label)}${e.label ? ` (${e.label})` : ""}`)
+      }
+    }
+
+    return {
+      success: true,
+      context: {
+        projectName: graph.projectName,
+        commitId,
+        timestamp: graph.timestamp,
+        naturalLanguageSummary: summary,
+        buildingCount: buildings.length,
+        floorCount: floors.length,
+        roomCount: rooms.length,
+        edgeSummary,
+        nodes: allNodes,
+        edges: graph.edges,
+        metrics: graph.metrics,
+        keyRelationships,
+      },
+    }
   } catch (error) {
     return { success: false, message: String(error) }
   }

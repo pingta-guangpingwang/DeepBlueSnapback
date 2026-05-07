@@ -13,6 +13,7 @@ interface MapCanvasProps {
   depth: number
   onSelectNode: (id: string | null) => void
   onToggleCollapse: (id: string) => void
+  onOpenFile: (id: string) => void
   onHoverNode: (id: string | null) => void
   onHoverEdge: (id: string | null) => void
   loading: boolean
@@ -21,7 +22,7 @@ interface MapCanvasProps {
 
 export function MapCanvas({
   rootNode, positions, edges, selectedNode, collapsedNodes, depth,
-  onSelectNode, onToggleCollapse, onHoverNode, onHoverEdge, loading, error,
+  onSelectNode, onToggleCollapse, onOpenFile, onHoverNode, onHoverEdge, loading, error,
 }: MapCanvasProps) {
   const { t } = useI18n()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -201,7 +202,10 @@ export function MapCanvas({
               key={pos.id}
               data-node="true"
               onClick={() => onSelectNode(pos.id)}
-              onDoubleClick={() => onToggleCollapse(pos.id)}
+              onDoubleClick={() => {
+                if (node.type === 'room') onOpenFile(pos.id)
+                else onToggleCollapse(pos.id)
+              }}
               onMouseEnter={() => handleNodeHover(pos.id)}
               onMouseLeave={() => handleNodeHover(null)}
             >

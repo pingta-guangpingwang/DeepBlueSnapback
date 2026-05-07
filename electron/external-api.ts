@@ -178,6 +178,93 @@ export async function startExternalApi(rootPath: string): Promise<{
     }
   })
 
+  // GET /api/v1/projects/:name/rag?q=...
+  // Returns RAG-friendly knowledge graph context, optionally filtered by query
+  app.get('/api/v1/projects/:name/rag', async (req: Request, res: Response) => {
+    try {
+      const registry = readRegistry(rootPath)
+      const proj = registry.find(e => e.name === req.params.name)
+      if (!proj) { res.status(404).json({ error: 'Project not found' }); return }
+
+      const history = await dbvs.getHistoryStructured(proj.repoPath)
+      if (!history.success || !history.commits?.length) {
+        res.status(404).json({ error: 'No commits found' }); return
+      }
+
+      const { loadGraph } = await import('./graph-store')
+      const graph = await loadGraph(rootPath, history.commits[0].id)
+      if (!graph) { res.status(404).json({ error: 'No graph found — run AST analysis first' }); return }
+
+      const query = typeof req.query.q === 'string' ? req.query.q.toLowerCase() : ''
+
+      // Collect all nodes
+      const allNodes: Record<string, unknown>[] = []
+      function collectNodes(node: any, parentId: string | null, depth: number): void {
+        allNodes.push({
+          id: node.id, label: node.label, type: node.type, path: node.path,
+          fileCount: node.fileCount, lineCount: node.lineCount, exportsCount: node.exportsCount,
+          parentId, depth, childCount: node.children?.length ?? 0,
+        })
+        if (node.children) {
+          for (const child of node.children) collectNodes(child, node.id, depth + 1)
+        }
+      }
+      collectNodes(graph.rootNode, null, 1)
+
+      // Key relationships
+      const keyRelationships: string[] = []
+      for (const e of graph.edges) {
+        const src = allNodes.find(n => n.id === e.source)
+        const tgt = allNodes.find(n => n.id === e.target)
+        if (src && tgt) {
+          keyRelationships.push(`[${e.type}] ${String(src.label)} -> ${String(tgt.label)}${e.label ? ` (${e.label})` : ''}`)
+        }
+      }
+
+      // Filter by query if provided
+      const filteredRels = query
+        ? keyRelationships.filter(r => r.toLowerCase().includes(query)).slice(0, 50)
+        : keyRelationships.slice(0, 50)
+
+      const filteredNodes = query
+        ? allNodes.filter(n => {
+            const label = String(n.label).toLowerCase()
+            const path = String(n.path).toLowerCase()
+            const type = String(n.type).toLowerCase()
+            return label.includes(query) || path.includes(query) || type.includes(query)
+          }).slice(0, 100)
+        : allNodes.slice(0, 100)
+
+      // Build summary
+      const buildings = allNodes.filter(n => n.type === 'building')
+      const floors = allNodes.filter(n => n.type === 'floor')
+      const rooms = allNodes.filter(n => n.type === 'room')
+
+      const summary = [
+        `Project "${graph.projectName}" at commit ${history.commits[0].id.slice(0, 14)}.`,
+        `Structure: ${buildings.length} buildings (modules), ${floors.length} floors (subdirectories), ${rooms.length} rooms (source files).`,
+        `Total: ${graph.metrics.totalLines.toLocaleString()} lines of code across ${graph.metrics.totalFiles} files.`,
+        `Circular dependencies: ${graph.metrics.circularDepCount}. Orphan modules: ${graph.metrics.orphanCount}.`,
+      ].join('\n')
+
+      res.json({
+        projectName: graph.projectName,
+        commitId: history.commits[0].id,
+        naturalLanguageSummary: summary,
+        buildingCount: buildings.length,
+        floorCount: floors.length,
+        roomCount: rooms.length,
+        totalRelationships: keyRelationships.length,
+        keyRelationships: filteredRels,
+        nodes: filteredNodes,
+        metrics: graph.metrics,
+        query: query || null,
+      })
+    } catch (e) {
+      res.status(500).json({ error: String(e) })
+    }
+  })
+
   // POST /api/v1/tasks/complete
   app.post('/api/v1/tasks/complete', async (req: Request, res: Response) => {
     try {
