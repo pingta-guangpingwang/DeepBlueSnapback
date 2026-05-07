@@ -629,7 +629,7 @@ async function parseFile(filePath, projectRoot) {
         hash,
     };
 }
-async function scanDirectory(dirPath, projectRoot, cacheDir, results, errors, stats, depth = 0) {
+async function scanDirectory(dirPath, projectRoot, cacheDir, results, errors, stats, depth = 0, onProgress) {
     if (depth > 30)
         return; // prevent runaway recursion
     let entries;
@@ -660,7 +660,9 @@ async function scanDirectory(dirPath, projectRoot, cacheDir, results, errors, st
                 stats.skippedDirNames.push(baseName);
                 continue;
             }
-            await scanDirectory(fullPath, projectRoot, cacheDir, results, errors, stats, depth + 1);
+            if (depth <= 2)
+                onProgress?.(`Scanning: ${path.relative(projectRoot, fullPath).replace(/\\/g, '/')}/`);
+            await scanDirectory(fullPath, projectRoot, cacheDir, results, errors, stats, depth + 1, onProgress);
             continue;
         }
         if (!entry.isFile())
@@ -674,6 +676,11 @@ async function scanDirectory(dirPath, projectRoot, cacheDir, results, errors, st
         if (baseName.endsWith('.d.ts'))
             continue;
         stats.total++;
+        // Progress: report every 10 files (and first 5 to show early activity)
+        if (onProgress && (stats.total <= 5 || stats.total % 10 === 0)) {
+            const rel = path.relative(projectRoot, fullPath).replace(/\\/g, '/');
+            onProgress(`Parsing (${stats.total} files): ${rel}`);
+        }
         // Check cache
         let cached = false;
         if (cacheDir) {
@@ -703,10 +710,11 @@ async function scanDirectory(dirPath, projectRoot, cacheDir, results, errors, st
         }
     }
 }
-async function parseProject(projectPath, repoPath) {
+async function parseProject(projectPath, repoPath, onProgress) {
     const results = [];
     const errors = [];
     const stats = { total: 0, cached: 0, skippedDirs: 0, skippedDirNames: [], foundExtensions: new Set() };
+    onProgress?.('Starting scan...');
     // Setup cache directory inside the root repository (graph data dir)
     const rootPath = path.resolve(repoPath, '..', '..'); // repoPath = <root>/repositories/<name>
     let cacheDir = null;
@@ -718,10 +726,11 @@ async function parseProject(projectPath, repoPath) {
         // Cache unavailable, parse without it
     }
     const startTime = Date.now();
-    await scanDirectory(projectPath, projectPath, cacheDir, results, errors, stats);
-    const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+    await scanDirectory(projectPath, projectPath, cacheDir, results, errors, stats, 0, onProgress);
+    onProgress?.(`Scan complete: ${stats.total} source files found (${stats.cached} cached) in ${((Date.now() - startTime) / 1000).toFixed(1)}s`);
     // Save cache entries for newly parsed files
     if (cacheDir) {
+        let savedCount = 0;
         for (const file of results) {
             const cacheKey = file.hash + '_' + file.path.replace(/[\\/]/g, '_');
             const cachePath = path.join(cacheDir, cacheKey + '.json');
@@ -730,12 +739,15 @@ async function parseProject(projectPath, repoPath) {
                     // Save without absolute path (reconstructed on load)
                     const { absolutePath, ...toCache } = file;
                     await fs.writeJson(cachePath, toCache);
+                    savedCount++;
                 }
                 catch {
                     // Best effort
                 }
             }
         }
+        if (savedCount > 0)
+            onProgress?.(`Cached ${savedCount} new files`);
     }
     return {
         success: true,

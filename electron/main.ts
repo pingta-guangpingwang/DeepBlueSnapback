@@ -1588,9 +1588,15 @@ ipcMain.handle('ast:parse-project', async (_, repoPath: string, workingCopyPath:
 })
 
 // 构建架构图谱
-ipcMain.handle('graph:build', async (_, repoPath: string, workingCopyPath: string, commitId: string, projectName: string) => {
+ipcMain.handle('graph:build', async (event, repoPath: string, workingCopyPath: string, commitId: string, projectName: string) => {
+  const send = (msg: string) => {
+    if (!event.sender.isDestroyed()) {
+      event.sender.send('graph:progress', msg)
+    }
+  }
   try {
-    const parseResult = await parseProject(workingCopyPath, repoPath)
+    send('Scanning project directory...')
+    const parseResult = await parseProject(workingCopyPath, repoPath, (msg) => send(msg))
     if (!parseResult.success || parseResult.files.length === 0) {
       let detail = `No source files found\nPath: ${parseResult.scannedPath || workingCopyPath}`
       if (parseResult.errors.length > 0) {
@@ -1611,16 +1617,20 @@ ipcMain.handle('graph:build', async (_, repoPath: string, workingCopyPath: strin
       return { success: false, message: detail }
     }
 
+    send(`Parsed ${parseResult.files.length} files. Building graph...`)
     const graph = buildGraph(parseResult, {
       projectName,
       commitId,
       timestamp: new Date().toISOString(),
     })
 
+    send(`Graph built: ${graph.metrics?.nodeCount ?? '?'} nodes, ${graph.edges?.length ?? 0} edges. Saving...`)
+
     const rootPath = await getRootPath()
     if (!rootPath) return { success: false, message: 'Root path not configured' }
 
     await saveGraph(rootPath, graph)
+    send('Graph saved. Done.')
     return { success: true, graph }
   } catch (error) {
     return { success: false, message: String(error) }

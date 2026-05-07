@@ -1512,9 +1512,15 @@ AI 智能体在开发过程中必须遵循以下规则：
         }
     });
     // 构建架构图谱
-    electron_1.ipcMain.handle('graph:build', async (_, repoPath, workingCopyPath, commitId, projectName) => {
+    electron_1.ipcMain.handle('graph:build', async (event, repoPath, workingCopyPath, commitId, projectName) => {
+        const send = (msg) => {
+            if (!event.sender.isDestroyed()) {
+                event.sender.send('graph:progress', msg);
+            }
+        };
         try {
-            const parseResult = await (0, ast_analyzer_1.parseProject)(workingCopyPath, repoPath);
+            send('Scanning project directory...');
+            const parseResult = await (0, ast_analyzer_1.parseProject)(workingCopyPath, repoPath, (msg) => send(msg));
             if (!parseResult.success || parseResult.files.length === 0) {
                 let detail = `No source files found\nPath: ${parseResult.scannedPath || workingCopyPath}`;
                 if (parseResult.errors.length > 0) {
@@ -1535,15 +1541,18 @@ AI 智能体在开发过程中必须遵循以下规则：
                 detail += `\nTip: Ensure the project directory contains TypeScript/JavaScript source files and nested folders are not in the skip list.`;
                 return { success: false, message: detail };
             }
+            send(`Parsed ${parseResult.files.length} files. Building graph...`);
             const graph = (0, graph_builder_1.buildGraph)(parseResult, {
                 projectName,
                 commitId,
                 timestamp: new Date().toISOString(),
             });
+            send(`Graph built: ${graph.metrics?.nodeCount ?? '?'} nodes, ${graph.edges?.length ?? 0} edges. Saving...`);
             const rootPath = await getRootPath();
             if (!rootPath)
                 return { success: false, message: 'Root path not configured' };
             await (0, graph_store_1.saveGraph)(rootPath, graph);
+            send('Graph saved. Done.');
             return { success: true, graph };
         }
         catch (error) {

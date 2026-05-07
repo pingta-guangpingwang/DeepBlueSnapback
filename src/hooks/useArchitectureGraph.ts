@@ -126,6 +126,7 @@ interface UseArchitectureGraphReturn {
   loading: boolean
   error: string | null
   selectedNode: string | null
+  progressLog: string[]
   loadGraph: (repoPath: string, workingCopyPath: string, commitId: string, projectName: string) => Promise<void>
   loadGraphForVersion: (commitId: string) => Promise<void>
   setViewMode: (mode: GraphViewMode) => void
@@ -151,6 +152,7 @@ export function useArchitectureGraph(): UseArchitectureGraphReturn {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
+  const [progressLog, setProgressLog] = useState<string[]>([])
   const [depth, setDepthState] = useState<number>(1) // -1 = unlimited, default 1
   const collapsedNodes = useRef<Set<string>>(new Set())
   // Refs to keep latest values accessible in callbacks without stale closures
@@ -193,6 +195,13 @@ export function useArchitectureGraph(): UseArchitectureGraphReturn {
   ) => {
     setLoading(true)
     setError(null)
+    setProgressLog([])
+
+    // Subscribe to progress updates
+    const unsub = window.electronAPI.onGraphProgress((msg) => {
+      setProgressLog(prev => [...prev, msg])
+    })
+
     try {
       // Build graph fresh
       const result = await window.electronAPI.buildGraph(repoPath, workingCopyPath, commitId, projectName)
@@ -206,6 +215,7 @@ export function useArchitectureGraph(): UseArchitectureGraphReturn {
     } catch (err) {
       setError(String(err))
     } finally {
+      unsub()
       setLoading(false)
     }
   }, [viewMode, applyLayout])
@@ -264,6 +274,7 @@ export function useArchitectureGraph(): UseArchitectureGraphReturn {
     loading,
     error,
     selectedNode,
+    progressLog,
     loadGraph,
     loadGraphForVersion,
     setViewMode: (mode: GraphViewMode) => {

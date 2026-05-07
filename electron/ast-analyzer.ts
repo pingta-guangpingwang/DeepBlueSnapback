@@ -51,6 +51,8 @@ export interface ParseResult {
   scannedPath: string
 }
 
+export type ParseProgressFn = (msg: string) => void
+
 // ==================== Core Analyzer ====================
 
 // File extensions to parse
@@ -687,7 +689,8 @@ async function scanDirectory(
   results: ParsedFile[],
   errors: string[],
   stats: { total: number; cached: number; skippedDirs: number; skippedDirNames: string[]; foundExtensions: Set<string> },
-  depth: number = 0
+  depth: number = 0,
+  onProgress?: ParseProgressFn
 ): Promise<void> {
   if (depth > 30) return // prevent runaway recursion
 
@@ -720,7 +723,8 @@ async function scanDirectory(
         stats.skippedDirNames.push(baseName)
         continue
       }
-      await scanDirectory(fullPath, projectRoot, cacheDir, results, errors, stats, depth + 1)
+      if (depth <= 2) onProgress?.(`Scanning: ${path.relative(projectRoot, fullPath).replace(/\\/g, '/')}/`)
+      await scanDirectory(fullPath, projectRoot, cacheDir, results, errors, stats, depth + 1, onProgress)
       continue
     }
 
@@ -736,6 +740,12 @@ async function scanDirectory(
     if (baseName.endsWith('.d.ts')) continue
 
     stats.total++
+
+    // Progress: report every 10 files (and first 5 to show early activity)
+    if (onProgress && (stats.total <= 5 || stats.total % 10 === 0)) {
+      const rel = path.relative(projectRoot, fullPath).replace(/\\/g, '/')
+      onProgress(`Parsing (${stats.total} files): ${rel}`)
+    }
 
     // Check cache
     let cached = false
@@ -770,11 +780,14 @@ async function scanDirectory(
 
 export async function parseProject(
   projectPath: string,
-  repoPath: string
+  repoPath: string,
+  onProgress?: ParseProgressFn
 ): Promise<ParseResult> {
   const results: ParsedFile[] = []
   const errors: string[] = []
   const stats = { total: 0, cached: 0, skippedDirs: 0, skippedDirNames: [] as string[], foundExtensions: new Set<string>() }
+
+  onProgress?.('Starting scan...')
 
   // Setup cache directory inside the root repository (graph data dir)
   const rootPath = path.resolve(repoPath, '..', '..') // repoPath = <root>/repositories/<name>
@@ -787,11 +800,13 @@ export async function parseProject(
   }
 
   const startTime = Date.now()
-  await scanDirectory(projectPath, projectPath, cacheDir, results, errors, stats)
-  const elapsed = ((Date.now() - startTime) / 1000).toFixed(2)
+  await scanDirectory(projectPath, projectPath, cacheDir, results, errors, stats, 0, onProgress)
+
+  onProgress?.(`Scan complete: ${stats.total} source files found (${stats.cached} cached) in ${((Date.now() - startTime) / 1000).toFixed(1)}s`)
 
   // Save cache entries for newly parsed files
   if (cacheDir) {
+    let savedCount = 0
     for (const file of results) {
       const cacheKey = file.hash + '_' + file.path.replace(/[\\/]/g, '_')
       const cachePath = path.join(cacheDir, cacheKey + '.json')
@@ -800,11 +815,13 @@ export async function parseProject(
           // Save without absolute path (reconstructed on load)
           const { absolutePath, ...toCache } = file
           await fs.writeJson(cachePath, toCache)
+          savedCount++
         } catch {
           // Best effort
         }
       }
     }
+    if (savedCount > 0) onProgress?.(`Cached ${savedCount} new files`)
   }
 
   return {

@@ -288,6 +288,7 @@ export interface ElectronAPI {
         graph?: Record<string, unknown>;
         message?: string;
     }>;
+    onGraphProgress: (callback: (msg: string) => void) => () => void;
     getGraph: (commitId: string) => Promise<{
         success: boolean;
         graph?: Record<string, unknown>;

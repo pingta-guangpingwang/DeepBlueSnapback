@@ -93,6 +93,10 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
         electron_1.ipcRenderer.on('git:progress', (_, msg) => callback(msg));
         return () => electron_1.ipcRenderer.removeAllListeners('git:progress');
     },
+    onGraphProgress: (callback) => {
+        electron_1.ipcRenderer.on('graph:progress', (_, msg) => callback(msg));
+        return () => electron_1.ipcRenderer.removeAllListeners('graph:progress');
+    },
     // LAN Server
     lanStart: (rootPath, port) => electron_1.ipcRenderer.invoke('lan:start', rootPath, port),
     lanStop: () => electron_1.ipcRenderer.invoke('lan:stop'),

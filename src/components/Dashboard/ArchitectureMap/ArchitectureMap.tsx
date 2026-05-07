@@ -15,7 +15,7 @@ export function ArchitectureMap() {
   const { t } = useI18n()
   const [state] = useAppState()
   const {
-    graph, positions, edges, viewMode, filter, loading, error, selectedNode,
+    graph, positions, edges, viewMode, filter, loading, error, selectedNode, progressLog,
     loadGraph, setViewMode, setFilter, setSelectedNode, toggleNodeCollapse, depth, setDepth, resetView,
   } = useArchitectureGraph()
 
@@ -262,6 +262,11 @@ export function ArchitectureMap() {
       )}
 
       <div className="map-main-area">
+        {/* Build progress log */}
+        {loading && progressLog.length > 0 && (
+          <LogPanel messages={progressLog} />
+        )}
+
         <MapCanvas
           rootNode={graph?.rootNode ?? null}
           positions={positions}
@@ -479,6 +484,32 @@ function findNodeById(root: GraphNode, id: string): GraphNode | null {
     }
   }
   return null
+}
+
+function LogPanel({ messages }: { messages: string[] }) {
+  const endRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  return (
+    <div className="map-log-panel">
+      <div className="map-log-header">
+        <span className="map-log-spinner" />
+        Building graph...
+      </div>
+      <div className="map-log-messages">
+        {messages.map((msg, i) => (
+          <div key={i} className="map-log-line">
+            <span className="map-log-time">{`${String(i + 1).padStart(2, '0')}`}</span>
+            <span className="map-log-text">{msg}</span>
+          </div>
+        ))}
+        <div ref={endRef} />
+      </div>
+    </div>
+  )
 }
 
 function FileViewerPanel({ node, content, loading, error, graph, onClose }: {
