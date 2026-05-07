@@ -2471,6 +2471,141 @@ pre {
   color: #b0d8ff;
 }
 
+/* Flow animation demo bar */
+.map-flow-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, rgba(10, 20, 40, 0.95), rgba(15, 30, 50, 0.9));
+  border: 1px solid rgba(77, 162, 255, 0.15);
+  border-top: 1px solid rgba(77, 162, 255, 0.08);
+  border-bottom: none;
+}
+
+.map-flow-start-btn,
+.map-flow-stop-btn {
+  padding: 5px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid;
+  transition: all 0.2s;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+}
+
+.map-flow-start-btn {
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.15), rgba(16, 185, 129, 0.1));
+  border-color: rgba(52, 211, 153, 0.4);
+  color: #34d399;
+  text-shadow: 0 0 8px rgba(52, 211, 153, 0.3);
+}
+
+.map-flow-start-btn:hover {
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.25), rgba(16, 185, 129, 0.18));
+  box-shadow: 0 0 16px rgba(52, 211, 153, 0.2);
+}
+
+.map-flow-stop-btn {
+  background: linear-gradient(135deg, rgba(255, 85, 85, 0.15), rgba(239, 68, 68, 0.1));
+  border-color: rgba(255, 85, 85, 0.4);
+  color: #ff6b6b;
+  text-shadow: 0 0 8px rgba(255, 85, 85, 0.3);
+}
+
+.map-flow-stop-btn:hover {
+  background: linear-gradient(135deg, rgba(255, 85, 85, 0.25), rgba(239, 68, 68, 0.18));
+  box-shadow: 0 0 16px rgba(255, 85, 85, 0.2);
+}
+
+.map-flow-speed-label {
+  font-size: 11px;
+  color: #5b7a9e;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-left: 6px;
+}
+
+.map-flow-speed-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 90px;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, #1e3a5f, #4da2ff);
+  outline: none;
+  cursor: pointer;
+}
+
+.map-flow-speed-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #4da2ff;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(77, 162, 255, 0.5);
+  border: 2px solid #b0d8ff;
+}
+
+.map-flow-speed-slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 14px rgba(77, 162, 255, 0.7);
+}
+
+.map-flow-speed-val {
+  font-size: 11px;
+  color: #809ec0;
+  font-family: 'Cascadia Code', Consolas, monospace;
+  min-width: 32px;
+}
+
+.map-flow-mode-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #809ec0;
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: 6px;
+}
+
+.map-flow-mode-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #b0d0f8;
+}
+
+.map-flow-mode-btn.active {
+  background: rgba(77, 162, 255, 0.18);
+  border-color: rgba(77, 162, 255, 0.35);
+  color: #4da2ff;
+}
+
+/* Flow dot pulse animation */
+.map-flow-dot {
+  animation: flow-dot-pulse 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes flow-dot-pulse {
+  from { opacity: 0.6; r: 3; }
+  to { opacity: 1; r: 5; }
+}
+
+/* Node glow when flow dot reaches it */
+.map-node-glow {
+  animation: node-glow-pulse 0.8s ease-out;
+}
+
+@keyframes node-glow-pulse {
+  0% { filter: drop-shadow(0 0 4px rgba(77, 162, 255, 0.5)) brightness(1); }
+  30% { filter: drop-shadow(0 0 16px rgba(77, 162, 255, 0.9)) brightness(1.4); }
+  100% { filter: drop-shadow(0 0 0px rgba(77, 162, 255, 0)) brightness(1); }
+}
+
 /* Help modal overlay */
 .map-help-overlay {
   position: fixed;

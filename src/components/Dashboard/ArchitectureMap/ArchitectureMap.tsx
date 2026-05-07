@@ -3,6 +3,7 @@ import { useI18n } from '../../../i18n'
 import { useAppState } from '../../../context/AppContext'
 import { useArchitectureGraph } from '../../../hooks/useArchitectureGraph'
 import { useGraphComparison } from '../../../hooks/useGraphComparison'
+import { useFlowAnimation } from '../../../hooks/useFlowAnimation'
 import { MapCanvas } from './MapCanvas'
 import { MapControls } from './MapControls'
 import { MapLegend } from './MapLegend'
@@ -19,6 +20,7 @@ export function ArchitectureMap() {
   } = useArchitectureGraph()
 
   const { diff, loading: cmpLoading, error: cmpError, versionA, versionB, compareVersions, clearComparison } = useGraphComparison()
+  const { flowActive, flowSpeed, flowMode, flowDots, glowingNodes, setFlowSpeed, setFlowMode, startFlow, stopFlow } = useFlowAnimation(edges, positions)
   const [showCompare, setShowCompare] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
   const [fileViewer, setFileViewer] = useState<{
@@ -189,6 +191,39 @@ export function ArchitectureMap() {
         >?</button>
       </div>
 
+      {/* Flow animation demo bar — only when there are edges */}
+      {edges.length > 0 && (
+        <div className="map-flow-bar">
+          {!flowActive ? (
+            <button className="map-flow-start-btn" onClick={startFlow}>
+              {'▶'} {String((t.graph as Record<string, string>).flowDemo || 'Flow Demo')}
+            </button>
+          ) : (
+            <button className="map-flow-stop-btn" onClick={stopFlow}>
+              {'■'} {String((t.graph as Record<string, string>).flowStop || 'Stop')}
+            </button>
+          )}
+          <span className="map-flow-speed-label">{String((t.graph as Record<string, string>).flowSpeed || 'Speed')}</span>
+          <input
+            type="range"
+            className="map-flow-speed-slider"
+            min="0.25"
+            max="3"
+            step="0.25"
+            value={flowSpeed}
+            onChange={e => setFlowSpeed(parseFloat(e.target.value))}
+          />
+          <span className="map-flow-speed-val">{flowSpeed}x</span>
+          <button
+            className={`map-flow-mode-btn ${flowMode === 'single' ? 'active' : ''}`}
+            onClick={() => setFlowMode(flowMode === 'single' ? 'multi' : 'single')}
+            title={String((t.graph as Record<string, string>).flowMode || 'Mode')}
+          >
+            {flowMode === 'single' ? '\u{1F539}' : '\u{1F536}'} {flowMode === 'single' ? '1' : 'N'}
+          </button>
+        </div>
+      )}
+
       {/* Graph version comparison */}
       {availableVersions.length > 1 && (
         <div className="map-compare-bar">
@@ -230,6 +265,8 @@ export function ArchitectureMap() {
           onHoverEdge={handleHoverEdge}
           loading={loading}
           error={error}
+          flowDots={flowDots}
+          glowingNodes={glowingNodes}
         />
 
         <MapLegend />

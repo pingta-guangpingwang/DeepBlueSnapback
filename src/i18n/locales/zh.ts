@@ -185,6 +185,10 @@ const zh: Translations = {
     helpApiTitle: 'REST API',
     helpApiDesc: '在设置中启用外部 API 后，可通过以下端点查询图谱：\nGET /api/v1/projects/:name/rag?q=<查询词>\n返回自然语言摘要、过滤后的节点以及与查询匹配的关键关系。',
     helpClose: '知道了',
+    flowDemo: '流光演示',
+    flowStop: '停止',
+    flowSpeed: '速度',
+    flowMode: '模式',
   },
 
   // Simple view (building metaphor)

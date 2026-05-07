@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect, type MouseEvent } from 'react'
 import { useI18n } from '../../../i18n'
 import type { GraphNode, GraphEdge, NodePosition } from '../../../types/graph'
+import type { FlowDot } from '../../../hooks/useFlowAnimation'
 import { NodeRenderer } from './NodeRenderer'
 import { EdgeRenderer } from './EdgeRenderer'
 
@@ -18,11 +19,14 @@ interface MapCanvasProps {
   onHoverEdge: (id: string | null) => void
   loading: boolean
   error: string | null
+  flowDots?: FlowDot[]
+  glowingNodes?: Set<string>
 }
 
 export function MapCanvas({
   rootNode, positions, edges, selectedNode, collapsedNodes, depth,
   onSelectNode, onToggleCollapse, onOpenFile, onHoverNode, onHoverEdge, loading, error,
+  flowDots = [], glowingNodes = new Set(),
 }: MapCanvasProps) {
   const { t } = useI18n()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -36,6 +40,13 @@ export function MapCanvas({
   const [fitVersion, setFitVersion] = useState(0)
   const needsAutoFit = useRef(true)
   const prevVisibleKey = useRef('')
+
+  // Node drag state
+  const dragOffsets = useRef<Map<string, { dx: number; dy: number }>>(new Map())
+  const [dragTick, setDragTick] = useState(0) // bump to re-render during drag
+  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null)
+  const nodeDragStart = useRef({ x: 0, y: 0, origDx: 0, origDy: 0 })
+  const nodeDragMoved = useRef(false) // distinguish click vs drag
 
   const positionMap = new Map(positions.map(p => [p.id, p]))
 
@@ -158,7 +169,25 @@ export function MapCanvas({
   }, [])
 
   const handleMouseDown = useCallback((e: MouseEvent) => {
-    if ((e.target as HTMLElement).closest('[data-node]')) return
+    // Node drag: start dragging the individual node
+    const nodeEl = (e.target as HTMLElement).closest('[data-node]') as HTMLElement | null
+    if (nodeEl) {
+      const nodeId = nodeEl.getAttribute('data-node-id')
+      if (nodeId) {
+        nodeDragMoved.current = false
+        const existing = dragOffsets.current.get(nodeId)
+        nodeDragStart.current = {
+          x: e.clientX, y: e.clientY,
+          origDx: existing?.dx ?? 0,
+          origDy: existing?.dy ?? 0,
+        }
+        setDraggingNodeId(nodeId)
+        e.preventDefault()
+        e.stopPropagation()
+        return
+      }
+    }
+    // Canvas pan
     needsAutoFit.current = false
     setDragging(true)
     dragStart.current = { x: e.clientX, y: e.clientY, panX, panY }
@@ -166,15 +195,29 @@ export function MapCanvas({
   }, [panX, panY])
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
+    // Node drag
+    if (draggingNodeId) {
+      const dx = (e.clientX - nodeDragStart.current.x) / scale
+      const dy = (e.clientY - nodeDragStart.current.y) / scale
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) nodeDragMoved.current = true
+      dragOffsets.current.set(draggingNodeId, {
+        dx: nodeDragStart.current.origDx + dx,
+        dy: nodeDragStart.current.origDy + dy,
+      })
+      setDragTick(t => t + 1)
+      return
+    }
+    // Canvas pan
     if (!dragging) return
     const dx = e.clientX - dragStart.current.x
     const dy = e.clientY - dragStart.current.y
     setPanX(dragStart.current.panX + dx)
     setPanY(dragStart.current.panY + dy)
-  }, [dragging])
+  }, [dragging, draggingNodeId, scale])
 
   const handleMouseUp = useCallback(() => {
     setDragging(false)
+    setDraggingNodeId(null)
   }, [])
 
   useEffect(() => {
@@ -246,15 +289,27 @@ export function MapCanvas({
         {visiblePositions.map(pos => {
           const node = findNode(rootNode, pos.id)
           if (!node) return null
+          const offset = dragOffsets.current.get(pos.id)
+          const oX = offset?.dx ?? 0
+          const oY = offset?.dy ?? 0
           return (
             <div
               key={pos.id}
               data-node="true"
-              onClick={() => onSelectNode(pos.id)}
+              data-node-id={pos.id}
+              className={`map-node-wrapper${glowingNodes.has(pos.id) ? ' map-node-glow' : ''}`}
+              style={{
+                position: 'absolute',
+                left: pos.x + oX,
+                top: pos.y + oY,
+                width: pos.width,
+                height: pos.height,
+              }}
+              onClick={() => { if (!nodeDragMoved.current) onSelectNode(pos.id) }}
               onDoubleClick={() => {
                 const isLeafRoom = node.type === 'room' && (!node.children || node.children.length === 0)
-                if (isLeafRoom) onOpenFile(pos.id)
-                else onToggleCollapse(pos.id)
+                if (isLeafRoom) { onOpenFile(pos.id) }
+                else { needsAutoFit.current = false; onToggleCollapse(pos.id) }
               }}
               onMouseEnter={() => handleNodeHover(pos.id)}
               onMouseLeave={() => handleNodeHover(null)}
@@ -286,6 +341,8 @@ export function MapCanvas({
             const sp = positionMap.get(edge.source)
             const tp = positionMap.get(edge.target)
             if (!sp || !tp) return null
+            const offsetS = dragOffsets.current.get(edge.source)
+            const offsetT = dragOffsets.current.get(edge.target)
             const isIncident = incidentEdgeIds.has(edge.id)
             return (
               <g
@@ -296,12 +353,12 @@ export function MapCanvas({
               >
                 <EdgeRenderer
                   edge={edge}
-                  sourceX={sp.x}
-                  sourceY={sp.y}
+                  sourceX={sp.x + (offsetS?.dx ?? 0)}
+                  sourceY={sp.y + (offsetS?.dy ?? 0)}
                   sourceW={sp.width}
                   sourceH={sp.height}
-                  targetX={tp.x}
-                  targetY={tp.y}
+                  targetX={tp.x + (offsetT?.dx ?? 0)}
+                  targetY={tp.y + (offsetT?.dy ?? 0)}
                   targetW={tp.width}
                   targetH={tp.height}
                   scale={scale}
@@ -310,6 +367,21 @@ export function MapCanvas({
               </g>
             )
           })}
+
+          {/* Flow animation dots layer */}
+          {flowDots.length > 0 && flowDots.map(dot => (
+            <circle
+              key={dot.id}
+              cx={dot.sourceX + (dot.targetX - dot.sourceX) * dot.progress}
+              cy={dot.sourceY + (dot.targetY - dot.sourceY) * dot.progress}
+              r={3.5}
+              fill={dot.color}
+              className="map-flow-dot"
+              style={{
+                filter: `drop-shadow(0 0 6px ${dot.glowColor}) drop-shadow(0 0 12px ${dot.glowColor})`,
+              }}
+            />
+          ))}
         </svg>
       </div>
 

@@ -183,6 +183,10 @@ const en = {
     helpApiTitle: 'REST API',
     helpApiDesc: 'When the External API is enabled (Settings), query the graph via:\nGET /api/v1/projects/:name/rag?q=<query>\nReturns natural language summary, filtered nodes, and key relationships matching your query.',
     helpClose: 'Got it',
+    flowDemo: 'Flow Demo',
+    flowStop: 'Stop',
+    flowSpeed: 'Speed',
+    flowMode: 'Mode',
   },
 
   // Simple view (building metaphor)
