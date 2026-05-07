@@ -211,7 +211,7 @@ export interface ElectronAPI {
   createFile: (path: string) => Promise<{ success: boolean; message?: string }>
   writeFile: (path: string, content: string) => Promise<{ success: boolean; message?: string }>
   deleteFile: (path: string) => Promise<{ success: boolean; message?: string }>
-  listFiles: (path: string) => Promise<{ success: boolean; files?: Array<{ name: string; path: string; isDirectory: boolean }>; message?: string }>
+  listFiles: (path: string) => Promise<{ success: boolean; files?: Array<{ name: string; path: string; isDirectory: boolean }>; message?: string; errors?: string[] }>
   copyDir: (src: string, dest: string) => Promise<{ success: boolean; message?: string }>
   pathJoin: (...paths: string[]) => Promise<{ result: string }>
   pathBasename: (filePath: string) => Promise<{ result: string }>

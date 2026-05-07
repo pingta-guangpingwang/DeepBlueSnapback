@@ -69,6 +69,17 @@ function createWindow() {
         backgroundColor: '#ffffff',
         show: false
     });
+    // Set Content-Security-Policy to suppress Electron security warning
+    mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+        callback({
+            responseHeaders: {
+                ...details.responseHeaders,
+                'Content-Security-Policy': [
+                    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* ws://localhost:*; img-src 'self' data:; font-src 'self' data:"
+                ]
+            }
+        });
+    });
     // 开发环境加载开发服务器
     if (process.env.NODE_ENV === 'development') {
         mainWindow.loadURL('http://localhost:3005');
@@ -445,31 +456,46 @@ function registerIPCHandlers() {
     });
     // 递归列出目录文件
     electron_1.ipcMain.handle('fs:list-files', async (_, dirPath) => {
-        try {
-            const results = [];
-            async function walk(dir, base) {
-                if (!(await fs.pathExists(dir)))
-                    return;
-                const entries = await fs.readdir(dir, { withFileTypes: true });
-                for (const entry of entries) {
-                    if (entry.name.startsWith('.') || entry.name === 'node_modules')
-                        continue;
-                    const fullPath = path.join(dir, entry.name);
-                    const relPath = path.relative(base, fullPath).replace(/\\/g, '/');
+        const results = [];
+        const errors = [];
+        async function walk(dir, base, depth) {
+            if (depth > 20)
+                return; // prevent runaway recursion from symlink loops
+            if (!(await fs.pathExists(dir)))
+                return;
+            let entries;
+            try {
+                entries = await fs.readdir(dir, { withFileTypes: true });
+            }
+            catch (err) {
+                errors.push(`${dir}: ${String(err)}`);
+                return; // skip directories we can't read, continue with others
+            }
+            for (const entry of entries) {
+                if (entry.name.startsWith('.') || entry.name === 'node_modules')
+                    continue;
+                const fullPath = path.join(dir, entry.name);
+                const relPath = path.relative(base, fullPath).replace(/\\/g, '/');
+                try {
                     if (entry.isDirectory()) {
                         results.push({ name: entry.name, path: relPath, isDirectory: true });
-                        await walk(fullPath, base);
+                        await walk(fullPath, base, depth + 1);
                     }
                     else {
                         results.push({ name: entry.name, path: relPath, isDirectory: false });
                     }
                 }
+                catch (err) {
+                    errors.push(`${relPath}: ${String(err)}`);
+                }
             }
-            await walk(dirPath, dirPath);
-            return { success: true, files: results };
+        }
+        try {
+            await walk(dirPath, dirPath, 0);
+            return { success: true, files: results, errors: errors.length > 0 ? errors : undefined };
         }
         catch (error) {
-            return { success: false, files: [], message: String(error) };
+            return { success: false, files: results, message: String(error), errors };
         }
     });
     // 递归复制目录
@@ -1543,6 +1569,81 @@ AI 智能体在开发过程中必须遵循以下规则：
             const graphB = await (0, graph_store_1.loadGraph)(rootPath, versionB);
             const diff = (0, graph_store_1.compareGraphs)(graphA, graphB);
             return { success: true, diff };
+        }
+        catch (error) {
+            return { success: false, message: String(error) };
+        }
+    });
+    // Generate RAG-friendly context from architecture graph
+    electron_1.ipcMain.handle('graph:to-rag-context', async (_, commitId) => {
+        try {
+            const rootPath = await getRootPath();
+            if (!rootPath)
+                return { success: false, message: 'Root path not configured' };
+            const graph = await (0, graph_store_1.loadGraph)(rootPath, commitId);
+            if (!graph)
+                return { success: false, message: 'Graph not found' };
+            const allNodes = [];
+            function collectNodes(node, parentId, depth) {
+                allNodes.push({
+                    id: node.id,
+                    label: node.label,
+                    type: node.type,
+                    path: node.path,
+                    fileCount: node.fileCount,
+                    lineCount: node.lineCount,
+                    exportsCount: node.exportsCount,
+                    parentId,
+                    depth,
+                    childCount: node.children?.length ?? 0,
+                });
+                if (node.children) {
+                    for (const child of node.children) {
+                        collectNodes(child, node.id, depth + 1);
+                    }
+                }
+            }
+            collectNodes(graph.rootNode, null, 1);
+            const edgeSummary = { pipeline: 0, hierarchy: 0, flow: 0, circular: 0 };
+            for (const e of graph.edges) {
+                if (e.type in edgeSummary)
+                    edgeSummary[e.type]++;
+            }
+            const buildings = allNodes.filter(n => n.type === 'building');
+            const floors = allNodes.filter(n => n.type === 'floor');
+            const rooms = allNodes.filter(n => n.type === 'room');
+            const summary = [
+                `Project "${graph.projectName}" at commit ${commitId.slice(0, 14)}.`,
+                `Structure: ${buildings.length} buildings (modules), ${floors.length} floors (subdirectories), ${rooms.length} rooms (source files).`,
+                `Total: ${graph.metrics.totalLines.toLocaleString()} lines of code across ${graph.metrics.totalFiles} files.`,
+                `Dependencies: ${edgeSummary.pipeline} imports, ${edgeSummary.hierarchy} inheritances, ${edgeSummary.flow} calls, ${edgeSummary.circular} circular.`,
+                `Circular dependencies detected: ${graph.metrics.circularDepCount}. Orphan modules: ${graph.metrics.orphanCount}.`,
+            ].join('\n');
+            const keyRelationships = [];
+            for (const e of graph.edges.slice(0, 50)) {
+                const src = allNodes.find(n => n.id === e.source);
+                const tgt = allNodes.find(n => n.id === e.target);
+                if (src && tgt) {
+                    keyRelationships.push(`[${e.type}] ${String(src.label)} -> ${String(tgt.label)}${e.label ? ` (${e.label})` : ""}`);
+                }
+            }
+            return {
+                success: true,
+                context: {
+                    projectName: graph.projectName,
+                    commitId,
+                    timestamp: graph.timestamp,
+                    naturalLanguageSummary: summary,
+                    buildingCount: buildings.length,
+                    floorCount: floors.length,
+                    roomCount: rooms.length,
+                    edgeSummary,
+                    nodes: allNodes,
+                    edges: graph.edges,
+                    metrics: graph.metrics,
+                    keyRelationships,
+                },
+            };
         }
         catch (error) {
             return { success: false, message: String(error) };

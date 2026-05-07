@@ -123,6 +123,7 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     getGraph: (commitId) => electron_1.ipcRenderer.invoke('graph:get', commitId),
     listGraphVersions: () => electron_1.ipcRenderer.invoke('graph:list-versions'),
     compareGraphs: (versionA, versionB) => electron_1.ipcRenderer.invoke('graph:compare', versionA, versionB),
+    getRagContext: (commitId) => electron_1.ipcRenderer.invoke('graph:to-rag-context', commitId),
     // Version switching
     switchToVersionReadonly: (repoPath, version) => electron_1.ipcRenderer.invoke('version:switch-readonly', repoPath, version),
     releaseVersionReadonly: (version) => electron_1.ipcRenderer.invoke('version:release-readonly', version),

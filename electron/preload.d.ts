@@ -30,6 +30,7 @@ export interface ElectronAPI {
             isDirectory: boolean;
         }>;
         message?: string;
+        errors?: string[];
     }>;
     copyDir: (src: string, dest: string) => Promise<{
         success: boolean;
@@ -328,6 +329,11 @@ export interface ElectronAPI {
     getVersionFileContent: (repoPath: string, version: string, filePath: string) => Promise<{
         success: boolean;
         content?: string;
+        message?: string;
+    }>;
+    getRagContext: (commitId: string) => Promise<{
+        success: boolean;
+        context?: Record<string, unknown>;
         message?: string;
     }>;
     analyzeQuality: (commitId: string) => Promise<{

@@ -188,6 +188,9 @@ export default function FileExplorer() {
         dispatch({ type: 'SET_MANAGED_FILES', payload: fileNames })
         setFileEntries(result.files)
       }
+      if (result?.errors && result.errors.length > 0) {
+        console.warn('Some directories could not be read:', result.errors)
+      }
     } catch (e) {
       console.error('Failed to load file tree:', e)
     } finally {

@@ -469,29 +469,41 @@ ipcMain.handle('fs:delete-file', async (_, filePath: string) => {
 
 // 递归列出目录文件
 ipcMain.handle('fs:list-files', async (_, dirPath: string) => {
-  try {
-    const results: Array<{ name: string; path: string; isDirectory: boolean }> = []
+  const results: Array<{ name: string; path: string; isDirectory: boolean }> = []
+  const errors: string[] = []
 
-    async function walk(dir: string, base: string) {
-      if (!(await fs.pathExists(dir))) return
-      const entries = await fs.readdir(dir, { withFileTypes: true })
-      for (const entry of entries) {
-        if (entry.name.startsWith('.') || entry.name === 'node_modules') continue
-        const fullPath = path.join(dir, entry.name)
-        const relPath = path.relative(base, fullPath).replace(/\\/g, '/')
+  async function walk(dir: string, base: string, depth: number) {
+    if (depth > 20) return // prevent runaway recursion from symlink loops
+    if (!(await fs.pathExists(dir))) return
+    let entries: fs.Dirent[]
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true })
+    } catch (err) {
+      errors.push(`${dir}: ${String(err)}`)
+      return // skip directories we can't read, continue with others
+    }
+    for (const entry of entries) {
+      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue
+      const fullPath = path.join(dir, entry.name)
+      const relPath = path.relative(base, fullPath).replace(/\\/g, '/')
+      try {
         if (entry.isDirectory()) {
           results.push({ name: entry.name, path: relPath, isDirectory: true })
-          await walk(fullPath, base)
+          await walk(fullPath, base, depth + 1)
         } else {
           results.push({ name: entry.name, path: relPath, isDirectory: false })
         }
+      } catch (err) {
+        errors.push(`${relPath}: ${String(err)}`)
       }
     }
+  }
 
-    await walk(dirPath, dirPath)
-    return { success: true, files: results }
+  try {
+    await walk(dirPath, dirPath, 0)
+    return { success: true, files: results, errors: errors.length > 0 ? errors : undefined }
   } catch (error) {
-    return { success: false, files: [], message: String(error) }
+    return { success: false, files: results, message: String(error), errors }
   }
 })
 
