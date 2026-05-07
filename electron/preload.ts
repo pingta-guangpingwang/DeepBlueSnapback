@@ -161,6 +161,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setOnboardingCompleted: (completed: boolean) =>
     ipcRenderer.invoke('dbgvs:set-onboarding-completed', completed),
 
+  // AST & Graph
+  parseProject: (repoPath: string, workingCopyPath: string) =>
+    ipcRenderer.invoke('ast:parse-project', repoPath, workingCopyPath),
+  buildGraph: (repoPath: string, workingCopyPath: string, commitId: string, projectName: string) =>
+    ipcRenderer.invoke('graph:build', repoPath, workingCopyPath, commitId, projectName),
+  getGraph: (commitId: string) =>
+    ipcRenderer.invoke('graph:get', commitId),
+  listGraphVersions: () =>
+    ipcRenderer.invoke('graph:list-versions'),
+  compareGraphs: (versionA: string, versionB: string) =>
+    ipcRenderer.invoke('graph:compare', versionA, versionB),
+
 })
 
 // 类型声明
@@ -241,6 +253,13 @@ export interface ElectronAPI {
   // 新手引导
   getOnboardingStatus: () => Promise<{ completed: boolean }>
   setOnboardingCompleted: (completed: boolean) => Promise<{ success: boolean; message?: string }>
+
+  // AST & Graph
+  parseProject: (repoPath: string, workingCopyPath: string) => Promise<{ success: boolean; files: Array<Record<string, unknown>>; errors: string[]; totalFiles: number; cachedFiles: number }>
+  buildGraph: (repoPath: string, workingCopyPath: string, commitId: string, projectName: string) => Promise<{ success: boolean; graph?: Record<string, unknown>; message?: string }>
+  getGraph: (commitId: string) => Promise<{ success: boolean; graph?: Record<string, unknown>; message?: string }>
+  listGraphVersions: () => Promise<{ success: boolean; versions: string[]; message?: string }>
+  compareGraphs: (versionA: string, versionB: string) => Promise<{ success: boolean; diff?: Record<string, unknown>; message?: string }>
 }
 
 export interface FileStatus {

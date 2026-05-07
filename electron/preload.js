@@ -116,4 +116,11 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     ensureProjectDocs: (rootPath) => electron_1.ipcRenderer.invoke('dbgvs:ensure-project-docs', rootPath),
     // 新手引导
     getOnboardingStatus: () => electron_1.ipcRenderer.invoke('dbgvs:get-onboarding-status'),
-    setOnboardingCompleted: (completed) => electron_1.ipcRenderer.invoke('dbgvs:set-onboarding-completed', completed),});
+    setOnboardingCompleted: (completed) => electron_1.ipcRenderer.invoke('dbgvs:set-onboarding-completed', completed),
+    // AST & Graph
+    parseProject: (repoPath, workingCopyPath) => electron_1.ipcRenderer.invoke('ast:parse-project', repoPath, workingCopyPath),
+    buildGraph: (repoPath, workingCopyPath, commitId, projectName) => electron_1.ipcRenderer.invoke('graph:build', repoPath, workingCopyPath, commitId, projectName),
+    getGraph: (commitId) => electron_1.ipcRenderer.invoke('graph:get', commitId),
+    listGraphVersions: () => electron_1.ipcRenderer.invoke('graph:list-versions'),
+    compareGraphs: (versionA, versionB) => electron_1.ipcRenderer.invoke('graph:compare', versionA, versionB),
+});

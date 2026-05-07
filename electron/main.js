@@ -44,6 +44,9 @@ const dbvs_repository_1 = require("./dbvs-repository");
 const git_bridge_1 = require("./git-bridge");
 const lan_server_1 = require("./lan-server");
 const context_menu_1 = require("./context-menu");
+const ast_analyzer_1 = require("./ast-analyzer");
+const graph_builder_1 = require("./graph-builder");
+const graph_store_1 = require("./graph-store");
 let mainWindow = null;
 const dbvsRepo = new dbvs_repository_1.DBHTRepository();
 const cliCommand = (0, context_menu_1.parseCommandLine)(process.argv);
@@ -278,7 +281,31 @@ function registerIPCHandlers() {
     });
     // 提交变更（repoPath + workingCopyPath）
     electron_1.ipcMain.handle('dbgvs:commit', async (_, repoPath, workingCopyPath, message, selectedFiles, options) => {
-        return await dbvsRepo.commit(repoPath, workingCopyPath, message, selectedFiles, options);
+        const result = await dbvsRepo.commit(repoPath, workingCopyPath, message, selectedFiles, options);
+        // 提交成功后，后台自动构建图谱（非阻塞）
+        if (result.success && result.version) {
+            setImmediate(async () => {
+                try {
+                    const rootPath = await getRootPath();
+                    if (!rootPath)
+                        return;
+                    const projectName = path.basename(workingCopyPath);
+                    const parseResult = await (0, ast_analyzer_1.parseProject)(workingCopyPath, repoPath);
+                    if (parseResult.success && parseResult.files.length > 0) {
+                        const graph = (0, graph_builder_1.buildGraph)(parseResult, {
+                            projectName,
+                            commitId: result.version,
+                            timestamp: new Date().toISOString(),
+                        });
+                        await (0, graph_store_1.saveGraph)(rootPath, graph);
+                    }
+                }
+                catch {
+                    // 图谱构建失败不影响提交流程
+                }
+            });
+        }
+        return result;
     });
     // 获取版本历史（只读仓库）
     electron_1.ipcMain.handle('dbgvs:get-history', async (_, repoPath) => {
@@ -1338,7 +1365,8 @@ AI 智能体在开发过程中必须遵循以下规则：
         catch (error) {
             return { success: false, message: String(error) };
         }
-    });    electron_1.ipcMain.handle('dbgvs:create-root-repository', async (_, rootPath) => {
+    });
+    electron_1.ipcMain.handle('dbgvs:create-root-repository', async (_, rootPath) => {
         try {
             const projectsDir = path.join(rootPath, 'projects');
             const repositoriesDir = path.join(rootPath, 'repositories');
@@ -1437,6 +1465,82 @@ AI 智能体在开发过程中必须遵循以下规则：
             const onboardingPath = path.join(electron_1.app.getPath('userData'), 'onboarding.json');
             await fs.writeJson(onboardingPath, { completed }, { spaces: 2 });
             return { success: true };
+        }
+        catch (error) {
+            return { success: false, message: String(error) };
+        }
+    });
+    // ==================== AST & Graph ====================
+    // 解析项目源码，返回 AST 分析结果
+    electron_1.ipcMain.handle('ast:parse-project', async (_, repoPath, workingCopyPath) => {
+        try {
+            const result = await (0, ast_analyzer_1.parseProject)(workingCopyPath, repoPath);
+            return result;
+        }
+        catch (error) {
+            return { success: false, files: [], errors: [String(error)], totalFiles: 0, cachedFiles: 0 };
+        }
+    });
+    // 构建架构图谱
+    electron_1.ipcMain.handle('graph:build', async (_, repoPath, workingCopyPath, commitId, projectName) => {
+        try {
+            const parseResult = await (0, ast_analyzer_1.parseProject)(workingCopyPath, repoPath);
+            if (!parseResult.success || parseResult.files.length === 0) {
+                return { success: false, message: 'No source files to analyze' };
+            }
+            const graph = (0, graph_builder_1.buildGraph)(parseResult, {
+                projectName,
+                commitId,
+                timestamp: new Date().toISOString(),
+            });
+            const rootPath = await getRootPath();
+            if (!rootPath)
+                return { success: false, message: 'Root path not configured' };
+            await (0, graph_store_1.saveGraph)(rootPath, graph);
+            return { success: true, graph };
+        }
+        catch (error) {
+            return { success: false, message: String(error) };
+        }
+    });
+    // 获取特定版本的图谱
+    electron_1.ipcMain.handle('graph:get', async (_, commitId) => {
+        try {
+            const rootPath = await getRootPath();
+            if (!rootPath)
+                return { success: false, message: 'Root path not configured' };
+            const graph = await (0, graph_store_1.loadGraph)(rootPath, commitId);
+            if (!graph)
+                return { success: false, message: 'Graph not found for this version' };
+            return { success: true, graph };
+        }
+        catch (error) {
+            return { success: false, message: String(error) };
+        }
+    });
+    // 列出所有已存储图谱的版本
+    electron_1.ipcMain.handle('graph:list-versions', async () => {
+        try {
+            const rootPath = await getRootPath();
+            if (!rootPath)
+                return { success: false, versions: [] };
+            const versions = await (0, graph_store_1.listGraphs)(rootPath);
+            return { success: true, versions };
+        }
+        catch (error) {
+            return { success: false, versions: [], message: String(error) };
+        }
+    });
+    // 对比两个版本的图谱
+    electron_1.ipcMain.handle('graph:compare', async (_, versionA, versionB) => {
+        try {
+            const rootPath = await getRootPath();
+            if (!rootPath)
+                return { success: false, message: 'Root path not configured' };
+            const graphA = await (0, graph_store_1.loadGraph)(rootPath, versionA);
+            const graphB = await (0, graph_store_1.loadGraph)(rootPath, versionB);
+            const diff = (0, graph_store_1.compareGraphs)(graphA, graphB);
+            return { success: true, diff };
         }
         catch (error) {
             return { success: false, message: String(error) };

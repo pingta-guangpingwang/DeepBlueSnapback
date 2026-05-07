@@ -8,6 +8,9 @@ import { DBHTRepository } from './dbvs-repository'
 import { GitBridge } from './git-bridge'
 import { LANServer } from './lan-server'
 import { parseCommandLine, registerContextMenu, unregisterContextMenu, isContextMenuRegistered } from './context-menu'
+import { parseProject } from './ast-analyzer'
+import { buildGraph } from './graph-builder'
+import { saveGraph, loadGraph, listGraphs, compareGraphs } from './graph-store'
 
 let mainWindow: BrowserWindow | null = null
 const dbvsRepo = new DBHTRepository()
@@ -271,7 +274,29 @@ ipcMain.handle('dbgvs:get-file-tree', async (_, workingCopyPath: string) => {
 
 // 提交变更（repoPath + workingCopyPath）
 ipcMain.handle('dbgvs:commit', async (_, repoPath: string, workingCopyPath: string, message: string, selectedFiles: string[], options?: { summary?: string; author?: string; sessionId?: string }) => {
-  return await dbvsRepo.commit(repoPath, workingCopyPath, message, selectedFiles, options)
+  const result = await dbvsRepo.commit(repoPath, workingCopyPath, message, selectedFiles, options)
+  // 提交成功后，后台自动构建图谱（非阻塞）
+  if (result.success && result.version) {
+    setImmediate(async () => {
+      try {
+        const rootPath = await getRootPath()
+        if (!rootPath) return
+        const projectName = path.basename(workingCopyPath)
+        const parseResult = await parseProject(workingCopyPath, repoPath)
+        if (parseResult.success && parseResult.files.length > 0) {
+          const graph = buildGraph(parseResult, {
+            projectName,
+            commitId: result.version!,
+            timestamp: new Date().toISOString(),
+          })
+          await saveGraph(rootPath, graph)
+        }
+      } catch {
+        // 图谱构建失败不影响提交流程
+      }
+    })
+  }
+  return result
 })
 
 // 获取版本历史（只读仓库）
@@ -1516,6 +1541,86 @@ ipcMain.handle('dbgvs:set-onboarding-completed', async (_, completed: boolean) =
     const onboardingPath = path.join(app.getPath('userData'), 'onboarding.json')
     await fs.writeJson(onboardingPath, { completed }, { spaces: 2 })
     return { success: true }
+  } catch (error) {
+    return { success: false, message: String(error) }
+  }
+})
+
+// ==================== AST & Graph ====================
+
+// 解析项目源码，返回 AST 分析结果
+ipcMain.handle('ast:parse-project', async (_, repoPath: string, workingCopyPath: string) => {
+  try {
+    const result = await parseProject(workingCopyPath, repoPath)
+    return result
+  } catch (error) {
+    return { success: false, files: [], errors: [String(error)], totalFiles: 0, cachedFiles: 0 }
+  }
+})
+
+// 构建架构图谱
+ipcMain.handle('graph:build', async (_, repoPath: string, workingCopyPath: string, commitId: string, projectName: string) => {
+  try {
+    const parseResult = await parseProject(workingCopyPath, repoPath)
+    if (!parseResult.success || parseResult.files.length === 0) {
+      return { success: false, message: 'No source files to analyze' }
+    }
+
+    const graph = buildGraph(parseResult, {
+      projectName,
+      commitId,
+      timestamp: new Date().toISOString(),
+    })
+
+    const rootPath = await getRootPath()
+    if (!rootPath) return { success: false, message: 'Root path not configured' }
+
+    await saveGraph(rootPath, graph)
+    return { success: true, graph }
+  } catch (error) {
+    return { success: false, message: String(error) }
+  }
+})
+
+// 获取特定版本的图谱
+ipcMain.handle('graph:get', async (_, commitId: string) => {
+  try {
+    const rootPath = await getRootPath()
+    if (!rootPath) return { success: false, message: 'Root path not configured' }
+
+    const graph = await loadGraph(rootPath, commitId)
+    if (!graph) return { success: false, message: 'Graph not found for this version' }
+
+    return { success: true, graph }
+  } catch (error) {
+    return { success: false, message: String(error) }
+  }
+})
+
+// 列出所有已存储图谱的版本
+ipcMain.handle('graph:list-versions', async () => {
+  try {
+    const rootPath = await getRootPath()
+    if (!rootPath) return { success: false, versions: [] }
+
+    const versions = await listGraphs(rootPath)
+    return { success: true, versions }
+  } catch (error) {
+    return { success: false, versions: [], message: String(error) }
+  }
+})
+
+// 对比两个版本的图谱
+ipcMain.handle('graph:compare', async (_, versionA: string, versionB: string) => {
+  try {
+    const rootPath = await getRootPath()
+    if (!rootPath) return { success: false, message: 'Root path not configured' }
+
+    const graphA = await loadGraph(rootPath, versionA)
+    const graphB = await loadGraph(rootPath, versionB)
+
+    const diff = compareGraphs(graphA, graphB)
+    return { success: true, diff }
   } catch (error) {
     return { success: false, message: String(error) }
   }

@@ -25,6 +25,8 @@
   "dependencies": {
     "commander": "^14.0.3",
     "cors": "^2.8.6",
+    "d3-force": "^3.0.0",
+    "d3-selection": "^3.0.0",
     "diff-match-patch": "^1.0.5",
     "express": "^5.2.1",
     "fs-extra": "^11.3.4",

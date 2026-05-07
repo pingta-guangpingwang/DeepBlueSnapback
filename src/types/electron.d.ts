@@ -111,6 +111,13 @@ export interface ElectronAPI {
   getOnboardingStatus: () => Promise<{ completed: boolean }>
   setOnboardingCompleted: (completed: boolean) => Promise<{ success: boolean; message?: string }>
 
+  // AST & Graph
+  parseProject: (repoPath: string, workingCopyPath: string) => Promise<{ success: boolean; files: Array<Record<string, unknown>>; errors: string[]; totalFiles: number; cachedFiles: number }>
+  buildGraph: (repoPath: string, workingCopyPath: string, commitId: string, projectName: string) => Promise<{ success: boolean; graph?: Record<string, unknown>; message?: string }>
+  getGraph: (commitId: string) => Promise<{ success: boolean; graph?: Record<string, unknown>; message?: string }>
+  listGraphVersions: () => Promise<{ success: boolean; versions: string[]; message?: string }>
+  compareGraphs: (versionA: string, versionB: string) => Promise<{ success: boolean; diff?: Record<string, unknown>; message?: string }>
+
 }
 
 declare global {
