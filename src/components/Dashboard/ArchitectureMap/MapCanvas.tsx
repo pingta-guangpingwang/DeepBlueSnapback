@@ -20,9 +20,9 @@ export function MapCanvas({
   onSelectNode, onToggleCollapse, loading, error,
 }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const [scale, setScale] = useState(0.85)
-  const [panX, setPanX] = useState(20)
-  const [panY, setPanY] = useState(20)
+  const [scale, setScale] = useState(0.92)
+  const [panX, setPanX] = useState(16)
+  const [panY, setPanY] = useState(16)
   const [dragging, setDragging] = useState(false)
   const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 })
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
@@ -82,7 +82,7 @@ export function MapCanvas({
 
   const handleZoomIn = () => setScale(prev => Math.min(3, prev + 0.15))
   const handleZoomOut = () => setScale(prev => Math.max(0.2, prev - 0.15))
-  const handleZoomReset = () => { setScale(0.85); setPanX(20); setPanY(20) }
+  const handleZoomReset = () => { setScale(0.92); setPanX(16); setPanY(16) }
 
   if (loading) {
     return (

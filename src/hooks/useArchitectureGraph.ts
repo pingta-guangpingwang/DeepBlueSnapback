@@ -6,10 +6,11 @@ import type { ArchitectureGraph, GraphNode, GraphEdge, GraphViewMode, GraphFilte
 // Simple tree layout for module/architecture view
 function computeTreeLayout(graph: ArchitectureGraph): NodePosition[] {
   const positions: NodePosition[] = []
-  const levelHeight = 80
-  const nodeWidth = 160
-  const nodeHeight = 36
-  const levelGap = 40
+  const levelHeight = 56
+  const nodeWidth = 140
+  const nodeHeight = 28
+  const levelGap = 28
+  const basePadding = 20
 
   function walk(node: GraphNode, level: number, xOffset: number, siblings: number): number {
     let totalWidth = 0
@@ -35,7 +36,7 @@ function computeTreeLayout(graph: ArchitectureGraph): NodePosition[] {
     return Math.max(totalWidth, nodeWidth + levelGap)
   }
 
-  walk(graph.rootNode, 0, 40, 1)
+  walk(graph.rootNode, 0, basePadding, 1)
   return positions
 }
 
@@ -56,15 +57,15 @@ function computeForceLayout(
   collect(graph.rootNode)
 
   const cols = Math.ceil(Math.sqrt(nodeList.length))
-  const gapX = 180
-  const gapY = 60
+  const gapX = 155
+  const gapY = 44
 
   const positions: NodePosition[] = nodeList.map((node, i) => ({
     id: node.id,
-    x: (i % cols) * gapX + 40,
-    y: Math.floor(i / cols) * gapY + 40,
-    width: 150,
-    height: 30,
+    x: (i % cols) * gapX + 20,
+    y: Math.floor(i / cols) * gapY + 20,
+    width: 140,
+    height: 28,
     level: 0,
   }))
 

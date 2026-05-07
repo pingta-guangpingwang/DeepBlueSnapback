@@ -14,16 +14,16 @@ interface EdgeRendererProps {
 }
 
 const EDGE_COLORS: Record<string, string> = {
-  pipeline: '#3b82f6',
-  hierarchy: '#8b5cf6',
-  flow: '#10b981',
-  circular: '#ef4444',
+  pipeline: '#5ea8ff',
+  hierarchy: '#a78bfa',
+  flow: '#34d399',
+  circular: '#ff5555',
 }
 
 const EDGE_DASH: Record<string, string> = {
   pipeline: '',
-  hierarchy: '6,3',
-  flow: '3,3',
+  hierarchy: '7,4',
+  flow: '4,3',
   circular: '',
 }
 
@@ -33,10 +33,10 @@ export function EdgeRenderer({
   targetX, targetY, targetW, targetH,
   scale,
 }: EdgeRendererProps) {
-  const color = EDGE_COLORS[edge.type] || '#64748b'
+  const color = EDGE_COLORS[edge.type] || '#8899aa'
   const dash = EDGE_DASH[edge.type] || ''
-  const strokeWidth = edge.type === 'circular' ? 2 : 1
-  const opacity = edge.type === 'flow' ? 0.5 : edge.type === 'circular' ? 0.9 : 0.7
+  const strokeWidth = edge.type === 'circular' ? 2.5 : edge.type === 'pipeline' ? 1.3 : 1
+  const opacity = edge.type === 'flow' ? 0.55 : edge.type === 'circular' ? 0.95 : 0.75
 
   // Connect from right center of source to left center of target
   const sx = sourceX + sourceW
@@ -77,15 +77,16 @@ export function EdgeRenderer({
         fill={color}
         opacity={opacity}
       />
-      {edge.label && (
+      {edge.label && scale > 0.5 && (
         <text
           x={(sx + tx) / 2}
-          y={(sy + ty) / 2 - 4}
+          y={(sy + ty) / 2 - 5}
           fill={color}
-          fontSize={Math.max(8, 10 * scale)}
+          fontSize={Math.max(8, 9.5 * scale)}
           textAnchor="middle"
-          opacity={0.7}
-          fontFamily="Consolas, monospace"
+          opacity={0.8}
+          fontFamily="'Segoe UI', system-ui, sans-serif"
+          fontWeight={500}
         >
           {edge.label.length > 20 ? edge.label.slice(0, 18) + '...' : edge.label}
         </text>

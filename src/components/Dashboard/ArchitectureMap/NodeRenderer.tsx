@@ -10,20 +10,24 @@ interface NodeRendererProps {
 }
 
 const TYPE_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  building: { bg: '#1e3a5f', border: '#3b82f6', text: '#e0e7ff' },
-  floor: { bg: '#1e293b', border: '#475569', text: '#cbd5e1' },
-  room: { bg: '#0f172a', border: '#334155', text: '#94a3b8' },
+  building: { bg: '#142c5e', border: '#4da2ff', text: '#d6e5ff' },
+  floor: { bg: '#162542', border: '#5b7fbf', text: '#cddbf5' },
+  room: { bg: '#111c2e', border: '#3e5270', text: '#a8bcd4' },
 }
 
 export function NodeRenderer({ node, position, isSelected, isCollapsed, isHighRisk, scale }: NodeRendererProps) {
   const colors = TYPE_COLORS[node.type] || TYPE_COLORS.room
   const { x, y, width, height } = position
 
-  const borderColor = isSelected ? '#60a5fa' : isHighRisk ? '#ef4444' : colors.border
+  const borderColor = isSelected ? '#70b8ff' : isHighRisk ? '#ff6464' : colors.border
   const borderWidth = isSelected ? 2 : isHighRisk ? 2 : 1
-  const bgColor = isHighRisk ? 'rgba(239, 68, 68, 0.1)' : colors.bg
-  const fontSize = Math.max(10, Math.min(12, 11 * scale))
-  const iconSize = Math.max(8, Math.min(14, 12 * scale))
+  const bgColor = isHighRisk
+    ? 'rgba(255, 80, 80, 0.12)'
+    : isSelected
+      ? 'rgba(59, 130, 246, 0.25)'
+      : colors.bg
+  const fontSize = Math.max(9.5, Math.min(12, 10.5 * scale))
+  const iconSize = Math.max(9, Math.min(13, 11 * scale))
 
   const icon = node.type === 'building' ? '\u{1F3E2}' : node.type === 'floor' ? '\u{1F3E2}' : '\u{1F4C4}'
   const badge = node.fileCount > 0 ? `${node.fileCount}` : ''
@@ -42,11 +46,12 @@ export function NodeRenderer({ node, position, isSelected, isCollapsed, isHighRi
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
-        padding: '0 6px',
-        gap: '4px',
+        padding: '0 8px',
+        gap: '5px',
         fontSize,
         color: colors.text,
-        fontFamily: 'Consolas, monospace',
+        fontFamily: "'Segoe UI', system-ui, sans-serif",
+        fontWeight: node.type === 'building' ? 600 : node.type === 'floor' ? 500 : 450,
         whiteSpace: 'nowrap',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
@@ -54,31 +59,40 @@ export function NodeRenderer({ node, position, isSelected, isCollapsed, isHighRi
         boxSizing: 'border-box',
         userSelect: 'none',
         zIndex: isSelected ? 10 : node.type === 'building' ? 3 : node.type === 'floor' ? 2 : 1,
+        textShadow: '0 1px 2px rgba(0,0,0,0.7)',
+        letterSpacing: '0.02em',
       }}
       title={`${node.label}\nFiles: ${node.fileCount}\nLines: ${node.lineCount}\nExports: ${node.exportsCount}`}
     >
-      <span style={{ fontSize: iconSize, flexShrink: 0 }}>{icon}</span>
+      <span style={{ fontSize: iconSize, flexShrink: 0, filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.5))' }}>{icon}</span>
       <span style={{
         flex: 1,
         overflow: 'hidden',
         textOverflow: 'ellipsis',
-        fontWeight: node.type === 'building' ? 600 : 400,
+        fontWeight: node.type === 'building' ? 600 : node.type === 'floor' ? 500 : 450,
       }}>
         {node.label}
       </span>
       {badge && (
         <span style={{
-          background: 'rgba(255,255,255,0.1)',
+          background: 'rgba(255,255,255,0.12)',
           borderRadius: '3px',
-          padding: '0 3px',
+          padding: '0 4px',
           fontSize: Math.max(8, fontSize - 2),
           flexShrink: 0,
+          fontWeight: 500,
+          color: '#c4d5e8',
         }}>
           {badge}
         </span>
       )}
       {isCollapsed && node.children && node.children.length > 0 && (
-        <span style={{ fontSize: iconSize, flexShrink: 0, marginLeft: '2px' }}>+{node.children.length}</span>
+        <span style={{
+          fontSize: iconSize,
+          flexShrink: 0,
+          marginLeft: '2px',
+          color: '#809ec0',
+        }}>+{node.children.length}</span>
       )}
     </div>
   )
