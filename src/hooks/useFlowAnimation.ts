@@ -1,15 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import type { GraphEdge, NodePosition } from '../types/graph'
+import type { GraphEdge } from '../types/graph'
 
+/** Lightweight flow dot: stores edge + progress, position computed at render time from live node positions */
 export interface FlowDot {
   id: string
   edgeId: string
-  // Bezier curve control points (matching EdgeRenderer path)
-  sx: number; sy: number     // start: right edge center of source node
-  cp1x: number; cp1y: number // control point 1
-  cp2x: number; cp2y: number // control point 2
-  tx: number; ty: number     // end: left edge center of target node
-  progress: number           // 0→1
+  progress: number   // 0→1 along the edge
   color: string
   glowColor: string
 }
@@ -21,37 +17,7 @@ const EDGE_COLORS: Record<string, { line: string; glow: string }> = {
   circular:  { line: '#ff5555', glow: '#ef4444' },
 }
 
-/** Compute bezier point at progress t (0→1), matching EdgeRenderer path */
-export function bezierPoint(dot: FlowDot): { cx: number; cy: number } {
-  const { sx, sy, cp1x, cp1y, cp2x, cp2y, tx, ty, progress: t } = dot
-  const mt = 1 - t
-  const mt2 = mt * mt
-  const mt3 = mt2 * mt
-  const t2 = t * t
-  const t3 = t2 * t
-  return {
-    cx: mt3 * sx + 3 * mt2 * t * cp1x + 3 * mt * t2 * cp2x + t3 * tx,
-    cy: mt3 * sy + 3 * mt2 * t * cp1y + 3 * mt * t2 * cp2y + t3 * ty,
-  }
-}
-
-/** Build bezier control points matching EdgeRenderer.tsx */
-function buildBezier(sp: NodePosition, tp: NodePosition) {
-  const sx = sp.x + sp.width        // right edge center of source
-  const sy = sp.y + sp.height / 2
-  const tx = tp.x                   // left edge center of target
-  const ty = tp.y + tp.height / 2
-
-  const dx = Math.abs(tx - sx) * 0.4
-  return {
-    sx, sy,
-    cp1x: sx + dx, cp1y: sy,
-    cp2x: tx - dx, cp2y: ty,
-    tx, ty,
-  }
-}
-
-export function useFlowAnimation(edges: GraphEdge[], positions: NodePosition[]) {
+export function useFlowAnimation(edges: GraphEdge[]) {
   const [flowActive, setFlowActive] = useState(false)
   const [flowSpeed, setFlowSpeed] = useState(1)
   const [flowMode, setFlowMode] = useState<'single' | 'multi'>('multi')
@@ -62,10 +28,10 @@ export function useFlowAnimation(edges: GraphEdge[], positions: NodePosition[]) 
   const lastTime = useRef<number>(0)
   const dotIdCounter = useRef(0)
   const singlePathIdx = useRef(0)
+  const edgesRef = useRef<GraphEdge[]>(edges)
+  edgesRef.current = edges
 
-  const posMap = new Map(positions.map(p => [p.id, p]))
-
-  // Animation loop
+  // Animation loop — only manages progress, no spatial data
   useEffect(() => {
     if (!flowActive || edges.length === 0) {
       if (animRef.current) cancelAnimationFrame(animRef.current)
@@ -80,6 +46,8 @@ export function useFlowAnimation(edges: GraphEdge[], positions: NodePosition[]) 
       const dt = Math.min((now - lastTime.current) / 1000, 0.1)
       lastTime.current = now
 
+      const currentEdges = edgesRef.current
+
       setFlowDots(prev => {
         const baseSpeed = 0.35
         const step = baseSpeed * flowSpeed * dt
@@ -88,8 +56,7 @@ export function useFlowAnimation(edges: GraphEdge[], positions: NodePosition[]) 
         for (const dot of prev) {
           const newProgress = dot.progress + step
           if (newProgress >= 1) {
-            // Dot reached target → glow the target node
-            const edge = edges.find(e => e.id === dot.edgeId)
+            const edge = currentEdges.find(e => e.id === dot.edgeId)
             if (edge) {
               setGlowingNodes(g => {
                 const nextSet = new Set(g)
@@ -105,44 +72,33 @@ export function useFlowAnimation(edges: GraphEdge[], positions: NodePosition[]) 
           }
         }
 
-        // Spawn new dots for uncovered edges (multi mode)
+        // Multi mode: ensure every edge has a dot
         if (flowMode === 'multi') {
           const coveredEdges = new Set(next.map(d => d.edgeId))
-          for (const edge of edges) {
+          for (const edge of currentEdges) {
             if (coveredEdges.has(edge.id)) continue
-            const sp = posMap.get(edge.source)
-            const tp = posMap.get(edge.target)
-            if (!sp || !tp) continue
             const colors = EDGE_COLORS[edge.type] || EDGE_COLORS.pipeline
-            const bez = buildBezier(sp, tp)
             next.push({
               id: `flow-${dotIdCounter.current++}`,
               edgeId: edge.id,
-              ...bez,
               progress: Math.random(),
               color: colors.line,
               glowColor: colors.glow,
             })
           }
         } else {
-          // Single mode: one dot traversing graph sequentially
-          if (next.length === 0 && edges.length > 0) {
-            const edge = edges[singlePathIdx.current % edges.length]
+          // Single mode: one dot traversing graph
+          if (next.length === 0 && currentEdges.length > 0) {
+            const edge = currentEdges[singlePathIdx.current % currentEdges.length]
             singlePathIdx.current++
-            const sp = posMap.get(edge.source)
-            const tp = posMap.get(edge.target)
-            if (sp && tp) {
-              const colors = EDGE_COLORS[edge.type] || EDGE_COLORS.pipeline
-              const bez = buildBezier(sp, tp)
-              next.push({
-                id: `flow-${dotIdCounter.current++}`,
-                edgeId: edge.id,
-                ...bez,
-                progress: 0,
-                color: colors.line,
-                glowColor: colors.glow,
-              })
-            }
+            const colors = EDGE_COLORS[edge.type] || EDGE_COLORS.pipeline
+            next.push({
+              id: `flow-${dotIdCounter.current++}`,
+              edgeId: edge.id,
+              progress: 0,
+              color: colors.line,
+              glowColor: colors.glow,
+            })
           }
         }
 
@@ -154,7 +110,7 @@ export function useFlowAnimation(edges: GraphEdge[], positions: NodePosition[]) 
 
     animRef.current = requestAnimationFrame(tick)
     return () => { if (animRef.current) cancelAnimationFrame(animRef.current) }
-  }, [flowActive, flowSpeed, flowMode, edges, posMap])
+  }, [flowActive, flowSpeed, flowMode, edges.length])
 
   // Decay glowing nodes after 800ms
   useEffect(() => {

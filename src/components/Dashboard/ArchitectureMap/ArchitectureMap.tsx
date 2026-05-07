@@ -20,7 +20,7 @@ export function ArchitectureMap() {
   } = useArchitectureGraph()
 
   const { diff, loading: cmpLoading, error: cmpError, versionA, versionB, compareVersions, clearComparison } = useGraphComparison()
-  const { flowActive, flowSpeed, flowMode, flowDots, glowingNodes, setFlowSpeed, setFlowMode, startFlow, stopFlow } = useFlowAnimation(edges, positions)
+  const { flowActive, flowSpeed, flowMode, flowDots, glowingNodes, setFlowSpeed, setFlowMode, startFlow, stopFlow } = useFlowAnimation(edges)
   const [showCompare, setShowCompare] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
   const [fileViewer, setFileViewer] = useState<{

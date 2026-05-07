@@ -2,7 +2,6 @@ import { useRef, useState, useCallback, useEffect, type MouseEvent } from 'react
 import { useI18n } from '../../../i18n'
 import type { GraphNode, GraphEdge, NodePosition } from '../../../types/graph'
 import type { FlowDot } from '../../../hooks/useFlowAnimation'
-import { bezierPoint } from '../../../hooks/useFlowAnimation'
 import { NodeRenderer } from './NodeRenderer'
 import { EdgeRenderer } from './EdgeRenderer'
 
@@ -366,14 +365,45 @@ export function MapCanvas({
             )
           })}
 
-          {/* Flow animation dots layer */}
+          {/* Flow animation dots layer — position computed from live node coords */}
           {flowDots.length > 0 && flowDots.map(dot => {
-            const pt = bezierPoint(dot)
+            // Find edge in visible edges only
+            const edge = visibleEdges.find(e => e.id === dot.edgeId)
+            if (!edge) return null
+            const sp = positionMap.get(edge.source)
+            const tp = positionMap.get(edge.target)
+            if (!sp || !tp) return null
+
+            // Apply drag offsets (same as EdgeRenderer)
+            const offS = dragOffsets.current.get(edge.source)
+            const offT = dragOffsets.current.get(edge.target)
+            const osx = sp.x + (offS?.dx ?? 0)
+            const osy = sp.y + (offS?.dy ?? 0)
+            const otx = tp.x + (offT?.dx ?? 0)
+            const oty = tp.y + (offT?.dy ?? 0)
+
+            // Edge bezier: right edge of source → left edge of target (matching EdgeRenderer)
+            const sx = osx + sp.width
+            const sy = osy + sp.height / 2
+            const tx = otx
+            const ty = oty + tp.height / 2
+            const bdx = Math.abs(tx - sx) * 0.4
+            const cp1x = sx + bdx; const cp1y = sy
+            const cp2x = tx - bdx; const cp2y = ty
+
+            // Cubic bezier interpolation
+            const t = dot.progress
+            const mt = 1 - t
+            const mt2 = mt * mt; const mt3 = mt2 * mt
+            const t2 = t * t; const t3 = t2 * t
+            const cx = mt3 * sx + 3 * mt2 * t * cp1x + 3 * mt * t2 * cp2x + t3 * tx
+            const cy = mt3 * sy + 3 * mt2 * t * cp1y + 3 * mt * t2 * cp2y + t3 * ty
+
             return (
               <circle
                 key={dot.id}
-                cx={pt.cx}
-                cy={pt.cy}
+                cx={cx}
+                cy={cy}
                 r={3.5}
                 fill={dot.color}
                 className="map-flow-dot"
