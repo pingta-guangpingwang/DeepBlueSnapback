@@ -103,6 +103,8 @@ const en = {
     zoomIn: 'Zoom in',
     zoomOut: 'Zoom out',
     zoomReset: 'Reset zoom',
+    fullscreen: 'Fullscreen',
+    fullscreenExit: 'Exit fullscreen',
     refresh: 'Refresh',
     loading: 'Loading...',
     moduleView: 'Modules',

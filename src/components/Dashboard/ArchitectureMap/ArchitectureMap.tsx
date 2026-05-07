@@ -23,6 +23,7 @@ export function ArchitectureMap() {
   const { flowActive, flowSpeed, flowMode, flowDots, glowingNodes, setFlowSpeed, setFlowMode, startFlow, stopFlow } = useFlowAnimation(edges)
   const [showCompare, setShowCompare] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
+  const [graphFullscreen, setGraphFullscreen] = useState(false)
   const [fileViewer, setFileViewer] = useState<{
     visible: boolean; node: GraphNode | null; content: string; loading: boolean; error: string | null
   }>({ visible: false, node: null, content: '', loading: false, error: null })
@@ -93,6 +94,16 @@ export function ArchitectureMap() {
     window.addEventListener('mousemove', handleMouseMove)
     return () => window.removeEventListener('mousemove', handleMouseMove)
   }, [tooltip.visible])
+
+  // ESC to exit fullscreen
+  useEffect(() => {
+    if (!graphFullscreen) return
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setGraphFullscreen(false)
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [graphFullscreen])
 
   // Load graph on mount
   useEffect(() => {
@@ -271,6 +282,15 @@ export function ArchitectureMap() {
 
         <MapLegend />
 
+        {/* Fullscreen button */}
+        <button
+          className="map-fullscreen-btn"
+          onClick={() => setGraphFullscreen(true)}
+          title={String(t.graph.fullscreen)}
+        >
+          {'⛶'}
+        </button>
+
         {/* Floating detail panel */}
         {selectedNode && graph && !showCompare && (
           <div className="map-detail-panel">
@@ -282,6 +302,41 @@ export function ArchitectureMap() {
           </div>
         )}
       </div>
+
+      {/* Fullscreen graph overlay */}
+      {graphFullscreen && (
+        <div className="map-fullscreen-overlay">
+          <div className="map-fullscreen-header">
+            <span className="map-fullscreen-title">{t.graph.fullscreen}</span>
+            <button
+              className="map-fullscreen-close"
+              onClick={() => setGraphFullscreen(false)}
+              title={String(t.graph.fullscreenExit)}
+            >
+              {'✕'}
+            </button>
+          </div>
+          <div className="map-fullscreen-body">
+            <MapCanvas
+              rootNode={graph?.rootNode ?? null}
+              positions={positions}
+              edges={edges}
+              selectedNode={selectedNode}
+              collapsedNodes={collapsedNodesRef.current}
+              depth={depth}
+              onSelectNode={handleSelectNode}
+              onToggleCollapse={handleToggleCollapse}
+              onOpenFile={handleOpenFile}
+              onHoverNode={handleHoverNode}
+              onHoverEdge={handleHoverEdge}
+              loading={loading}
+              error={error}
+              flowDots={flowDots}
+              glowingNodes={glowingNodes}
+            />
+          </div>
+        </div>
+      )}
 
       <MapTooltip
         node={tooltip.node}

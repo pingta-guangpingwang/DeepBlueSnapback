@@ -105,6 +105,8 @@ const zh: Translations = {
     zoomIn: '放大',
     zoomOut: '缩小',
     zoomReset: '重置缩放',
+    fullscreen: '全屏',
+    fullscreenExit: '退出全屏',
     refresh: '刷新',
     loading: '加载中...',
     moduleView: '模块',
