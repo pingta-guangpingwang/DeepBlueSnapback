@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAppState } from '../../context/AppContext'
 import { useRepository } from '../../hooks/useRepository'
+import { useVersionSwitch } from '../../hooks/useVersionSwitch'
+import { VersionSwitcherBanner as VersionBanner } from './VersionSwitcher'
 import { computeLineDiff, getDiffStats, type DiffLine } from './DiffView'
 import { useI18n } from '../../i18n'
 
@@ -35,6 +37,7 @@ export default function History() {
   const [state, dispatch] = useAppState()
   const { handleRollback } = useRepository()
   const { t } = useI18n()
+  const { isViewing, viewedVersion, switching, error: switchError, switchToVersion, releaseVersion } = useVersionSwitch()
   const [commits, setCommits] = useState<CommitEntry[]>([])
   const [loading, setLoading] = useState(false)
   const [expandedCommit, setExpandedCommit] = useState<string | null>(null)
@@ -241,8 +244,26 @@ export default function History() {
     return sorted
   }, [commitDetail, showAllFiles, sortBy, parentDetail])
 
+  const onSwitchToVersion = useCallback(async (repoPath: string, version: string) => {
+    await switchToVersion(repoPath, version)
+  }, [switchToVersion])
+
+  const onReleaseVersion = useCallback(async () => {
+    await releaseVersion()
+  }, [releaseVersion])
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <VersionBanner
+        repoPath={state.repoPath}
+        viewedVersion={viewedVersion}
+        isViewing={isViewing}
+        onSwitchToVersion={onSwitchToVersion}
+        onReleaseVersion={onReleaseVersion}
+        switching={switching}
+        error={switchError}
+      />
+
       <div style={{
         background: 'white', borderRadius: '12px', padding: '20px',
         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)', border: '1px solid #e5e7eb',
@@ -321,8 +342,28 @@ export default function History() {
                           onClick={e => { e.stopPropagation(); setConfirmVersion(null) }}>{t.common.cancel}</button>
                       </>
                     ) : (
-                      <button className="secondary-button" style={{ fontSize: '12px', padding: '3px 10px' }}
-                        onClick={e => { e.stopPropagation(); setConfirmVersion(commit.id) }}>{t.history.rollbackToVersion}</button>
+                      <>
+                        <button
+                          style={{
+                            fontSize: '11px', padding: '3px 10px', border: '1px solid #60a5fa',
+                            borderRadius: '4px', background: viewedVersion === commit.id ? '#2563eb' : 'transparent',
+                            color: viewedVersion === commit.id ? '#fff' : '#60a5fa', cursor: 'pointer',
+                          }}
+                          onClick={e => {
+                            e.stopPropagation()
+                            if (viewedVersion === commit.id) {
+                              onReleaseVersion()
+                            } else {
+                              onSwitchToVersion(state.repoPath, commit.id)
+                            }
+                          }}
+                          disabled={switching}
+                        >
+                          {viewedVersion === commit.id ? 'Viewing' : 'View'}
+                        </button>
+                        <button className="secondary-button" style={{ fontSize: '12px', padding: '3px 10px' }}
+                          onClick={e => { e.stopPropagation(); setConfirmVersion(commit.id) }}>{t.history.rollbackToVersion}</button>
+                      </>
                     )}
                     <span style={{ fontSize: '16px', color: '#9ca3af', transition: 'transform 0.2s',
                       transform: expandedCommit === commit.id ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>

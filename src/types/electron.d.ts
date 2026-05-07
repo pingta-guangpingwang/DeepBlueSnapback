@@ -118,6 +118,12 @@ export interface ElectronAPI {
   listGraphVersions: () => Promise<{ success: boolean; versions: string[]; message?: string }>
   compareGraphs: (versionA: string, versionB: string) => Promise<{ success: boolean; diff?: Record<string, unknown>; message?: string }>
 
+  // Version switching
+  switchToVersionReadonly: (repoPath: string, version: string) => Promise<{ success: boolean; viewPath?: string; files?: Array<{ path: string; hash: string; size: number }>; message?: string }>
+  releaseVersionReadonly: (version: string) => Promise<{ success: boolean; message?: string }>
+  getVersionFileList: (repoPath: string, version: string) => Promise<{ success: boolean; files?: Array<{ path: string; hash: string; size: number }>; message?: string }>
+  getVersionFileContent: (repoPath: string, version: string, filePath: string) => Promise<{ success: boolean; content?: string; message?: string }>
+
 }
 
 declare global {

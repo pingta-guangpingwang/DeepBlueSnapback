@@ -123,4 +123,9 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     getGraph: (commitId) => electron_1.ipcRenderer.invoke('graph:get', commitId),
     listGraphVersions: () => electron_1.ipcRenderer.invoke('graph:list-versions'),
     compareGraphs: (versionA, versionB) => electron_1.ipcRenderer.invoke('graph:compare', versionA, versionB),
+    // Version switching
+    switchToVersionReadonly: (repoPath, version) => electron_1.ipcRenderer.invoke('version:switch-readonly', repoPath, version),
+    releaseVersionReadonly: (version) => electron_1.ipcRenderer.invoke('version:release-readonly', version),
+    getVersionFileList: (repoPath, version) => electron_1.ipcRenderer.invoke('version:get-file-list', repoPath, version),
+    getVersionFileContent: (repoPath, version, filePath) => electron_1.ipcRenderer.invoke('version:get-file-content', repoPath, version, filePath),
 });

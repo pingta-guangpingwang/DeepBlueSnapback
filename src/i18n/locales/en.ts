@@ -581,6 +581,15 @@ const en = {
     loadingDiff: 'Loading diff content...',
   },
 
+  // Version switching
+  versionSwitch: {
+    readOnlyMode: 'Read-only mode — viewing version',
+    returnToLive: 'Return to Live',
+    switching: 'Switching...',
+    viewVersion: 'View',
+    viewing: 'Viewing',
+  },
+
   // File Explorer
   fileExplorer: {
     edit: 'Edit',

@@ -47,6 +47,7 @@ const context_menu_1 = require("./context-menu");
 const ast_analyzer_1 = require("./ast-analyzer");
 const graph_builder_1 = require("./graph-builder");
 const graph_store_1 = require("./graph-store");
+const version_switch_1 = require("./version-switch");
 let mainWindow = null;
 const dbvsRepo = new dbvs_repository_1.DBHTRepository();
 const cliCommand = (0, context_menu_1.parseCommandLine)(process.argv);
@@ -1545,6 +1546,35 @@ AI 智能体在开发过程中必须遵循以下规则：
         catch (error) {
             return { success: false, message: String(error) };
         }
+    });
+    // Read-only version switching
+    electron_1.ipcMain.handle('version:switch-readonly', async (_, repoPath, version) => {
+        try {
+            const rootPath = await getRootPath();
+            if (!rootPath)
+                return { success: false, message: 'Root path not configured' };
+            return await (0, version_switch_1.switchToVersionReadonly)(rootPath, repoPath, version);
+        }
+        catch (error) {
+            return { success: false, message: String(error) };
+        }
+    });
+    electron_1.ipcMain.handle('version:release-readonly', async (_, version) => {
+        try {
+            const rootPath = await getRootPath();
+            if (!rootPath)
+                return { success: false, message: 'Root path not configured' };
+            return await (0, version_switch_1.releaseVersionReadonly)(rootPath, version);
+        }
+        catch (error) {
+            return { success: false, message: String(error) };
+        }
+    });
+    electron_1.ipcMain.handle('version:get-file-list', async (_, repoPath, version) => {
+        return await (0, version_switch_1.getVersionFileList)(repoPath, version);
+    });
+    electron_1.ipcMain.handle('version:get-file-content', async (_, repoPath, version, filePath) => {
+        return await (0, version_switch_1.getVersionFileContent)(repoPath, version, filePath);
     });
 } // end registerIPCHandlers
 // ==================== Git Bridge ====================

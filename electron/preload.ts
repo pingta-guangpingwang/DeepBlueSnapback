@@ -173,6 +173,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   compareGraphs: (versionA: string, versionB: string) =>
     ipcRenderer.invoke('graph:compare', versionA, versionB),
 
+  // Version switching
+  switchToVersionReadonly: (repoPath: string, version: string) =>
+    ipcRenderer.invoke('version:switch-readonly', repoPath, version),
+  releaseVersionReadonly: (version: string) =>
+    ipcRenderer.invoke('version:release-readonly', version),
+  getVersionFileList: (repoPath: string, version: string) =>
+    ipcRenderer.invoke('version:get-file-list', repoPath, version),
+  getVersionFileContent: (repoPath: string, version: string, filePath: string) =>
+    ipcRenderer.invoke('version:get-file-content', repoPath, version, filePath),
+
 })
 
 // 类型声明
@@ -260,6 +270,12 @@ export interface ElectronAPI {
   getGraph: (commitId: string) => Promise<{ success: boolean; graph?: Record<string, unknown>; message?: string }>
   listGraphVersions: () => Promise<{ success: boolean; versions: string[]; message?: string }>
   compareGraphs: (versionA: string, versionB: string) => Promise<{ success: boolean; diff?: Record<string, unknown>; message?: string }>
+
+  // Version switching
+  switchToVersionReadonly: (repoPath: string, version: string) => Promise<{ success: boolean; viewPath?: string; files?: Array<{ path: string; hash: string; size: number }>; message?: string }>
+  releaseVersionReadonly: (version: string) => Promise<{ success: boolean; message?: string }>
+  getVersionFileList: (repoPath: string, version: string) => Promise<{ success: boolean; files?: Array<{ path: string; hash: string; size: number }>; message?: string }>
+  getVersionFileContent: (repoPath: string, version: string, filePath: string) => Promise<{ success: boolean; content?: string; message?: string }>
 }
 
 export interface FileStatus {

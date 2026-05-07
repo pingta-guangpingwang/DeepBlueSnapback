@@ -11,6 +11,7 @@ import { parseCommandLine, registerContextMenu, unregisterContextMenu, isContext
 import { parseProject } from './ast-analyzer'
 import { buildGraph } from './graph-builder'
 import { saveGraph, loadGraph, listGraphs, compareGraphs } from './graph-store'
+import { switchToVersionReadonly, releaseVersionReadonly, getVersionFileList, getVersionFileContent } from './version-switch'
 
 let mainWindow: BrowserWindow | null = null
 const dbvsRepo = new DBHTRepository()
@@ -1625,6 +1626,35 @@ ipcMain.handle('graph:compare', async (_, versionA: string, versionB: string) =>
     return { success: false, message: String(error) }
   }
 })
+
+	// Read-only version switching
+	ipcMain.handle('version:switch-readonly', async (_, repoPath: string, version: string) => {
+	  try {
+	    const rootPath = await getRootPath()
+	    if (!rootPath) return { success: false, message: 'Root path not configured' }
+	    return await switchToVersionReadonly(rootPath, repoPath, version)
+	  } catch (error) {
+	    return { success: false, message: String(error) }
+	  }
+	})
+
+	ipcMain.handle('version:release-readonly', async (_, version: string) => {
+	  try {
+	    const rootPath = await getRootPath()
+	    if (!rootPath) return { success: false, message: 'Root path not configured' }
+	    return await releaseVersionReadonly(rootPath, version)
+	  } catch (error) {
+	    return { success: false, message: String(error) }
+	  }
+	})
+
+	ipcMain.handle('version:get-file-list', async (_, repoPath: string, version: string) => {
+	  return await getVersionFileList(repoPath, version)
+	})
+
+	ipcMain.handle('version:get-file-content', async (_, repoPath: string, version: string, filePath: string) => {
+	  return await getVersionFileContent(repoPath, version, filePath)
+	})
 
 } // end registerIPCHandlers
 

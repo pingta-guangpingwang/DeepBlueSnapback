@@ -575,6 +575,15 @@ const zh: Translations = {
     loadingDiff: '加载对比内容...',
   },
 
+  // Version switching
+  versionSwitch: {
+    readOnlyMode: '只读模式 — 正在查看版本',
+    returnToLive: '返回实时',
+    switching: '切换中...',
+    viewVersion: '查看',
+    viewing: '查看中',
+  },
+
   // File Explorer
   fileExplorer: {
     edit: '编辑',
