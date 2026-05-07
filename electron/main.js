@@ -69,17 +69,19 @@ function createWindow() {
         backgroundColor: '#ffffff',
         show: false
     });
-    // Set Content-Security-Policy to suppress Electron security warning
-    mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
-        callback({
-            responseHeaders: {
-                ...details.responseHeaders,
-                'Content-Security-Policy': [
-                    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* ws://localhost:*; img-src 'self' data:; font-src 'self' data:"
-                ]
-            }
+    // Only set CSP in production — Vite dev server needs inline scripts for HMR
+    if (process.env.NODE_ENV !== 'development') {
+        mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+            callback({
+                responseHeaders: {
+                    ...details.responseHeaders,
+                    'Content-Security-Policy': [
+                        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:"
+                    ]
+                }
+            });
         });
-    });
+    }
     // 开发环境加载开发服务器
     if (process.env.NODE_ENV === 'development') {
         mainWindow.loadURL('http://localhost:3005');
