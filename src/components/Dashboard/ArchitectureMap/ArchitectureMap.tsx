@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useAppState } from '../../../context/AppContext'
 import { useArchitectureGraph } from '../../../hooks/useArchitectureGraph'
+import { useGraphComparison } from '../../../hooks/useGraphComparison'
 import { MapCanvas } from './MapCanvas'
 import { MapControls } from './MapControls'
 import { MapLegend } from './MapLegend'
 import { MapTooltip } from './MapTooltip'
+import { GraphDiffView } from '../GraphDiffView'
 import type { GraphNode, GraphEdge } from '../../../types/graph'
 
 export function ArchitectureMap() {
@@ -14,12 +16,41 @@ export function ArchitectureMap() {
     loadGraph, setViewMode, setFilter, setSelectedNode, toggleNodeCollapse, resetView,
   } = useArchitectureGraph()
 
+  const { diff, loading: cmpLoading, error: cmpError, versionA, versionB, compareVersions, clearComparison } = useGraphComparison()
+  const [showCompare, setShowCompare] = useState(false)
+  const [availableVersions, setAvailableVersions] = useState<string[]>([])
+  const [cmpVersionA, setCmpVersionA] = useState('')
+  const [cmpVersionB, setCmpVersionB] = useState('')
+
   const [tooltip, setTooltip] = useState<{
     node: GraphNode | null; edge: GraphEdge | null; x: number; y: number; visible: boolean
   }>({ node: null, edge: null, x: 0, y: 0, visible: false })
 
   const collapsedNodesRef = useRef<Set<string>>(new Set())
   const didLoad = useRef(false)
+
+  // Load available graph versions
+  useEffect(() => {
+    const fetchVersions = async () => {
+      const result = await (window as any).electronAPI?.listGraphVersions()
+      if (result?.success && result.versions) {
+        setAvailableVersions(result.versions)
+      }
+    }
+    fetchVersions()
+  }, [graph])
+
+  const handleCompare = useCallback(async () => {
+    if (cmpVersionA && cmpVersionB) {
+      setShowCompare(true)
+      await compareVersions(cmpVersionA, cmpVersionB)
+    }
+  }, [cmpVersionA, cmpVersionB, compareVersions])
+
+  const handleCloseCompare = useCallback(() => {
+    setShowCompare(false)
+    clearComparison()
+  }, [clearComparison])
 
   // Load graph on mount using AppContext state
   useEffect(() => {
@@ -74,6 +105,32 @@ export function ArchitectureMap() {
         loading={loading}
       />
 
+      {/* Graph version comparison */}
+      {availableVersions.length > 1 && (
+        <div className="map-compare-bar">
+          <span className="map-compare-label">Compare:</span>
+          <select value={cmpVersionA} onChange={e => setCmpVersionA(e.target.value)}>
+            <option value="">Select version A...</option>
+            {availableVersions.map(v => (
+              <option key={v} value={v}>{v.slice(0, 14)}</option>
+            ))}
+          </select>
+          <span className="map-compare-vs">vs</span>
+          <select value={cmpVersionB} onChange={e => setCmpVersionB(e.target.value)}>
+            <option value="">Select version B...</option>
+            {availableVersions.map(v => (
+              <option key={v} value={v}>{v.slice(0, 14)}</option>
+            ))}
+          </select>
+          <button
+            onClick={handleCompare}
+            disabled={!cmpVersionA || !cmpVersionB || cmpLoading}
+          >
+            Compare
+          </button>
+        </div>
+      )}
+
       <div className="map-main-area">
         <MapCanvas
           rootNode={graph?.rootNode ?? null}
@@ -98,8 +155,18 @@ export function ArchitectureMap() {
         visible={tooltip.visible}
       />
 
+      {/* Graph diff comparison panel */}
+      <GraphDiffView
+        diff={diff}
+        loading={cmpLoading}
+        error={cmpError}
+        versionA={versionA}
+        versionB={versionB}
+        onClose={handleCloseCompare}
+      />
+
       {/* Selected node detail panel */}
-      {selectedNode && graph && (
+      {selectedNode && graph && !showCompare && (
         <div className="map-detail-panel">
           <NodeDetailPanel
             nodeId={selectedNode}

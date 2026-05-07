@@ -1873,6 +1873,275 @@ pre {
   margin-top: 4px;
 }
 
+/* ==================== Graph Diff View ==================== */
+
+.graph-diff-panel {
+  background: white;
+  border-top: 2px solid #8b5cf6;
+  max-height: 280px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.graph-diff-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.graph-diff-header h4 {
+  margin: 0;
+  font-size: 13px;
+  color: #1f2937;
+}
+
+.graph-diff-versions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.graph-diff-versions code {
+  font-family: Consolas, monospace;
+  font-size: 11px;
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.graph-diff-arrow {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.graph-diff-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.graph-diff-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.graph-diff-tab {
+  padding: 3px 10px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.graph-diff-tab.active {
+  background: #8b5cf6;
+  color: white;
+  border-color: #8b5cf6;
+}
+
+.graph-diff-close {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.graph-diff-close:hover {
+  color: #374151;
+}
+
+.graph-diff-body {
+  padding: 12px 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.graph-diff-loading,
+.graph-diff-error {
+  text-align: center;
+  color: #6b7280;
+  font-size: 13px;
+  padding: 20px;
+}
+
+.graph-diff-error {
+  color: #ef4444;
+}
+
+.graph-diff-summary {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.graph-diff-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: 8px;
+  min-width: 100px;
+}
+
+.graph-diff-stat.added {
+  background: #dcfce7;
+}
+
+.graph-diff-stat.removed {
+  background: #fee2e2;
+}
+
+.graph-diff-stat.modified {
+  background: #fef3c7;
+}
+
+.graph-diff-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.graph-diff-stat.added .graph-diff-stat-value { color: #16a34a; }
+.graph-diff-stat.removed .graph-diff-stat-value { color: #dc2626; }
+.graph-diff-stat.modified .graph-diff-stat-value { color: #d97706; }
+
+.graph-diff-stat-label {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.graph-diff-section {
+  margin-bottom: 12px;
+}
+
+.graph-diff-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.graph-diff-section-title.added { color: #16a34a; }
+.graph-diff-section-title.removed { color: #dc2626; }
+.graph-diff-section-title.modified { color: #d97706; }
+
+.graph-diff-node-list,
+.graph-diff-edge-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.graph-diff-node-item,
+.graph-diff-edge-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.graph-diff-node-item.added { background: #dcfce7; color: #166534; }
+.graph-diff-node-item.removed { background: #fee2e2; color: #991b1b; }
+.graph-diff-node-item.modified { background: #fef3c7; color: #92400e; }
+.graph-diff-edge-item.edge-pipeline { background: #eff6ff; }
+.graph-diff-edge-item.edge-hierarchy { background: #f5f3ff; }
+.graph-diff-edge-item.edge-flow { background: #ecfdf5; }
+.graph-diff-edge-item.edge-circular { background: #fef2f2; }
+.graph-diff-edge-item.broken { opacity: 0.5; text-decoration: line-through; }
+
+.graph-diff-node-type,
+.graph-diff-edge-type {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #e5e7eb;
+  color: #6b7280;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.graph-diff-node-label {
+  font-weight: 500;
+}
+
+.graph-diff-node-path {
+  color: #9ca3af;
+  font-family: Consolas, monospace;
+  font-size: 10px;
+}
+
+.graph-diff-node-changes {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: #92400e;
+}
+
+.graph-diff-edge-item code {
+  font-size: 10px;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+.graph-diff-edge-label {
+  color: #9ca3af;
+  font-size: 10px;
+}
+
+.graph-diff-empty {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
+  padding: 20px;
+}
+
+/* Map Compare Bar */
+.map-compare-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.map-compare-label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.map-compare-vs {
+  color: #9ca3af;
+  font-size: 11px;
+}
+
+.map-compare-bar select {
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 11px;
+  background: white;
+  max-width: 180px;
+}
+
+.map-compare-bar button {
+  padding: 4px 12px;
+  font-size: 11px;
+}
+
 /* ==================== Version Switch Banner ==================== */
 
 .version-switch-banner {
