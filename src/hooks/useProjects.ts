@@ -155,8 +155,8 @@ export function useProjects() {
   }, [state.rootRepositoryPath, dispatch, loadProjects])
 
   const openProject = useCallback(async (projectPath: string) => {
-    const project = state.projects.find(p => p.path === projectPath)
-    if (!project) return
+    const project = state.projects.find(p => p.path === projectPath || p.repoPath === projectPath)
+    if (!project || !project.path) return
 
     dispatch({ type: 'RESET_PROJECT_STATE' })
     dispatch({ type: 'SET_CURRENT_PROJECT', payload: project.path })
@@ -174,13 +174,16 @@ export function useProjects() {
   }, [state.projects, dispatch])
 
   const removeProject = useCallback(async (projectPath: string) => {
-    const project = state.projects.find(p => p.path === projectPath)
+    const project = state.projects.find(p => p.path === projectPath || p.repoPath === projectPath)
     if (!project) return
+
+    // 对于未检出的项目，传 repoPath；否则传 path
+    const unregisterTarget = project.path || project.repoPath
 
     dispatch({ type: 'SET_IS_LOADING', payload: true })
     try {
       // 仅从项目列表移除，断开关联，不删文件不删仓库
-      const result = await window.electronAPI.unregisterProject(state.rootRepositoryPath, projectPath)
+      const result = await window.electronAPI.unregisterProject(state.rootRepositoryPath, unregisterTarget)
       if (result?.success) {
         await loadProjects()
         dispatch({ type: 'SET_MESSAGE', payload: `已从项目列表移除 "${project.name}"（文件和仓库不受影响）` })
