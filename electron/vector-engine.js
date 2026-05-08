@@ -211,7 +211,9 @@ function textToVector(text, df, totalDocs) {
 }
 // ==================== Storage ====================
 function getVectorDir(rootPath, projectName) {
-    return path.join(rootPath, 'vectors', projectName);
+    // projectName may be a full path (e.g. from currentProject state), extract basename
+    const name = path.basename(projectName);
+    return path.join(rootPath, 'vectors', name);
 }
 function getIndexPath(rootPath, projectName) {
     return path.join(getVectorDir(rootPath, projectName), 'index.json');

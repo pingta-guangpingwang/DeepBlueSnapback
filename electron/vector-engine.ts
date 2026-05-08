@@ -231,7 +231,9 @@ function textToVector(text: string, df: Uint32Array, totalDocs: number): Float32
 // ==================== Storage ====================
 
 function getVectorDir(rootPath: string, projectName: string): string {
-  return path.join(rootPath, 'vectors', projectName)
+  // projectName may be a full path (e.g. from currentProject state), extract basename
+  const name = path.basename(projectName)
+  return path.join(rootPath, 'vectors', name)
 }
 
 function getIndexPath(rootPath: string, projectName: string): string {
