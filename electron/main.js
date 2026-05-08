@@ -161,28 +161,35 @@ async function getRegistryPath(rootPath) {
 }
 async function readProjectRegistry(rootPath) {
     const registryPath = await getRegistryPath(rootPath);
-    if (await fs.pathExists(registryPath)) {
-        const raw = await fs.readJson(registryPath);
-        // 兼容旧格式 { name, path } → 新格式 { name, repoPath, workingCopies }
-        return raw.map((entry) => {
-            if (entry.repoPath)
-                return entry;
-            return {
-                name: entry.name,
-                repoPath: entry.path,
-                workingCopies: [{ path: entry.path }],
-                created: entry.created
-            };
-        });
-    }
-    // 首次：扫描 repositories/ 目录
     const reposDir = path.join(rootPath, 'repositories');
-    const entries = [];
+    let entries = [];
+    // 1. 从注册表文件读取已有条目
+    if (await fs.pathExists(registryPath)) {
+        try {
+            const raw = await fs.readJson(registryPath);
+            entries = raw.map((entry) => {
+                if (entry.repoPath)
+                    return entry;
+                return {
+                    name: entry.name,
+                    repoPath: entry.path,
+                    workingCopies: [{ path: entry.path }],
+                    created: entry.created
+                };
+            });
+        }
+        catch { /* ignore corrupt file */ }
+    }
+    // 2. 扫描 repositories/ 目录，补齐注册表中缺失的仓库（外部 AI 初始化）
     if (await fs.pathExists(reposDir)) {
         try {
             const dirs = await fs.readdir(reposDir);
             for (const dir of dirs) {
                 const repoPath = path.join(reposDir, dir);
+                const normalizedRepo = path.resolve(repoPath);
+                const existing = entries.find(e => path.resolve(e.repoPath) === normalizedRepo);
+                if (existing)
+                    continue;
                 const stat = await fs.stat(repoPath).catch(() => null);
                 if (stat?.isDirectory() && await fs.pathExists(path.join(repoPath, 'config.json'))) {
                     entries.push({
@@ -194,17 +201,18 @@ async function readProjectRegistry(rootPath) {
         }
         catch { /* ignore */ }
     }
-    // 也扫描 projects/ 目录（旧格式的项目）
+    // 3. 扫描 projects/ 目录（旧格式项目），迁移到新仓库结构
     const projectsDir = path.join(rootPath, 'projects');
     if (await fs.pathExists(projectsDir)) {
         try {
             const dirs = await fs.readdir(projectsDir);
             for (const dir of dirs) {
                 const projPath = path.join(projectsDir, dir);
+                const normalizedProj = path.resolve(projPath);
                 const stat = await fs.stat(projPath).catch(() => null);
                 if (!stat?.isDirectory())
                     continue;
-                if (entries.find(e => e.name === dir))
+                if (entries.find(e => e.workingCopies.some(wc => path.resolve(wc.path) === normalizedProj)))
                     continue;
                 const oldDbvs = path.join(projPath, '.dbvs');
                 if (await fs.pathExists(oldDbvs)) {
@@ -222,6 +230,7 @@ async function readProjectRegistry(rootPath) {
         }
         catch { /* ignore */ }
     }
+    // 4. 持久化（补齐后）
     if (entries.length > 0) {
         await fs.ensureDir(path.dirname(registryPath));
         await fs.writeJson(registryPath, entries, { spaces: 2 });

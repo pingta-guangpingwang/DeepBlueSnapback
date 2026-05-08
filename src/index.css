@@ -21,6 +21,9 @@ input {
 /* 可拖拽标题栏 */
 .draggable-header {
   -webkit-app-region: drag;
+  position: sticky;
+  top: 0;
+  z-index: 200;
 }
 
 .draggable-header button,
