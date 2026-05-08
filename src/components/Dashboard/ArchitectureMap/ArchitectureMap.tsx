@@ -542,21 +542,22 @@ function FileViewerPanel({ node, content, loading, error, graph, onClose }: {
           <button className="file-viewer-close" onClick={onClose}>✕</button>
         </div>
 
-        {/* Code panel */}
-        <div className="file-viewer-code-panel">
-          {loading ? (
-            <div className="file-viewer-loading">{t.graph.loading}</div>
-          ) : error ? (
-            <div className="file-viewer-error">{error}</div>
-          ) : (
-            <pre className="file-viewer-code">
-              <code>{content}</code>
-            </pre>
-          )}
-        </div>
+        {/* Main: code + details side by side */}
+        <div className="file-viewer-main">
+          <div className="file-viewer-code-panel">
+            {loading ? (
+              <div className="file-viewer-loading">{t.graph.loading}</div>
+            ) : error ? (
+              <div className="file-viewer-error">{error}</div>
+            ) : (
+              <pre className="file-viewer-code">
+                <code>{content}</code>
+              </pre>
+            )}
+          </div>
 
-        {/* Details side panel */}
-        <div className="file-viewer-details">
+          {/* Details side panel */}
+          <div className="file-viewer-details">
             <div className="fv-detail-section">
               <h4 className="fv-detail-title">{t.graph.nodeType}</h4>
               <span className="fv-detail-value fv-type-badge">{node.type}</span>
@@ -653,6 +654,7 @@ function FileViewerPanel({ node, content, loading, error, graph, onClose }: {
             )}
           </div>
       </div>
+    </div>
     </div>
   )
 }

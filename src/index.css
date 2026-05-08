@@ -3818,9 +3818,8 @@ pre {
   width: 96vw;
   max-width: 1400px;
   height: 96vh;
-  display: grid;
-  grid-template-rows: auto 1fr;
-  grid-template-columns: 1fr auto;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
   animation: modal-in 0.2s ease-out;
   overflow: hidden;
@@ -3832,13 +3831,13 @@ pre {
 }
 
 .file-viewer-header {
-  grid-column: 1 / -1;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 12px 18px;
   border-bottom: 1px solid #334155;
   background: #1e293b;
+  flex-shrink: 0;
 }
 
 .file-viewer-title {
@@ -3886,15 +3885,20 @@ pre {
   color: #ef4444;
 }
 
+/* Main area — code + details side by side */
+.file-viewer-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
 /* Code panel (left, main area) */
 .file-viewer-code-panel {
-  grid-row: 2;
-  grid-column: 1;
-  min-height: 0;
-  overflow: auto;
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
   background: #111827;
-  display: flex;
-  flex-direction: column;
 }
 
 .file-viewer-loading,
@@ -3902,7 +3906,7 @@ pre {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 1;
+  height: 100%;
   color: #cbd5e1;
   font-size: 13px;
 }
@@ -3912,7 +3916,6 @@ pre {
 }
 
 .file-viewer-code {
-  flex: 1;
   margin: 0;
   padding: 16px 20px;
   font-family: 'Cascadia Code', Consolas, 'Courier New', monospace;
@@ -3925,7 +3928,7 @@ pre {
   tab-size: 2;
   background: #111827;
   box-sizing: border-box;
-  width: 100%;
+  min-height: 100%;
 }
 
 .file-viewer-code code {
@@ -3937,10 +3940,10 @@ pre {
 
 /* Details side panel (right) */
 .file-viewer-details {
-  grid-row: 2;
-  grid-column: 2;
   width: clamp(220px, 25%, 360px);
+  flex-shrink: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 14px 16px;
   background: #1e293b;
   border-left: 1px solid #334155;
