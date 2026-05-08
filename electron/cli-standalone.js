@@ -52,6 +52,7 @@ const dbvs_repository_1 = require("./dbvs-repository");
 const graph_store_1 = require("./graph-store");
 const health_scorer_1 = require("./health-scorer");
 const impact_analyzer_1 = require("./impact-analyzer");
+const commit_msg_generator_1 = require("./commit-msg-generator");
 const repo = new dbvs_repository_1.DBHTRepository();
 const program = new commander_1.Command();
 program
@@ -396,11 +397,11 @@ program.command('status [projectPath]')
     }
 });
 program.command('commit <projectPath>')
-    .description('提交变更')
-    .requiredOption('-m, --message <msg>', '提交信息')
+    .description('提交变更（--ai 自动生成中文提交信息）')
+    .option('-m, --message <msg>', '提交信息（留空则 --ai 自动生成）')
     .option('-f, --files <files>', '指定文件（逗号分隔），不指定则提交所有变更')
     .option('--dry-run', '仅显示将要提交的文件，不实际提交')
-    .option('--ai <tool>', 'AI 工具标识（claude-code / cursor / copilot / manual）', 'manual')
+    .option('--ai <tool>', 'AI 工具标识（claude-code / cursor / copilot / manual）')
     .option('--session <id>', 'AI 会话 ID，用于追溯同一次会话的所有提交')
     .option('--summary <text>', '本次变更的自然语言摘要')
     .action(async (projectPath, opts) => {
@@ -419,8 +420,28 @@ program.command('commit <projectPath>')
             out({ success: false, message: '没有需要提交的文件' }, fmt);
             return;
         }
+        // Auto-generate commit message via --ai
+        let commitMsg = opts.message;
+        if (!commitMsg && opts.ai) {
+            const diffSummary = await repo.getDiffSummary(repoPath, workingCopyPath);
+            if (diffSummary.success && diffSummary.files) {
+                const generated = await (0, commit_msg_generator_1.generateAICommitMessage)(diffSummary.files, opts.ai);
+                commitMsg = generated.message;
+                if (fmt !== 'json') {
+                    console.log(`🤖 自动生成提交信息: ${commitMsg}`);
+                    console.log(`   来源: ${generated.source}  |  标签建议: ${generated.suggestedLabels.join(', ') || '无'}`);
+                }
+            }
+            else {
+                commitMsg = `更新 ${files.length} 个文件`;
+            }
+        }
+        if (!commitMsg) {
+            out({ success: false, message: '请提供提交信息 (-m) 或使用 --ai 自动生成' }, fmt);
+            return;
+        }
         if (opts.dryRun) {
-            out({ success: true, dryRun: true, message: `将提交 ${files.length} 个文件`, files }, fmt);
+            out({ success: true, dryRun: true, message: commitMsg, files }, fmt);
             return;
         }
         const options = {};
@@ -430,7 +451,7 @@ program.command('commit <projectPath>')
             options.sessionId = opts.session;
         if (opts.summary)
             options.summary = opts.summary;
-        out(await repo.commit(repoPath, workingCopyPath, opts.message, files, options), fmt);
+        out(await repo.commit(repoPath, workingCopyPath, commitMsg, files, options), fmt);
     }
     catch (error) {
         out({ success: false, message: String(error) }, fmt);
