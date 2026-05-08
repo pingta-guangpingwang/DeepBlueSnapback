@@ -110,6 +110,7 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     vectorImport: (projectName, data) => electron_1.ipcRenderer.invoke('vector:import', projectName, data),
     vectorIngestFiles: (projectName, filePaths, workingCopyPath, commitId) => electron_1.ipcRenderer.invoke('vector:ingest-files', projectName, filePaths, workingCopyPath, commitId),
     vectorOpenFilesDialog: () => electron_1.ipcRenderer.invoke('vector:open-files-dialog'),
+    vectorOpenFolderDialog: () => electron_1.ipcRenderer.invoke('vector:open-folder-dialog'),
     vectorGetSupportedExtensions: () => electron_1.ipcRenderer.invoke('vector:get-supported-extensions'),
     onVectorProgress: (callback) => {
         electron_1.ipcRenderer.on('vector:progress', (_, msg) => callback(msg));

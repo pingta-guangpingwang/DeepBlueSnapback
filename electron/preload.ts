@@ -152,6 +152,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('vector:ingest-files', projectName, filePaths, workingCopyPath, commitId),
   vectorOpenFilesDialog: () =>
     ipcRenderer.invoke('vector:open-files-dialog'),
+  vectorOpenFolderDialog: () =>
+    ipcRenderer.invoke('vector:open-folder-dialog'),
   vectorGetSupportedExtensions: () =>
     ipcRenderer.invoke('vector:get-supported-extensions'),
   onVectorProgress: (callback: (msg: string) => void) => {
@@ -349,6 +351,7 @@ export interface ElectronAPI {
   vectorIngestFiles: (projectName: string, filePaths: string[], workingCopyPath: string, commitId: string) =>
     Promise<{ success: boolean; result?: Record<string, unknown>; message?: string }>
   vectorOpenFilesDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>
+  vectorOpenFolderDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>
   vectorGetSupportedExtensions: () => Promise<{ extensions: Array<{ extension: string; description: string; category: string }> }>
   onVectorProgress: (callback: (msg: string) => void) => () => void
 

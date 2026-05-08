@@ -2,7 +2,7 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 
 const mammoth = require('mammoth')
-const pdfParse = require('pdf-parse')
+const PDFParser = require('pdf2json')
 
 export interface SupportedExtension {
   extension: string
@@ -53,20 +53,56 @@ export const SUPPORTED_INGEST_EXTENSIONS: SupportedExtension[] = [
 
 const BINARY_EXTENSIONS = new Set(['.pdf', '.docx'])
 
+const SUPPORTED_EXT_SET = new Set(SUPPORTED_INGEST_EXTENSIONS.map(e => e.extension))
+
+const SKIP_DIRS = new Set(['node_modules', '.git', '.dbvs', '__pycache__', 'dist', 'build',
+  '.next', '.nuxt', 'target', 'bin', 'obj', 'vendor', '.venv', 'venv', 'env', '.svn', '.hg'])
+
 export function isBinaryFormat(extension: string): boolean {
   return BINARY_EXTENSIONS.has(extension.toLowerCase())
 }
 
-async function parsePdfToText(filePath: string): Promise<{ success: boolean; text?: string; error?: string }> {
+export function findSupportedFiles(rootDir: string): string[] {
+  const results: string[] = []
   try {
-    const buffer = await fs.readFile(filePath)
-    const data = await pdfParse(buffer)
-    const text = (data?.text || '').trim()
-    if (!text) return { success: false, error: 'PDF contains no extractable text (scanned image?)' }
-    return { success: true, text }
-  } catch (err: any) {
-    return { success: false, error: `PDF parse error: ${err.message || String(err)}` }
-  }
+    const entries = fs.readdirSync(rootDir)
+    for (const entry of entries) {
+      if (SKIP_DIRS.has(entry)) continue
+      const fullPath = path.join(rootDir, entry)
+      try {
+        const stat = fs.statSync(fullPath)
+        if (stat.isDirectory()) {
+          results.push(...findSupportedFiles(fullPath))
+        } else if (stat.isFile() && stat.size < 5_000_000) {
+          const ext = path.extname(entry).toLowerCase()
+          if (SUPPORTED_EXT_SET.has(ext)) results.push(fullPath)
+        }
+      } catch { /* skip inaccessible */ }
+    }
+  } catch { /* skip inaccessible */ }
+  return results
+}
+
+function parsePdfToText(filePath: string): Promise<{ success: boolean; text?: string; error?: string }> {
+  return new Promise(resolve => {
+    const parser = new PDFParser()
+    parser.on('pdfParser_dataReady', () => {
+      try {
+        const text = (parser.getRawTextContent() || '').trim()
+        if (!text) {
+          resolve({ success: false, error: 'PDF contains no extractable text (scanned image?)' })
+        } else {
+          resolve({ success: true, text })
+        }
+      } catch (err: any) {
+        resolve({ success: false, error: `PDF text extract error: ${err.message || String(err)}` })
+      }
+    })
+    parser.on('pdfParser_dataError', (err: any) => {
+      resolve({ success: false, error: `PDF parse error: ${err?.parserError?.message || String(err)}` })
+    })
+    parser.loadPDF(filePath)
+  })
 }
 
 async function parseDocxToText(filePath: string): Promise<{ success: boolean; text?: string; error?: string }> {

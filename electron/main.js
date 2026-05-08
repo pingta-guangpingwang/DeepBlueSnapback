@@ -1975,12 +1975,15 @@ electron_1.ipcMain.handle('lan:status', async () => {
 });
 // ==================== Vector Database ====================
 electron_1.ipcMain.handle('vector:index', async (event, repoPath, workingCopyPath, commitId, projectName, filePaths) => {
+    const rootPath = await getRootPath();
+    if (!rootPath)
+        return { success: false, message: 'Root path not configured' };
     const send = (msg) => {
         if (!event.sender.isDestroyed()) {
             event.sender.send('vector:progress', msg);
         }
     };
-    return await (0, vector_engine_1.buildVectorIndex)(repoPath, workingCopyPath, commitId, projectName, filePaths, send);
+    return await (0, vector_engine_1.buildVectorIndex)(rootPath, workingCopyPath, commitId, projectName, filePaths, send);
 });
 electron_1.ipcMain.handle('vector:status', async (_, projectName) => {
     const rootPath = await getRootPath();
@@ -2066,6 +2069,21 @@ electron_1.ipcMain.handle('vector:open-files-dialog', async () => {
         ],
     });
     return { canceled: result.canceled, filePaths: result.filePaths };
+});
+electron_1.ipcMain.handle('vector:open-folder-dialog', async () => {
+    if (!mainWindow)
+        return { canceled: true, filePaths: [] };
+    const result = await electron_1.dialog.showOpenDialog(mainWindow, {
+        properties: ['openDirectory'],
+        title: 'Select folder to scan for supported files',
+    });
+    if (result.canceled || result.filePaths.length === 0)
+        return { canceled: true, filePaths: [] };
+    // Recursively find all supported files in the selected directory
+    const folderPath = result.filePaths[0];
+    const { findSupportedFiles } = await Promise.resolve().then(() => __importStar(require('./file-parser')));
+    const filePaths = findSupportedFiles(folderPath);
+    return { canceled: false, filePaths };
 });
 electron_1.ipcMain.handle('vector:get-supported-extensions', async () => {
     return (0, vector_engine_1.getSupportedExtensions)();

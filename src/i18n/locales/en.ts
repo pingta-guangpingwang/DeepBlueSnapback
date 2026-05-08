@@ -144,6 +144,7 @@ const en = {
     uploadZoneHint: 'Supports PDF, DOCX, TXT, MD, CSV, JSON, XML, HTML, CSS, YAML, and code files',
     uploadZoneActive: 'Drop files to add to knowledge base',
     addFiles: 'Add Files',
+    addFolder: 'Add Folder',
     addFilesDesc: 'Upload external documents and code files',
     importIndexDesc: 'Restore from JSON export',
     exportIndexDesc: 'Download index as JSON',

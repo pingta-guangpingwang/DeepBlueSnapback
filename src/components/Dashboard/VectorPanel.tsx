@@ -17,7 +17,7 @@ export default function VectorPanel() {
     status, indexedFiles, results, loading, error, progressLog,
     buildIndex, search, deleteIndex, loadStatus, loadFiles,
     removeFiles, exportIndex, importIndex, ingestFiles,
-    openFilesDialog, getSupportedExtensions, clearError,
+    openFilesDialog, openFolderDialog, getSupportedExtensions, clearError,
   } = useVectorDB()
 
   // Search
@@ -43,6 +43,7 @@ export default function VectorPanel() {
   const [currentCommitId, setCurrentCommitId] = useState<string | null>(null)
   const [actionMsg, setActionMsg] = useState<string | null>(null)
   const [activeSection, setActiveSection] = useState<'upload' | 'files' | 'search'>('upload')
+  const [importing, setImporting] = useState(false)
 
   const didLoad = useRef(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -138,8 +139,10 @@ export default function VectorPanel() {
     try {
       const text = await navigator.clipboard.readText()
       if (text.includes('"dbht-vector-export-v1"')) {
+        setImporting(true)
         const ok = await importIndex(state.currentProject, text)
-        if (ok) flash(vt('importSuccess'))
+        setImporting(false)
+        flash(ok ? vt('importSuccess') : vt('importFailed'))
         return
       }
     } catch { /* fall through */ }
@@ -149,11 +152,13 @@ export default function VectorPanel() {
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !state.currentProject) return
+    setImporting(true)
     try {
       const text = await file.text()
       const ok = await importIndex(state.currentProject, text)
-      if (ok) flash(vt('importSuccess'))
+      flash(ok ? vt('importSuccess') : vt('importFailed'))
     } catch { flash(vt('importFailed')) }
+    setImporting(false)
     e.target.value = ''
   }
 
@@ -161,7 +166,12 @@ export default function VectorPanel() {
 
   const handleOpenFileDialog = async () => {
     const files = await openFilesDialog()
-    if (files.length > 0) setUploadFilePaths(files)
+    if (files.length > 0) setUploadFilePaths(prev => [...prev, ...files])
+  }
+
+  const handleOpenFolderDialog = async () => {
+    const files = await openFolderDialog()
+    if (files.length > 0) setUploadFilePaths(prev => [...prev, ...files])
   }
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -189,8 +199,8 @@ export default function VectorPanel() {
     const result = await ingestFiles(state.currentProject, uploadFilePaths, state.projectPath || '', cid)
     if (result?.success) {
       setIngestResult(result)
-      const succ = result.result?.filesSucceeded || 0
-      const fail = result.result?.filesFailed || 0
+      const succ = result.filesSucceeded || 0
+      const fail = result.filesFailed || 0
       if (succ > 0 && fail === 0) flash(vt('ingestSuccess').replace('{count}', String(succ)))
       else if (succ > 0) flash(vt('ingestPartial').replace('{succeeded}', String(succ)).replace('{failed}', String(fail)))
       else flash(vt('ingestFailed'))
@@ -236,10 +246,13 @@ export default function VectorPanel() {
       <div className="vector-toolbar">
         <div className="vector-toolbar-group">
           <button className="vector-btn vector-btn-build" onClick={handleBuildIndex} disabled={loading}>
-            {loading && progressLog.length > 0 ? '...' : status ? vt('rebuildIndex') : vt('buildIndex')}
+            {loading && progressLog.length > 0 ? '⏳ ' + vt('building') : status ? vt('rebuildIndex') : vt('buildIndex')}
           </button>
           <button className="vector-btn-primary" onClick={handleOpenFileDialog} disabled={loading}>
             + {vt('addFiles')}
+          </button>
+          <button className="vector-btn-primary" onClick={handleOpenFolderDialog} disabled={loading} style={{ background: 'linear-gradient(135deg, #6c5ce7, #a29bfe)' }}>
+            📂 {vt('addFolder') || 'Add Folder'}
           </button>
         </div>
         <div className="vector-toolbar-divider" />
@@ -248,8 +261,8 @@ export default function VectorPanel() {
           <button className="vector-btn vector-btn-export" onClick={handleExport} disabled={!status}>
             {vt('exportIndex')}
           </button>
-          <button className="vector-btn vector-btn-import" onClick={handleImport}>
-            {vt('importIndex')}
+          <button className="vector-btn vector-btn-import" onClick={handleImport} disabled={importing}>
+            {importing ? vt('importing') || 'Importing...' : vt('importIndex')}
           </button>
         </div>
         {status && (

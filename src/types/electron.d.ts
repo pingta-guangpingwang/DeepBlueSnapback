@@ -145,6 +145,7 @@ export interface ElectronAPI {
   vectorIngestFiles: (projectName: string, filePaths: string[], workingCopyPath: string, commitId: string) =>
     Promise<IngestFilesResult>
   vectorOpenFilesDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>
+  vectorOpenFolderDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>
   vectorGetSupportedExtensions: () => Promise<{ extensions: SupportedExtension[] }>
 
   // Quality & health

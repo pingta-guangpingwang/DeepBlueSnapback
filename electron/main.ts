@@ -2068,12 +2068,14 @@ ipcMain.handle('lan:status', async () => {
 // ==================== Vector Database ====================
 
 ipcMain.handle('vector:index', async (event, repoPath: string, workingCopyPath: string, commitId: string, projectName: string, filePaths?: string[]) => {
+  const rootPath = await getRootPath()
+  if (!rootPath) return { success: false, message: 'Root path not configured' }
   const send = (msg: string) => {
     if (!event.sender.isDestroyed()) {
       event.sender.send('vector:progress', msg)
     }
   }
-  return await buildVectorIndex(repoPath, workingCopyPath, commitId, projectName, filePaths, send)
+  return await buildVectorIndex(rootPath, workingCopyPath, commitId, projectName, filePaths, send)
 })
 
 ipcMain.handle('vector:status', async (_, projectName: string) => {
@@ -2157,6 +2159,20 @@ ipcMain.handle('vector:open-files-dialog', async () => {
     ],
   })
   return { canceled: result.canceled, filePaths: result.filePaths }
+})
+
+ipcMain.handle('vector:open-folder-dialog', async () => {
+  if (!mainWindow) return { canceled: true, filePaths: [] }
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+    title: 'Select folder to scan for supported files',
+  })
+  if (result.canceled || result.filePaths.length === 0) return { canceled: true, filePaths: [] }
+  // Recursively find all supported files in the selected directory
+  const folderPath = result.filePaths[0]
+  const { findSupportedFiles } = await import('./file-parser')
+  const filePaths = findSupportedFiles(folderPath)
+  return { canceled: false, filePaths }
 })
 
 ipcMain.handle('vector:get-supported-extensions', async () => {

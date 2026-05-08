@@ -18,6 +18,7 @@ interface UseVectorDBReturn {
   importIndex: (projectName: string, data: string) => Promise<boolean>
   ingestFiles: (projectName: string, filePaths: string[], workingCopyPath: string, commitId: string) => Promise<IngestFilesResult | null>
   openFilesDialog: () => Promise<string[]>
+  openFolderDialog: () => Promise<string[]>
   getSupportedExtensions: () => Promise<SupportedExtension[]>
   clearResults: () => void
   clearError: () => void
@@ -222,6 +223,16 @@ export function useVectorDB(): UseVectorDBReturn {
     return []
   }, [])
 
+  const openFolderDialog = useCallback(async (): Promise<string[]> => {
+    try {
+      const result = await (window as any).electronAPI?.vectorOpenFolderDialog()
+      if (!result?.canceled && result?.filePaths) {
+        return result.filePaths
+      }
+    } catch { /* ignore */ }
+    return []
+  }, [])
+
   const getSupportedExtensions = useCallback(async (): Promise<SupportedExtension[]> => {
     try {
       const result = await (window as any).electronAPI?.vectorGetSupportedExtensions()
@@ -236,7 +247,7 @@ export function useVectorDB(): UseVectorDBReturn {
   return {
     status, indexedFiles, results, loading, error, progressLog,
     loadStatus, loadFiles, buildIndex, search, deleteIndex, removeFiles, exportIndex, importIndex,
-    ingestFiles, openFilesDialog, getSupportedExtensions,
+    ingestFiles, openFilesDialog, openFolderDialog, getSupportedExtensions,
     clearResults, clearError,
   }
 }
