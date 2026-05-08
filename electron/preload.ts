@@ -243,6 +243,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   externalApiSaveConfig: (config: { enabled: boolean; port: number; token: string }) =>
     ipcRenderer.invoke('external-api:save-config', config),
 
+  // OpenClaw Agent Tools
+  getToolsManifest: () => ipcRenderer.invoke('tools:get-manifest'),
+  invokeTool: (toolName: string, params: Record<string, unknown>) =>
+    ipcRenderer.invoke('tools:invoke', toolName, params),
+
 })
 
 // 类型声明
@@ -375,6 +380,10 @@ export interface ElectronAPI {
   externalApiStatus: () => Promise<{ running: boolean; port: number }>
   externalApiGetConfig: () => Promise<{ enabled: boolean; port: number; token: string }>
   externalApiSaveConfig: (config: { enabled: boolean; port: number; token: string }) => Promise<{ success: boolean; message: string }>
+
+  // OpenClaw Agent Tools
+  getToolsManifest: () => Promise<{ version: string; tools: Array<{ name: string; description: string; parameters: Record<string, unknown> }> }>
+  invokeTool: (toolName: string, params: Record<string, unknown>) => Promise<{ success: boolean; [key: string]: unknown }>
 }
 
 export interface FileStatus {

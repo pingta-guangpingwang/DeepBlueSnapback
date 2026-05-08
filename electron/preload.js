@@ -166,4 +166,7 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     externalApiStatus: () => electron_1.ipcRenderer.invoke('external-api:status'),
     externalApiGetConfig: () => electron_1.ipcRenderer.invoke('external-api:get-config'),
     externalApiSaveConfig: (config) => electron_1.ipcRenderer.invoke('external-api:save-config', config),
+    // OpenClaw Agent Tools
+    getToolsManifest: () => electron_1.ipcRenderer.invoke('tools:get-manifest'),
+    invokeTool: (toolName, params) => electron_1.ipcRenderer.invoke('tools:invoke', toolName, params),
 });

@@ -495,6 +495,18 @@ export interface ElectronAPI {
         success: boolean;
         message: string;
     }>;
+    getToolsManifest: () => Promise<{
+        version: string;
+        tools: Array<{
+            name: string;
+            description: string;
+            parameters: Record<string, unknown>;
+        }>;
+    }>;
+    invokeTool: (toolName: string, params: Record<string, unknown>) => Promise<{
+        success: boolean;
+        [key: string]: unknown;
+    }>;
 }
 export interface FileStatus {
     path: string;

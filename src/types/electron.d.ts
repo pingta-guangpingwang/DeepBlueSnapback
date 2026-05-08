@@ -161,6 +161,10 @@ export interface ElectronAPI {
   externalApiGetConfig: () => Promise<{ enabled: boolean; port: number; token: string }>
   externalApiSaveConfig: (config: { enabled: boolean; port: number; token: string }) => Promise<{ success: boolean; message: string }>
 
+  // OpenClaw Agent Tools
+  getToolsManifest: () => Promise<{ version: string; tools: Array<{ name: string; description: string; parameters: Record<string, unknown> }> }>
+  invokeTool: (toolName: string, params: Record<string, unknown>) => Promise<{ success: boolean; [key: string]: unknown }>
+
 }
 
 declare global {

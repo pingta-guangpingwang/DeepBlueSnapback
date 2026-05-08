@@ -16,6 +16,8 @@ import { switchToVersionReadonly, releaseVersionReadonly, getVersionFileList, ge
 import { generateHealthReport } from './health-scorer'
 import { analyzeImpact } from './impact-analyzer'
 import { buildVectorIndex, getVectorStatus, deleteVectorIndex, searchVectors, searchBatchVectors, enhanceRagContext, getIndexedFiles, getFileChunks, removeFilesFromIndex, exportVectorIndex, importVectorIndex, ingestFiles, getSupportedExtensions } from './vector-engine'
+import { getToolsManifest, DBHT_OPENCLAW_TOOLS } from './openclaw-tools'
+import { analyzeCrossReferences } from './cross-ref-analyzer'
 
 let mainWindow: BrowserWindow | null = null
 const dbvsRepo = new DBHTRepository()
@@ -2220,6 +2222,127 @@ ipcMain.handle('vector:open-folder-dialog', async () => {
 
 ipcMain.handle('vector:get-supported-extensions', async () => {
   return getSupportedExtensions()
+})
+
+// ==================== OpenClaw Agent Tools ====================
+
+ipcMain.handle('tools:get-manifest', async () => {
+  return getToolsManifest()
+})
+
+ipcMain.handle('tools:invoke', async (_, toolName: string, params: Record<string, unknown>) => {
+  const tool = DBHT_OPENCLAW_TOOLS.find(t => t.name === toolName)
+  if (!tool) return { success: false, message: `Unknown tool: ${toolName}` }
+
+  const rootPath = await getRootPath()
+  if (!rootPath) return { success: false, message: 'Root path not configured' }
+
+  // Helper: resolve projectPath → { repoPath, workingCopyPath }
+  const resolveProject = async (projectPath?: string) => {
+    if (!projectPath) return null
+    return await dbvsRepo.resolvePaths(projectPath)
+  }
+
+  try {
+    switch (toolName) {
+      case 'dbht_commit': {
+        const resolved = await resolveProject(params.projectPath as string)
+        if (!resolved) return { success: false, message: 'Cannot resolve project path' }
+        const status = await dbvsRepo.getStatus(resolved.repoPath, resolved.workingCopyPath)
+        const files = params.files
+          ? (params.files as string).split(',').map(f => f.trim())
+          : (status.status || []).filter((s: string) => !s.startsWith('?'))
+        if (files.length === 0) return { success: true, message: 'No files to commit' }
+        return await dbvsRepo.commit(
+          resolved.repoPath, resolved.workingCopyPath,
+          (params.message as string) || 'AI auto commit', files,
+          { sessionId: params.sessionId as string }
+        )
+      }
+      case 'dbht_history': {
+        const resolved = await resolveProject(params.projectPath as string)
+        if (!resolved) return { success: false, message: 'Cannot resolve project path' }
+        return await dbvsRepo.getHistoryStructured(resolved.repoPath)
+      }
+      case 'dbht_search': {
+        return await searchVectors(rootPath,
+          (params.projectName as string) || '',
+          {
+            text: params.query as string,
+            topK: (params.topK as number) || 10,
+            searchMode: (params.searchMode as 'hybrid' | 'vector' | 'bm25') || 'hybrid',
+          }
+        )
+      }
+      case 'dbht_cross_ref': {
+        const registry = await readProjectRegistry(rootPath)
+        const projectName = params.projectPath
+          ? path.basename(params.projectPath as string)
+          : ''
+        return await analyzeCrossReferences(rootPath, projectName, registry)
+      }
+      case 'dbht_rollback': {
+        const resolved = await resolveProject(params.projectPath as string)
+        if (!resolved) return { success: false, message: 'Cannot resolve project path' }
+        return await dbvsRepo.rollback(resolved.repoPath, resolved.workingCopyPath, params.version as string)
+      }
+      case 'dbht_diff': {
+        const resolved = await resolveProject(params.projectPath as string)
+        if (!resolved) return { success: false, message: 'Cannot resolve project path' }
+        if (params.impact) {
+          const history = await dbvsRepo.getHistoryStructured(resolved.repoPath)
+          if (!history.success || !history.commits?.length) {
+            return { success: false, message: 'No commits found for impact analysis' }
+          }
+          const graph = await loadGraph(rootPath, history.commits[0].id)
+          if (!graph) return { success: false, message: 'No graph found — run AST analysis first' }
+          const diffSummary = await dbvsRepo.getDiffSummary(resolved.repoPath, resolved.workingCopyPath)
+          if (!diffSummary.success || !diffSummary.files) {
+            return { success: false, message: diffSummary.message || 'Cannot get diff summary' }
+          }
+          return { success: true, report: analyzeImpact(graph, diffSummary.files) }
+        }
+        return await dbvsRepo.getDiff(resolved.repoPath, resolved.workingCopyPath, (params.file as string) || '')
+      }
+      case 'dbht_health': {
+        const projectPath = params.projectPath as string
+        let resolved: { repoPath: string; workingCopyPath: string } | null = null
+        if (projectPath) {
+          resolved = await resolveProject(projectPath)
+        } else {
+          // use rootPath to find first available project
+          const registry = await readProjectRegistry(rootPath)
+          const entry = registry[0]
+          if (!entry) return { success: false, message: 'No projects found' }
+          const wc = entry.workingCopies[0]
+          if (!wc) return { success: false, message: 'No working copy found' }
+          resolved = { repoPath: entry.repoPath, workingCopyPath: wc.path }
+        }
+        if (!resolved) return { success: false, message: 'Cannot resolve project path' }
+        const history = await dbvsRepo.getHistoryStructured(resolved.repoPath)
+        if (!history.success || !history.commits?.length) {
+          return { success: false, message: 'No commits found — commit something first' }
+        }
+        const graph = await loadGraph(rootPath, history.commits[0].id)
+        if (!graph) return { success: false, message: 'No graph found — run AST analysis first' }
+        return { success: true, report: generateHealthReport(graph) }
+      }
+      case 'dbht_status': {
+        const resolved = await resolveProject(params.projectPath as string)
+        if (!resolved) return { success: false, message: 'Cannot resolve project path' }
+        return await dbvsRepo.getStatus(resolved.repoPath, resolved.workingCopyPath)
+      }
+      case 'dbht_file_tree': {
+        const resolved = await resolveProject(params.projectPath as string)
+        if (!resolved) return { success: false, message: 'Cannot resolve project path' }
+        return await dbvsRepo.getFileTree(resolved.workingCopyPath)
+      }
+      default:
+        return { success: false, message: `Tool ${toolName} not implemented` }
+    }
+  } catch (e) {
+    return { success: false, message: `Tool error: ${String(e)}` }
+  }
 })
 
 // ==================== 项目列表辅助函数 ====================
