@@ -40,12 +40,15 @@ exports.searchVectors = searchVectors;
 exports.searchBatchVectors = searchBatchVectors;
 exports.getIndexedFiles = getIndexedFiles;
 exports.removeFilesFromIndex = removeFilesFromIndex;
+exports.ingestFiles = ingestFiles;
+exports.getSupportedExtensions = getSupportedExtensions;
 exports.exportVectorIndex = exportVectorIndex;
 exports.importVectorIndex = importVectorIndex;
 exports.enhanceRagContext = enhanceRagContext;
 const fs = __importStar(require("fs-extra"));
 const path = __importStar(require("path"));
 const crypto = __importStar(require("crypto"));
+const file_parser_1 = require("./file-parser");
 // ==================== Text Chunking ====================
 const CHUNK_MAX_CHARS = 2000;
 const CHUNK_IDEAL_CHARS = 1200;
@@ -534,6 +537,122 @@ async function removeFilesFromIndex(rootPath, workingCopyPath, commitId, project
     catch (error) {
         return { success: false, message: String(error) };
     }
+}
+async function ingestFiles(rootPath, filePaths, projectName, commitId, onProgress) {
+    const dir = getVectorDir(rootPath, projectName);
+    await fs.ensureDir(dir);
+    const indexPath = getIndexPath(rootPath, projectName);
+    const embeddingsPath = getEmbeddingsPath(rootPath, projectName);
+    const fileResults = [];
+    const allNewChunks = [];
+    let filesSucceeded = 0;
+    let filesFailed = 0;
+    const supportedExts = new Set(file_parser_1.SUPPORTED_INGEST_EXTENSIONS.map(e => e.extension));
+    for (let i = 0; i < filePaths.length; i++) {
+        const filePath = filePaths[i];
+        const fileName = path.basename(filePath);
+        const ext = path.extname(filePath).toLowerCase();
+        if (!supportedExts.has(ext)) {
+            fileResults.push({ name: fileName, success: false, chunksAdded: 0, error: `Unsupported format: ${ext}` });
+            filesFailed++;
+            continue;
+        }
+        if (!fs.existsSync(filePath)) {
+            fileResults.push({ name: fileName, success: false, chunksAdded: 0, error: 'File not found' });
+            filesFailed++;
+            continue;
+        }
+        const stat = fs.statSync(filePath);
+        if (stat.size > 500000) {
+            fileResults.push({ name: fileName, success: false, chunksAdded: 0, error: 'File too large (>500KB)' });
+            filesFailed++;
+            continue;
+        }
+        onProgress?.(`[${i + 1}/${filePaths.length}] Parsing: ${fileName}`);
+        const parseResult = await (0, file_parser_1.parseFileToText)(filePath);
+        if (!parseResult.success || !parseResult.text) {
+            fileResults.push({ name: fileName, success: false, chunksAdded: 0, error: parseResult.error || 'Empty content' });
+            filesFailed++;
+            continue;
+        }
+        onProgress?.(`[${i + 1}/${filePaths.length}] Chunking: ${fileName} (${parseResult.text.length} chars)`);
+        // Use the file path as-is for tracking; normalize to forward slashes
+        const virtualPath = filePath.replace(/\\/g, '/');
+        const chunks = chunkFile(virtualPath, parseResult.text);
+        allNewChunks.push(...chunks);
+        fileResults.push({ name: fileName, success: true, chunksAdded: chunks.length });
+        filesSucceeded++;
+    }
+    if (allNewChunks.length === 0) {
+        return {
+            success: filesFailed === 0,
+            result: {
+                projectName, filesProcessed: filePaths.length,
+                filesSucceeded, filesFailed, totalChunksAdded: 0, fileResults,
+            },
+            message: filesFailed > 0 ? 'No files could be ingested' : 'No new chunks produced',
+        };
+    }
+    onProgress?.(`Merging ${allNewChunks.length} new chunks with existing index...`);
+    // Load existing index if any
+    let existingChunks = [];
+    if (fs.existsSync(indexPath)) {
+        try {
+            const stored = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
+            existingChunks = stored.chunks || [];
+        }
+        catch { /* start fresh */ }
+    }
+    const allChunks = [...existingChunks, ...allNewChunks];
+    onProgress?.(`Rebuilding vocabulary for ${allChunks.length} total chunks...`);
+    const { df } = buildVocabulary(allChunks);
+    onProgress?.(`Vectorizing...`);
+    const total = allChunks.length;
+    const vectors = [];
+    for (let i = 0; i < total; i++) {
+        vectors.push(textToVector(allChunks[i].content, df, total));
+        if ((i + 1) % 200 === 0)
+            onProgress?.(`Vectorized ${i + 1}/${total} chunks`);
+    }
+    const totalTokens = allChunks.reduce((sum, c) => sum + c.tokenCount, 0);
+    const uniqueFiles = new Set(allChunks.map(c => c.filePath)).size;
+    const meta = {
+        schemaVersion: 1,
+        projectName,
+        commitId,
+        model: 'tfidf-v1',
+        dimensions: VECTOR_DIMS,
+        totalChunks: allChunks.length,
+        totalFiles: uniqueFiles,
+        totalTokens,
+        createdAt: existingChunks.length > 0
+            ? JSON.parse(fs.readFileSync(indexPath, 'utf-8')).meta.createdAt
+            : new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    };
+    const stored = { meta, chunks: allChunks };
+    fs.writeFileSync(indexPath, JSON.stringify(stored, null, 2));
+    const dimsBuf = Buffer.alloc(8);
+    dimsBuf.writeUInt32LE(VECTOR_DIMS, 0);
+    dimsBuf.writeUInt32LE(vectors.length, 4);
+    const vecsBuf = Buffer.concat([dimsBuf, ...vectors.map(v => Buffer.from(v.buffer))]);
+    fs.writeFileSync(embeddingsPath, vecsBuf);
+    onProgress?.(`Done: ${allChunks.length} chunks indexed (${uniqueFiles} files, ${totalTokens.toLocaleString()} tokens)`);
+    return {
+        success: true,
+        result: {
+            projectName,
+            filesProcessed: filePaths.length,
+            filesSucceeded,
+            filesFailed,
+            totalChunksAdded: allNewChunks.length,
+            fileResults,
+            updatedIndex: meta,
+        },
+    };
+}
+function getSupportedExtensions() {
+    return { extensions: file_parser_1.SUPPORTED_INGEST_EXTENSIONS };
 }
 async function exportVectorIndex(rootPath, projectName) {
     try {

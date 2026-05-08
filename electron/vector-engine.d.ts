@@ -1,3 +1,4 @@
+import { type SupportedExtension } from './file-parser';
 export interface VectorChunk {
     id: string;
     filePath: string;
@@ -77,6 +78,27 @@ export declare function removeFilesFromIndex(rootPath: string, workingCopyPath: 
     index?: VectorIndex;
     message?: string;
 }>;
+export declare function ingestFiles(rootPath: string, filePaths: string[], projectName: string, commitId: string, onProgress?: VectorProgressFn): Promise<{
+    success: boolean;
+    result?: {
+        projectName: string;
+        filesProcessed: number;
+        filesSucceeded: number;
+        filesFailed: number;
+        totalChunksAdded: number;
+        fileResults: Array<{
+            name: string;
+            success: boolean;
+            chunksAdded: number;
+            error?: string;
+        }>;
+        updatedIndex?: VectorIndex;
+    };
+    message?: string;
+}>;
+export declare function getSupportedExtensions(): {
+    extensions: SupportedExtension[];
+};
 export declare function exportVectorIndex(rootPath: string, projectName: string): Promise<{
     success: boolean;
     data?: string;

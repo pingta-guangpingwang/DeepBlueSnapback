@@ -1143,5 +1143,153 @@ vectorCommand.command('delete <projectName>')
         process.exit(1);
     }
 });
+
+// vector ingest <projectName> <files...>
+vectorCommand.command('ingest <projectName> <files...>')
+    .description('Ingest external files (PDF, DOCX, TXT, code, etc.) into vector index')
+    .action(async (projectName, files, opts) => {
+        const fmt = program.opts().format;
+        try {
+            const rootPath = getRootPath(program.opts());
+            const filePaths = files.map(f => path.resolve(f));
+            for (const fp of filePaths) {
+                if (!fs.pathExistsSync(fp)) {
+                    out({ success: false, message: `File not found: ${fp}` }, fmt);
+                    process.exit(1);
+                }
+            }
+            const { ingestFiles, getVectorStatus } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            const statusResult = await getVectorStatus(rootPath, projectName);
+            const commitId = (statusResult.success && statusResult.index) ? statusResult.index.commitId : 'unknown';
+            const result = await ingestFiles(rootPath, filePaths, projectName, commitId,
+                (msg) => { if (program.opts().format !== 'json') console.log(`  ${msg}`); });
+            out(result, fmt);
+        }
+        catch (error) {
+            out({ success: false, message: String(error) }, fmt);
+            process.exit(1);
+        }
+    });
+
+// vector files <projectName>
+vectorCommand.command('files <projectName>')
+    .description('List files in vector index')
+    .action(async (projectName, opts) => {
+        const fmt = program.opts().format;
+        try {
+            const rootPath = getRootPath(program.opts());
+            const { getIndexedFiles } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            const result = await getIndexedFiles(rootPath, projectName);
+            if (fmt === 'table' && result.success) {
+                console.log(`\nIndexed files (${result.files.length}):\n`);
+                for (const f of result.files) {
+                    console.log(`  ${f.filePath}  [${f.chunkCount} chunks, ${f.totalChars.toLocaleString()} chars, ${f.language}]`);
+                }
+                console.log('');
+            }
+            else { out(result, fmt); }
+        }
+        catch (error) {
+            out({ success: false, message: String(error) }, fmt);
+            process.exit(1);
+        }
+    });
+
+// vector export <projectName> [-o file]
+vectorCommand.command('export <projectName>')
+    .description('Export vector index as JSON')
+    .option('-o, --output <file>', 'Output file path (prints to stdout if not set)')
+    .action(async (projectName, opts) => {
+        const fmt = program.opts().format;
+        try {
+            const rootPath = getRootPath(program.opts());
+            const { exportVectorIndex } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            const result = await exportVectorIndex(rootPath, projectName);
+            if (result.success && result.data) {
+                if (opts.output) {
+                    fs.writeFileSync(path.resolve(opts.output), result.data);
+                    out({ success: true, message: `Exported to ${opts.output}` }, fmt);
+                }
+                else if (fmt === 'json') {
+                    out(result, fmt);
+                }
+                else {
+                    console.log(result.data);
+                }
+            }
+            else { out(result, fmt); }
+        }
+        catch (error) {
+            out({ success: false, message: String(error) }, fmt);
+            process.exit(1);
+        }
+    });
+
+// vector import <projectName> <file>
+vectorCommand.command('import <projectName> <file>')
+    .description('Import vector index from JSON export file')
+    .action(async (projectName, file, opts) => {
+        const fmt = program.opts().format;
+        try {
+            const rootPath = getRootPath(program.opts());
+            const filePath = path.resolve(file);
+            if (!fs.pathExistsSync(filePath)) {
+                out({ success: false, message: `File not found: ${filePath}` }, fmt);
+                process.exit(1);
+            }
+            const data = fs.readFileSync(filePath, 'utf-8');
+            const { importVectorIndex } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            const result = await importVectorIndex(rootPath, projectName, data);
+            out(result, fmt);
+        }
+        catch (error) {
+            out({ success: false, message: String(error) }, fmt);
+            process.exit(1);
+        }
+    });
+
+// vector remove <projectName> <files...>
+vectorCommand.command('remove <projectName> <files...>')
+    .description('Remove files from vector index')
+    .action(async (projectName, files, opts) => {
+        const fmt = program.opts().format;
+        try {
+            const rootPath = getRootPath(program.opts());
+            const { removeFilesFromIndex } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            const result = await removeFilesFromIndex(rootPath, '', '', projectName, files,
+                (msg) => { if (program.opts().format !== 'json') console.log(`  ${msg}`); });
+            out(result, fmt);
+        }
+        catch (error) {
+            out({ success: false, message: String(error) }, fmt);
+            process.exit(1);
+        }
+    });
+
+// vector supported
+vectorCommand.command('supported')
+    .description('List supported file formats for ingestion')
+    .action(async (opts) => {
+        const fmt = program.opts().format;
+        const { getSupportedExtensions } = require('./vector-engine');
+        const result = getSupportedExtensions();
+        if (fmt === 'table') {
+            const cats = { document: 'Documents', code: 'Code', data: 'Data', web: 'Web' };
+            const grouped = {};
+            for (const e of result.extensions) {
+                if (!grouped[e.category]) grouped[e.category] = [];
+                grouped[e.category].push(e);
+            }
+            for (const [cat, exts] of Object.entries(grouped)) {
+                console.log(`\n${cats[cat] || cat}:`);
+                for (const e of exts) {
+                    console.log(`  ${e.extension.padEnd(8)} ${e.description}`);
+                }
+            }
+            console.log('');
+        }
+        else { out({ extensions: result.extensions }, fmt); }
+    });
+
 // ==================== 解析 ====================
 program.parse(process.argv);

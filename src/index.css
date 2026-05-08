@@ -4511,3 +4511,348 @@ pre {
   gap: 10px;
 }
 
+/* =============================================
+   Vector Toolbar
+   ============================================= */
+
+.vector-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(75, 130, 200, 0.2);
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+
+.vector-toolbar-divider {
+  width: 1px;
+  height: 26px;
+  background: rgba(75, 130, 200, 0.15);
+  margin: 0 2px;
+}
+
+.vector-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vector-toolbar-label {
+  font-size: 11px;
+  color: #5b7a9e;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 2px;
+}
+
+.vector-btn-primary {
+  padding: 7px 16px;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.vector-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.vector-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* =============================================
+   Vector Drop Zone
+   ============================================= */
+
+.vector-dropzone {
+  border: 2px dashed rgba(75, 130, 200, 0.3);
+  border-radius: 12px;
+  padding: 36px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(15, 23, 42, 0.35);
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  user-select: none;
+}
+
+.vector-dropzone:hover {
+  border-color: rgba(75, 130, 200, 0.5);
+  background: rgba(25, 40, 70, 0.4);
+}
+
+.vector-dropzone.drag-active {
+  border-color: #4a90e2;
+  border-style: solid;
+  background: rgba(30, 58, 100, 0.35);
+  box-shadow: inset 0 0 40px rgba(74, 144, 226, 0.08);
+}
+
+.vector-dropzone-icon {
+  font-size: 38px;
+  opacity: 0.7;
+  margin-bottom: 2px;
+}
+
+.vector-dropzone-text {
+  font-size: 15px;
+  color: #b8cfe0;
+  font-weight: 500;
+}
+
+.vector-dropzone-hint {
+  font-size: 12px;
+  color: #5b7a9e;
+  max-width: 450px;
+  line-height: 1.5;
+}
+
+/* =============================================
+   Vector File Chips
+   ============================================= */
+
+.vector-file-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.vector-file-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(30, 50, 80, 0.5);
+  border: 1px solid rgba(75, 130, 200, 0.2);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+
+.vector-file-chip:hover {
+  background: rgba(40, 65, 100, 0.6);
+}
+
+.vector-file-chip-name {
+  color: #b8cfe0;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vector-file-chip-ext {
+  color: #4a90e2;
+  background: rgba(74, 144, 226, 0.12);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.vector-file-chip-size {
+  color: #5b7a9e;
+  font-size: 11px;
+}
+
+.vector-file-chip-status {
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.vector-file-chip-remove {
+  background: none;
+  border: none;
+  color: #5b7a9e;
+  cursor: pointer;
+  font-size: 15px;
+  padding: 0 2px;
+  line-height: 1;
+  transition: color 0.1s;
+}
+
+.vector-file-chip-remove:hover {
+  color: #ff7a7a;
+}
+
+.vector-file-chip.status-done {
+  border-color: rgba(52, 211, 153, 0.25);
+}
+
+.vector-file-chip.status-error {
+  border-color: rgba(255, 100, 100, 0.3);
+}
+
+.vector-file-chip-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(75, 130, 200, 0.2);
+  border-top-color: #4a90e2;
+  border-radius: 50%;
+  animation: vec-chip-spin 0.6s linear infinite;
+}
+
+@keyframes vec-chip-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* =============================================
+   Vector Upload Progress
+   ============================================= */
+
+.vector-upload-progress {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(75, 130, 200, 0.12);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.vector-upload-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.vector-upload-progress-title {
+  font-size: 13px;
+  color: #b8cfe0;
+  font-weight: 500;
+}
+
+.vector-upload-progress-bar {
+  height: 4px;
+  background: rgba(75, 130, 200, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.vector-upload-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4a90e2, #34d399);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.vector-upload-progress-file {
+  font-size: 11px;
+  color: #5b7a9e;
+  font-family: 'Consolas', 'Courier New', monospace;
+}
+
+.vector-upload-progress-cancel {
+  background: rgba(255, 100, 100, 0.15);
+  border: 1px solid rgba(255, 100, 100, 0.25);
+  border-radius: 4px;
+  color: #ff7a7a;
+  font-size: 11px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+
+/* =============================================
+   Vector Supported Formats
+   ============================================= */
+
+.vector-formats-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 0 2px 0;
+}
+
+.vector-formats-label {
+  font-size: 11px;
+  color: #5b7a9e;
+  flex-shrink: 0;
+}
+
+.vector-format-badge {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.vector-format-badge.cat-document { background: rgba(52, 211, 153, 0.1); color: #34d399; }
+.vector-format-badge.cat-code     { background: rgba(74, 144, 226, 0.1); color: #4a90e2; }
+.vector-format-badge.cat-data     { background: rgba(251, 191, 36, 0.1); color: #fbbf24; }
+.vector-format-badge.cat-web      { background: rgba(167, 139, 250, 0.1); color: #a78bfa; }
+
+/* =============================================
+   Vector Tab Navigation
+   ============================================= */
+
+.vector-tabs {
+  display: flex;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.vector-tab {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #5b7a9e;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.vector-tab:hover {
+  color: #b8cfe0;
+}
+
+.vector-tab.active {
+  background: rgba(75, 130, 200, 0.2);
+  color: #a0d0ff;
+  font-weight: 500;
+}
+
+/* =============================================
+   Vector Filter
+   ============================================= */
+
+.vector-filter-input {
+  padding: 5px 10px;
+  border: 1px solid rgba(75, 130, 200, 0.2);
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.2);
+  color: #b8cfe0;
+  font-size: 12px;
+  outline: none;
+  width: 200px;
+}
+
+.vector-filter-input:focus {
+  border-color: rgba(74, 144, 226, 0.5);
+}
+
+.vector-filter-input::placeholder {
+  color: #4a6080;
+}
+

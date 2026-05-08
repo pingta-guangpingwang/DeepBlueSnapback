@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import type { VectorIndexInfo, VectorQuery, VectorSearchResult, IndexedFileInfo } from '../types/electron'
+import type { VectorIndexInfo, VectorQuery, VectorSearchResult, IndexedFileInfo, IngestFilesResult, SupportedExtension } from '../types/electron'
 
 interface UseVectorDBReturn {
   status: VectorIndexInfo | null
@@ -16,6 +16,9 @@ interface UseVectorDBReturn {
   removeFiles: (workingCopyPath: string, commitId: string, projectName: string, filePaths: string[]) => Promise<void>
   exportIndex: (projectName: string) => Promise<string | null>
   importIndex: (projectName: string, data: string) => Promise<boolean>
+  ingestFiles: (projectName: string, filePaths: string[], workingCopyPath: string, commitId: string) => Promise<IngestFilesResult | null>
+  openFilesDialog: () => Promise<string[]>
+  getSupportedExtensions: () => Promise<SupportedExtension[]>
   clearResults: () => void
   clearError: () => void
 }
@@ -179,11 +182,61 @@ export function useVectorDB(): UseVectorDBReturn {
     }
   }, [loadFiles])
 
+  const ingestFiles = useCallback(async (
+    projectName: string,
+    filePaths: string[],
+    workingCopyPath: string,
+    commitId: string,
+  ): Promise<IngestFilesResult | null> => {
+    setLoading(true)
+    setError(null)
+    setProgressLog([])
+    const unsub = (window as any).electronAPI?.onVectorProgress?.((msg: string) => {
+      setProgressLog(prev => [...prev, msg])
+    })
+    try {
+      const result = await (window as any).electronAPI?.vectorIngestFiles(projectName, filePaths, workingCopyPath, commitId)
+      if (result?.success) {
+        setStatus(result.result?.updatedIndex || null)
+        await loadFiles(projectName)
+        return result
+      }
+      setError(result?.message || 'Ingestion failed')
+      return null
+    } catch (err) {
+      setError(String(err))
+      return null
+    } finally {
+      unsub?.()
+      setLoading(false)
+    }
+  }, [loadFiles])
+
+  const openFilesDialog = useCallback(async (): Promise<string[]> => {
+    try {
+      const result = await (window as any).electronAPI?.vectorOpenFilesDialog()
+      if (!result?.canceled && result?.filePaths) {
+        return result.filePaths
+      }
+    } catch { /* ignore */ }
+    return []
+  }, [])
+
+  const getSupportedExtensions = useCallback(async (): Promise<SupportedExtension[]> => {
+    try {
+      const result = await (window as any).electronAPI?.vectorGetSupportedExtensions()
+      if (result?.extensions) return result.extensions
+    } catch { /* ignore */ }
+    return []
+  }, [])
+
   const clearResults = useCallback(() => setResults([]), [])
   const clearError = useCallback(() => setError(null), [])
 
   return {
     status, indexedFiles, results, loading, error, progressLog,
-    loadStatus, loadFiles, buildIndex, search, deleteIndex, removeFiles, exportIndex, importIndex, clearResults, clearError,
+    loadStatus, loadFiles, buildIndex, search, deleteIndex, removeFiles, exportIndex, importIndex,
+    ingestFiles, openFilesDialog, getSupportedExtensions,
+    clearResults, clearError,
   }
 }

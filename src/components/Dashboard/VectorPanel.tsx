@@ -1,8 +1,14 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useI18n } from '../../i18n'
 import { useAppState } from '../../context/AppContext'
 import { useVectorDB } from '../../hooks/useVectorDB'
-import type { VectorSearchResult } from '../../types/electron'
+import type { SupportedExtension, IngestFilesResult } from '../../types/electron'
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 export default function VectorPanel() {
   const { t } = useI18n()
@@ -10,17 +16,33 @@ export default function VectorPanel() {
   const {
     status, indexedFiles, results, loading, error, progressLog,
     buildIndex, search, deleteIndex, loadStatus, loadFiles,
-    removeFiles, exportIndex, importIndex, clearError,
+    removeFiles, exportIndex, importIndex, ingestFiles,
+    openFilesDialog, getSupportedExtensions, clearError,
   } = useVectorDB()
 
+  // Search
   const [query, setQuery] = useState('')
   const [topK, setTopK] = useState(10)
   const [minSim, setMinSim] = useState(0.3)
+
+  // File management
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set())
-  const [currentCommitId, setCurrentCommitId] = useState<string | null>(null)
+  const [fileFilter, setFileFilter] = useState('')
+
+  // Upload / ingestion
+  const [uploadFilePaths, setUploadFilePaths] = useState<string[]>([])
+  const [ingestResult, setIngestResult] = useState<IngestFilesResult | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [supportedExts, setSupportedExts] = useState<SupportedExtension[]>([])
+
+  // Modals
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
+
+  // UI state
+  const [currentCommitId, setCurrentCommitId] = useState<string | null>(null)
   const [actionMsg, setActionMsg] = useState<string | null>(null)
+  const [activeSection, setActiveSection] = useState<'upload' | 'files' | 'search'>('upload')
 
   const didLoad = useRef(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -28,27 +50,22 @@ export default function VectorPanel() {
   const vt = useCallback((key: string): string =>
     (t as any).vector?.[key] || key, [t])
 
-  // Load status + files + detect current commit
+  // Load everything on mount
   useEffect(() => {
     if (didLoad.current) return
     if (!state.currentProject) return
     didLoad.current = true
     loadStatus(state.currentProject)
     loadFiles(state.currentProject)
+    getSupportedExtensions().then(setSupportedExts)
 
-    // Get current HEAD commit for version mismatch detection
     if (state.repoPath) {
       ;(window as any).electronAPI?.getHistoryStructured(state.repoPath).then(
-        (r: any) => {
-          if (r?.success && r.commits?.length > 0) {
-            setCurrentCommitId(r.commits[0].id)
-          }
-        }
+        (r: any) => { if (r?.success && r.commits?.length > 0) setCurrentCommitId(r.commits[0].id) }
       ).catch(() => {})
     }
   }, [state.currentProject])
 
-  // Show action message briefly
   const flash = (msg: string) => {
     setActionMsg(msg)
     setTimeout(() => setActionMsg(null), 3000)
@@ -59,31 +76,27 @@ export default function VectorPanel() {
     if (!state.repoPath) return 'unknown'
     try {
       const r = await (window as any).electronAPI?.getHistoryStructured(state.repoPath)
-      if (r?.success && r.commits?.length > 0) {
-        setCurrentCommitId(r.commits[0].id)
-        return r.commits[0].id
-      }
+      if (r?.success && r.commits?.length > 0) { setCurrentCommitId(r.commits[0].id); return r.commits[0].id }
     } catch { /* ignore */ }
     return 'unknown'
   }
 
+  // ---- Actions ----
+
   const handleBuildIndex = async () => {
     if (!state.repoPath || !state.projectPath || !state.currentProject) return
-    const commitId = await getCurrentCommitId()
-    const ok = await buildIndex(state.repoPath, state.projectPath, commitId, state.currentProject)
-    if (ok) {
-      flash(vt('buildIndex') + ' ✓')
-      setCurrentCommitId(commitId)
-    }
+    const cid = await getCurrentCommitId()
+    const ok = await buildIndex(state.repoPath, state.projectPath, cid, state.currentProject)
+    if (ok) { flash(vt('buildIndex') + ' ✓'); setCurrentCommitId(cid) }
   }
 
   const handleSearch = async () => {
     if (!query.trim() || !state.currentProject) return
-    await search(state.currentProject, {
-      text: query.trim(),
-      topK,
-      minSimilarity: minSim,
-    })
+    await search(state.currentProject, { text: query.trim(), topK, minSimilarity: minSim })
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSearch()
   }
 
   const handleDelete = async () => {
@@ -91,12 +104,13 @@ export default function VectorPanel() {
     await deleteIndex(state.currentProject)
     setShowDeleteConfirm(false)
     setSelectedFiles(new Set())
+    setUploadFilePaths([])
   }
 
   const handleRemoveFiles = async () => {
     if (!state.projectPath || !state.currentProject || selectedFiles.size === 0) return
-    const commitId = await getCurrentCommitId()
-    await removeFiles(state.projectPath, commitId, state.currentProject, Array.from(selectedFiles))
+    const cid = await getCurrentCommitId()
+    await removeFiles(state.projectPath, cid, state.currentProject, Array.from(selectedFiles))
     setSelectedFiles(new Set())
     setShowRemoveConfirm(false)
   }
@@ -109,13 +123,10 @@ export default function VectorPanel() {
         await navigator.clipboard.writeText(data)
         flash(vt('exportSuccess'))
       } catch {
-        // Fallback: download as file
         const blob = new Blob([data], { type: 'application/json' })
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
-        a.href = url
-        a.download = `${state.currentProject}-vector-export.json`
-        a.click()
+        a.href = url; a.download = `${state.currentProject}-vector-export.json`; a.click()
         URL.revokeObjectURL(url)
         flash(vt('exportSuccess'))
       }
@@ -125,14 +136,13 @@ export default function VectorPanel() {
   const handleImport = async () => {
     if (!state.currentProject) return
     try {
-      // Try clipboard first
       const text = await navigator.clipboard.readText()
       if (text.includes('"dbht-vector-export-v1"')) {
         const ok = await importIndex(state.currentProject, text)
         if (ok) flash(vt('importSuccess'))
         return
       }
-    } catch { /* clipboard empty, fall through to file picker */ }
+    } catch { /* fall through */ }
     fileInputRef.current?.click()
   }
 
@@ -143,21 +153,58 @@ export default function VectorPanel() {
       const text = await file.text()
       const ok = await importIndex(state.currentProject, text)
       if (ok) flash(vt('importSuccess'))
-    } catch {
-      flash(vt('importFailed'))
-    }
+    } catch { flash(vt('importFailed')) }
     e.target.value = ''
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleSearch()
+  // ---- File Upload / Ingestion ----
+
+  const handleOpenFileDialog = async () => {
+    const files = await openFilesDialog()
+    if (files.length > 0) setUploadFilePaths(files)
   }
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const files: string[] = []
+    if (e.dataTransfer?.files) {
+      for (let i = 0; i < e.dataTransfer.files.length; i++) {
+        const f = e.dataTransfer.files[i] as any
+        if (f.path) files.push(f.path)
+      }
+    }
+    if (files.length > 0) setUploadFilePaths(prev => [...prev, ...files])
+  }, [])
+
+  const removeUploadFile = (filePath: string) => {
+    setUploadFilePaths(prev => prev.filter(p => p !== filePath))
+  }
+
+  const clearUploadFiles = () => setUploadFilePaths([])
+
+  const handleIngestFiles = async () => {
+    if (!state.currentProject || uploadFilePaths.length === 0) return
+    const cid = await getCurrentCommitId()
+    const result = await ingestFiles(state.currentProject, uploadFilePaths, state.projectPath || '', cid)
+    if (result?.success) {
+      setIngestResult(result)
+      const succ = result.result?.filesSucceeded || 0
+      const fail = result.result?.filesFailed || 0
+      if (succ > 0 && fail === 0) flash(vt('ingestSuccess').replace('{count}', String(succ)))
+      else if (succ > 0) flash(vt('ingestPartial').replace('{succeeded}', String(succ)).replace('{failed}', String(fail)))
+      else flash(vt('ingestFailed'))
+      setCurrentCommitId(cid)
+      setUploadFilePaths([])
+    }
+  }
+
+  // ---- File selection ----
 
   const toggleFile = (filePath: string) => {
     setSelectedFiles(prev => {
       const next = new Set(prev)
-      if (next.has(filePath)) next.delete(filePath)
-      else next.add(filePath)
+      if (next.has(filePath)) next.delete(filePath); else next.add(filePath)
       return next
     })
   }
@@ -165,49 +212,140 @@ export default function VectorPanel() {
   const selectAllFiles = () => setSelectedFiles(new Set(indexedFiles.map(f => f.filePath)))
   const deselectAllFiles = () => setSelectedFiles(new Set())
 
+  const filteredIndexedFiles = useMemo(() => {
+    if (!fileFilter.trim()) return indexedFiles
+    const q = fileFilter.toLowerCase()
+    return indexedFiles.filter(f => f.filePath.toLowerCase().includes(q))
+  }, [indexedFiles, fileFilter])
+
+  // ---- Derived ----
+
   const versionMismatch = status && currentCommitId && status.commitId !== currentCommitId
+  const fileNames = useMemo(() => uploadFilePaths.map(p => {
+    const parts = p.replace(/\\/g, '/').split('/')
+    return { path: p, name: parts[parts.length - 1], ext: p.slice(p.lastIndexOf('.')).toLowerCase() }
+  }), [uploadFilePaths])
+
+  const formatCount = supportedExts.length
 
   return (
     <div className="vector-panel">
       <h2 className="vector-title">{vt('title')}</h2>
 
-      {/* Status Card */}
+      {/* ===== Toolbar ===== */}
+      <div className="vector-toolbar">
+        <div className="vector-toolbar-group">
+          <button className="vector-btn vector-btn-build" onClick={handleBuildIndex} disabled={loading}>
+            {loading && progressLog.length > 0 ? '...' : status ? vt('rebuildIndex') : vt('buildIndex')}
+          </button>
+          <button className="vector-btn-primary" onClick={handleOpenFileDialog} disabled={loading}>
+            + {vt('addFiles')}
+          </button>
+        </div>
+        <div className="vector-toolbar-divider" />
+        <div className="vector-toolbar-group">
+          <span className="vector-toolbar-label">{vt('exportIndex')}</span>
+          <button className="vector-btn vector-btn-export" onClick={handleExport} disabled={!status}>
+            {vt('exportIndex')}
+          </button>
+          <button className="vector-btn vector-btn-import" onClick={handleImport}>
+            {vt('importIndex')}
+          </button>
+        </div>
+        {status && (
+          <>
+            <div className="vector-toolbar-divider" />
+            <button className="vector-btn vector-btn-delete" onClick={() => setShowDeleteConfirm(true)}>
+              {vt('deleteIndex')}
+            </button>
+          </>
+        )}
+      </div>
+
+      {actionMsg && <div className="vector-action-msg">{actionMsg}</div>}
+
+      {/* ===== Version Warning ===== */}
+      {versionMismatch && (
+        <div className="vector-version-warning">
+          ⚠ {vt('versionMismatch')}
+        </div>
+      )}
+
+      {/* ===== Drop Zone ===== */}
+      <div
+        className={`vector-dropzone ${isDragging ? 'drag-active' : ''}`}
+        onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
+        onDragLeave={e => { e.preventDefault(); setIsDragging(false) }}
+        onDrop={handleDrop}
+        onClick={handleOpenFileDialog}
+      >
+        <div className="vector-dropzone-icon">📁</div>
+        <div className="vector-dropzone-text">
+          {isDragging ? vt('uploadZoneActive') : vt('uploadZone')}
+        </div>
+        <div className="vector-dropzone-hint">
+          {vt('uploadZoneHint')}
+        </div>
+        {formatCount > 0 && (
+          <div className="vector-formats-bar">
+            <span className="vector-formats-label">
+              {vt('supportedFormatsCount').replace('{count}', String(formatCount))}:
+            </span>
+            {supportedExts.map(e => (
+              <span key={e.extension} className={`vector-format-badge cat-${e.category}`}>
+                {e.extension}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ===== Upload File Chips ===== */}
+      {uploadFilePaths.length > 0 && (
+        <div className="vector-file-chips">
+          {fileNames.map(f => (
+            <div key={f.path} className="vector-file-chip">
+              <span className="vector-file-chip-ext">{f.ext}</span>
+              <span className="vector-file-chip-name" title={f.path}>{f.name}</span>
+              <button className="vector-file-chip-remove" onClick={e => { e.stopPropagation(); removeUploadFile(f.path) }}>×</button>
+            </div>
+          ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 4 }}>
+            <button className="vector-btn-primary" onClick={handleIngestFiles} disabled={loading}>
+              {loading ? vt('ingesting') : `${vt('addFiles')} (${uploadFilePaths.length})`}
+            </button>
+            <button className="vector-btn-small" onClick={clearUploadFiles}>{vt('clearFiles')}</button>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Progress Log ===== */}
+      {loading && progressLog.length > 0 && (
+        <div className="vector-progress">
+          <div className="vector-progress-header">
+            <span>{vt('progress')}</span>
+          </div>
+          {progressLog.map((msg, i) => (
+            <div key={i} className="vector-progress-line">{msg}</div>
+          ))}
+        </div>
+      )}
+
+      {/* ===== Error ===== */}
+      {error && (
+        <div className="vector-error" onClick={clearError}>{error}</div>
+      )}
+
+      {/* ===== Index Status Card ===== */}
       <div className="vector-status-card">
         <div className="vector-status-header">
           <h3>{vt('indexStatus')}</h3>
-          <div className="vector-status-actions">
-            <button
-              className="vector-btn vector-btn-build"
-              onClick={handleBuildIndex}
-              disabled={loading}
-            >
-              {loading && progressLog.length > 0 ? '...' : status ? vt('rebuildIndex') : vt('buildIndex')}
-            </button>
-            {status && (
-              <>
-                <button className="vector-btn vector-btn-export" onClick={handleExport}>
-                  {vt('exportIndex')}
-                </button>
-                <button className="vector-btn vector-btn-import" onClick={handleImport}>
-                  {vt('importIndex')}
-                </button>
-                <button
-                  className="vector-btn vector-btn-delete"
-                  onClick={() => setShowDeleteConfirm(true)}
-                >
-                  {vt('deleteIndex')}
-                </button>
-              </>
-            )}
-          </div>
+          {status && (
+            <span style={{ fontSize: 11, color: '#5b7a9e' }}>
+              {vt('supportedFormatsCount').replace('{count}', String(formatCount))}
+            </span>
+          )}
         </div>
-
-        {versionMismatch && (
-          <div className="vector-version-warning">
-            ⚠ {vt('versionMismatch')}
-          </div>
-        )}
-
         {status ? (
           <div className="vector-status-grid">
             <div className="vector-stat">
@@ -238,36 +376,23 @@ export default function VectorPanel() {
             </div>
           </div>
         ) : (
-          <div className="vector-status-empty">
-            {vt('noIndex')}
-          </div>
-        )}
-
-        {actionMsg && <div className="vector-action-msg">{actionMsg}</div>}
-
-        {loading && progressLog.length > 0 && (
-          <div className="vector-progress">
-            <div className="vector-progress-header">
-              <span>{vt('progress')}</span>
-              <button className="vector-progress-clear" onClick={() => {}}>{vt('clearProgress')}</button>
-            </div>
-            {progressLog.map((msg, i) => (
-              <div key={i} className="vector-progress-line">{msg}</div>
-            ))}
-          </div>
-        )}
-
-        {error && (
-          <div className="vector-error" onClick={clearError}>{error}</div>
+          <div className="vector-status-empty">{vt('noIndex')}</div>
         )}
       </div>
 
-      {/* File List Card */}
+      {/* ===== Indexed Files Card ===== */}
       {status && indexedFiles.length > 0 && (
         <div className="vector-files-card">
           <div className="vector-files-header">
             <h3>{vt('indexedFiles')} ({indexedFiles.length})</h3>
-            <div className="vector-files-actions">
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                className="vector-filter-input"
+                type="text"
+                placeholder={vt('filterFiles')}
+                value={fileFilter}
+                onChange={e => setFileFilter(e.target.value)}
+              />
               <button className="vector-btn-small" onClick={selectAllFiles}>{vt('selectAll')}</button>
               <button className="vector-btn-small" onClick={deselectAllFiles}>{vt('deselectAll')}</button>
               <button
@@ -280,7 +405,7 @@ export default function VectorPanel() {
             </div>
           </div>
           <div className="vector-files-list">
-            {indexedFiles.map(f => (
+            {filteredIndexedFiles.map(f => (
               <div
                 key={f.filePath}
                 className={`vector-file-item ${selectedFiles.has(f.filePath) ? 'selected' : ''}`}
@@ -299,11 +424,16 @@ export default function VectorPanel() {
                 </span>
               </div>
             ))}
+            {filteredIndexedFiles.length === 0 && fileFilter.trim() !== '' && (
+              <div style={{ color: '#5b7a9e', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>
+                No files match "{fileFilter}"
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* Search Card */}
+      {/* ===== Search Card ===== */}
       <div className="vector-search-card">
         <h3>{vt('semanticSearch')}</h3>
         <div className="vector-search-bar">
@@ -327,20 +457,13 @@ export default function VectorPanel() {
           <label className="vector-option">
             {vt('topK')}:
             <select value={topK} onChange={e => setTopK(Number(e.target.value))}>
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
+              {[5, 10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </label>
           <label className="vector-option">
             {vt('minSimilarity')}:
             <select value={minSim} onChange={e => setMinSim(Number(e.target.value))}>
-              <option value={0}>0</option>
-              <option value={0.3}>0.3</option>
-              <option value={0.5}>0.5</option>
-              <option value={0.7}>0.7</option>
-              <option value={0.9}>0.9</option>
+              {[0, 0.3, 0.5, 0.7, 0.9].map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </label>
         </div>
@@ -363,42 +486,35 @@ export default function VectorPanel() {
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
+      {/* ===== Delete Confirmation Modal ===== */}
       {showDeleteConfirm && (
         <div className="vector-modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
           <div className="vector-modal" onClick={e => e.stopPropagation()}>
             <h3>{vt('deleteIndex')}</h3>
             <p>{vt('deleteConfirm')}</p>
             <div className="vector-modal-actions">
-              <button className="vector-btn" onClick={() => setShowDeleteConfirm(false)}>
-                {t.common.cancel}
-              </button>
-              <button className="vector-btn vector-btn-delete" onClick={handleDelete}>
-                {t.common.confirm}
-              </button>
+              <button className="vector-btn" onClick={() => setShowDeleteConfirm(false)}>{t.common.cancel}</button>
+              <button className="vector-btn vector-btn-delete" onClick={handleDelete}>{t.common.confirm}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Remove Files Confirmation */}
+      {/* ===== Remove Files Confirmation ===== */}
       {showRemoveConfirm && (
         <div className="vector-modal-overlay" onClick={() => setShowRemoveConfirm(false)}>
           <div className="vector-modal" onClick={e => e.stopPropagation()}>
             <h3>{vt('removeSelected')}</h3>
             <p>{vt('removeFilesConfirm').replace('{count}', String(selectedFiles.size))}</p>
             <div className="vector-modal-actions">
-              <button className="vector-btn" onClick={() => setShowRemoveConfirm(false)}>
-                {t.common.cancel}
-              </button>
-              <button className="vector-btn vector-btn-delete" onClick={handleRemoveFiles}>
-                {t.common.confirm}
-              </button>
+              <button className="vector-btn" onClick={() => setShowRemoveConfirm(false)}>{t.common.cancel}</button>
+              <button className="vector-btn vector-btn-delete" onClick={handleRemoveFiles}>{t.common.confirm}</button>
             </div>
           </div>
         </div>
       )}
 
+      {/* ===== Hidden file inputs ===== */}
       <input
         ref={fileInputRef}
         type="file"

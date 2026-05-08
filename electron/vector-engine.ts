@@ -1,6 +1,7 @@
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as crypto from 'crypto'
+import { parseFileToText, isBinaryFormat, SUPPORTED_INGEST_EXTENSIONS, type SupportedExtension } from './file-parser'
 
 // ==================== Types ====================
 
@@ -621,6 +622,159 @@ export async function removeFilesFromIndex(
   } catch (error) {
     return { success: false, message: String(error) }
   }
+}
+
+export async function ingestFiles(
+  rootPath: string,
+  filePaths: string[],
+  projectName: string,
+  commitId: string,
+  onProgress?: VectorProgressFn,
+): Promise<{ success: boolean; result?: {
+  projectName: string
+  filesProcessed: number
+  filesSucceeded: number
+  filesFailed: number
+  totalChunksAdded: number
+  fileResults: Array<{ name: string; success: boolean; chunksAdded: number; error?: string }>
+  updatedIndex?: VectorIndex
+}; message?: string }> {
+  const dir = getVectorDir(rootPath, projectName)
+  await fs.ensureDir(dir)
+
+  const indexPath = getIndexPath(rootPath, projectName)
+  const embeddingsPath = getEmbeddingsPath(rootPath, projectName)
+
+  const fileResults: Array<{ name: string; success: boolean; chunksAdded: number; error?: string }> = []
+  const allNewChunks: VectorChunk[] = []
+  let filesSucceeded = 0
+  let filesFailed = 0
+
+  const supportedExts = new Set(SUPPORTED_INGEST_EXTENSIONS.map(e => e.extension))
+
+  for (let i = 0; i < filePaths.length; i++) {
+    const filePath = filePaths[i]
+    const fileName = path.basename(filePath)
+    const ext = path.extname(filePath).toLowerCase()
+
+    if (!supportedExts.has(ext)) {
+      fileResults.push({ name: fileName, success: false, chunksAdded: 0, error: `Unsupported format: ${ext}` })
+      filesFailed++
+      continue
+    }
+
+    if (!fs.existsSync(filePath)) {
+      fileResults.push({ name: fileName, success: false, chunksAdded: 0, error: 'File not found' })
+      filesFailed++
+      continue
+    }
+
+    const stat = fs.statSync(filePath)
+    if (stat.size > 500000) {
+      fileResults.push({ name: fileName, success: false, chunksAdded: 0, error: 'File too large (>500KB)' })
+      filesFailed++
+      continue
+    }
+
+    onProgress?.(`[${i + 1}/${filePaths.length}] Parsing: ${fileName}`)
+
+    const parseResult = await parseFileToText(filePath)
+    if (!parseResult.success || !parseResult.text) {
+      fileResults.push({ name: fileName, success: false, chunksAdded: 0, error: parseResult.error || 'Empty content' })
+      filesFailed++
+      continue
+    }
+
+    onProgress?.(`[${i + 1}/${filePaths.length}] Chunking: ${fileName} (${parseResult.text.length} chars)`)
+
+    // Use the file path as-is for tracking; normalize to forward slashes
+    const virtualPath = filePath.replace(/\\/g, '/')
+    const chunks = chunkFile(virtualPath, parseResult.text)
+    allNewChunks.push(...chunks)
+    fileResults.push({ name: fileName, success: true, chunksAdded: chunks.length })
+    filesSucceeded++
+  }
+
+  if (allNewChunks.length === 0) {
+    return {
+      success: filesFailed === 0,
+      result: {
+        projectName, filesProcessed: filePaths.length,
+        filesSucceeded, filesFailed, totalChunksAdded: 0, fileResults,
+      },
+      message: filesFailed > 0 ? 'No files could be ingested' : 'No new chunks produced',
+    }
+  }
+
+  onProgress?.(`Merging ${allNewChunks.length} new chunks with existing index...`)
+
+  // Load existing index if any
+  let existingChunks: VectorChunk[] = []
+  if (fs.existsSync(indexPath)) {
+    try {
+      const stored: StoredIndex = JSON.parse(fs.readFileSync(indexPath, 'utf-8'))
+      existingChunks = stored.chunks || []
+    } catch { /* start fresh */ }
+  }
+
+  const allChunks = [...existingChunks, ...allNewChunks]
+
+  onProgress?.(`Rebuilding vocabulary for ${allChunks.length} total chunks...`)
+  const { df } = buildVocabulary(allChunks)
+
+  onProgress?.(`Vectorizing...`)
+  const total = allChunks.length
+  const vectors: Float32Array[] = []
+  for (let i = 0; i < total; i++) {
+    vectors.push(textToVector(allChunks[i].content, df, total))
+    if ((i + 1) % 200 === 0) onProgress?.(`Vectorized ${i + 1}/${total} chunks`)
+  }
+
+  const totalTokens = allChunks.reduce((sum, c) => sum + c.tokenCount, 0)
+  const uniqueFiles = new Set(allChunks.map(c => c.filePath)).size
+
+  const meta: VectorIndex = {
+    schemaVersion: 1,
+    projectName,
+    commitId,
+    model: 'tfidf-v1',
+    dimensions: VECTOR_DIMS,
+    totalChunks: allChunks.length,
+    totalFiles: uniqueFiles,
+    totalTokens,
+    createdAt: existingChunks.length > 0
+      ? (JSON.parse(fs.readFileSync(indexPath, 'utf-8')) as StoredIndex).meta.createdAt
+      : new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+
+  const stored: StoredIndex = { meta, chunks: allChunks }
+  fs.writeFileSync(indexPath, JSON.stringify(stored, null, 2))
+
+  const dimsBuf = Buffer.alloc(8)
+  dimsBuf.writeUInt32LE(VECTOR_DIMS, 0)
+  dimsBuf.writeUInt32LE(vectors.length, 4)
+  const vecsBuf = Buffer.concat([dimsBuf, ...vectors.map(v => Buffer.from(v.buffer))])
+  fs.writeFileSync(embeddingsPath, vecsBuf)
+
+  onProgress?.(`Done: ${allChunks.length} chunks indexed (${uniqueFiles} files, ${totalTokens.toLocaleString()} tokens)`)
+
+  return {
+    success: true,
+    result: {
+      projectName,
+      filesProcessed: filePaths.length,
+      filesSucceeded,
+      filesFailed,
+      totalChunksAdded: allNewChunks.length,
+      fileResults,
+      updatedIndex: meta,
+    },
+  }
+}
+
+export function getSupportedExtensions(): { extensions: SupportedExtension[] } {
+  return { extensions: SUPPORTED_INGEST_EXTENSIONS }
 }
 
 export async function exportVectorIndex(

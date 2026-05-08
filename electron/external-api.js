@@ -424,6 +424,96 @@ async function startExternalApi(rootPath) {
             res.status(500).json({ error: String(e) });
         }
     });
+    // POST /api/v1/projects/:name/vector/ingest — ingest external files
+    app.post('/api/v1/projects/:name/vector/ingest', async (req, res) => {
+        try {
+            const { filePaths } = req.body || {};
+            if (!filePaths || !Array.isArray(filePaths) || filePaths.length === 0) {
+                return res.status(400).json({ success: false, message: 'filePaths array required' });
+            }
+            const { ingestFiles } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            const name = String(req.params.name);
+            const registry = readRegistry(rootPath);
+            const proj = registry.find(e => e.name === name);
+            if (!proj) {
+                res.status(404).json({ error: 'Project not found' });
+                return;
+            }
+            const history = await dbvs.getHistoryStructured(proj.repoPath);
+            const commitId = (history.success && history.commits?.length > 0)
+                ? history.commits[0].id : 'unknown';
+            const result = await ingestFiles(rootPath, filePaths, name, commitId);
+            res.json(result);
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // GET /api/v1/projects/:name/vector/files — list indexed files
+    app.get('/api/v1/projects/:name/vector/files', async (req, res) => {
+        try {
+            const { getIndexedFiles } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            const result = await getIndexedFiles(rootPath, String(req.params.name));
+            res.json(result);
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // DELETE /api/v1/projects/:name/vector/files — remove files from index
+    app.delete('/api/v1/projects/:name/vector/files', async (req, res) => {
+        try {
+            const { filePaths } = req.body || {};
+            if (!filePaths || !Array.isArray(filePaths) || filePaths.length === 0) {
+                return res.status(400).json({ success: false, message: 'filePaths array required' });
+            }
+            const { removeFilesFromIndex } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            const name = String(req.params.name);
+            const result = await removeFilesFromIndex(rootPath, '', '', name, filePaths);
+            res.json(result);
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // GET /api/v1/projects/:name/vector/export — export index
+    app.get('/api/v1/projects/:name/vector/export', async (req, res) => {
+        try {
+            const { exportVectorIndex } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            const result = await exportVectorIndex(rootPath, String(req.params.name));
+            if (result.success && result.data) {
+                res.type('application/json').send(result.data);
+            }
+            else {
+                res.json(result);
+            }
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // POST /api/v1/projects/:name/vector/import — import index
+    app.post('/api/v1/projects/:name/vector/import', async (req, res) => {
+        try {
+            const data = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+            const { importVectorIndex } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            const result = await importVectorIndex(rootPath, String(req.params.name), data);
+            res.json(result);
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // GET /api/v1/projects/:name/vector/supported — list supported formats
+    app.get('/api/v1/projects/:name/vector/supported', async (_req, res) => {
+        try {
+            const { getSupportedExtensions } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            res.json(getSupportedExtensions());
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
     return new Promise(resolve => {
         server = app.listen(currentConfig.port, () => {
             const addr = `http://localhost:${currentConfig.port}`;

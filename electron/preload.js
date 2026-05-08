@@ -108,6 +108,9 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     vectorRemoveFiles: (workingCopyPath, commitId, projectName, filePaths) => electron_1.ipcRenderer.invoke('vector:remove-files', workingCopyPath, commitId, projectName, filePaths),
     vectorExport: (projectName) => electron_1.ipcRenderer.invoke('vector:export', projectName),
     vectorImport: (projectName, data) => electron_1.ipcRenderer.invoke('vector:import', projectName, data),
+    vectorIngestFiles: (projectName, filePaths, workingCopyPath, commitId) => electron_1.ipcRenderer.invoke('vector:ingest-files', projectName, filePaths, workingCopyPath, commitId),
+    vectorOpenFilesDialog: () => electron_1.ipcRenderer.invoke('vector:open-files-dialog'),
+    vectorGetSupportedExtensions: () => electron_1.ipcRenderer.invoke('vector:get-supported-extensions'),
     onVectorProgress: (callback) => {
         electron_1.ipcRenderer.on('vector:progress', (_, msg) => callback(msg));
         return () => electron_1.ipcRenderer.removeAllListeners('vector:progress');

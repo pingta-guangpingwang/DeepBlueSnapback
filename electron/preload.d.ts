@@ -423,6 +423,22 @@ export interface ElectronAPI {
         index?: Record<string, unknown>;
         message?: string;
     }>;
+    vectorIngestFiles: (projectName: string, filePaths: string[], workingCopyPath: string, commitId: string) => Promise<{
+        success: boolean;
+        result?: Record<string, unknown>;
+        message?: string;
+    }>;
+    vectorOpenFilesDialog: () => Promise<{
+        canceled: boolean;
+        filePaths: string[];
+    }>;
+    vectorGetSupportedExtensions: () => Promise<{
+        extensions: Array<{
+            extension: string;
+            description: string;
+            category: string;
+        }>;
+    }>;
     onVectorProgress: (callback: (msg: string) => void) => () => void;
     analyzeQuality: (commitId: string) => Promise<{
         success: boolean;

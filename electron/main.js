@@ -795,20 +795,44 @@ dbgvs info "${projectPath}"
 dbgvs rollback-file "${projectPath}" --version <版本ID> --file src/example.ts
 \`\`\`
 
+### ⚠️ 回滚操作 — AI 必须使用命令，严禁手动编辑！
+
+> **Critical Rule for AI Agents**: 当你需要撤销变更、回滚到之前版本时，**绝对不能**手动逐行编辑文件来"恢复"代码。手动编辑回滚：
+> - 速度慢、容易遗漏
+> - 破坏版本历史完整性
+> - 无法被 DBHT 追踪和审计
+> - 可能引入新 bug
+>
+> **正确做法**：先确认回滚目标，然后**告知用户即将执行回滚操作**，获得确认后使用以下命令一键完成：
+
 ### 整体回滚
 
-回滚整个工作副本（自动创建回滚前快照，可撤销）：
+回滚整个工作副本到指定版本（自动创建回滚前快照，可撤销）：
 
 \`\`\`bash
-# 执行回滚（自动创建快照）
+# 1. 先查看历史，找到目标版本
+dbgvs history "${projectPath}"
+
+# 2. 确认后执行回滚（自动创建当前状态快照）
 dbgvs rollback "${projectPath}" --version <版本ID>
 
-# 如果回滚错误，撤销回滚恢复到回滚前状态
+# 3. 如果回滚错了，撤销回滚（恢复到回滚前状态）
 dbgvs undo-rollback "${projectPath}"
 
-# 按 AI 会话回滚（撤销某次 AI 会话的所有提交）
+# 4. 按 AI 会话回滚（撤销某次 AI 会话的所有提交）
 dbgvs rollback-ai "${projectPath}" --session <会话ID>
 \`\`\`
+
+**回滚决策流程**：
+1. 确认需要回滚到哪个版本 → 用 \`dbgvs history\` 查找
+2. 告知用户即将回滚的版本和原因
+3. 用户确认后，执行 \`dbgvs rollback\`
+4. 验证结果：\`dbgvs status\`
+
+**❌ 绝对禁止的行为**：
+- 不使用 \`dbgvs rollback\` 命令，而是手动读取旧版本文件再写回
+- 逐文件 Git revert / git checkout
+- 任何"模拟回滚"的手动编辑操作
 
 ### 验证恢复结果
 
@@ -978,7 +1002,7 @@ AI 每完成一个任务或切换模块时更新此文件即可。
     async function ensureProjectGuide(projectPath, projectName, repoPath) {
         const guidePath = path.join(projectPath, 'DBHT-GUIDE.md');
         const newContent = generateDBHTGuide(projectName, projectPath, repoPath);
-        const versionTag = '<!-- DBHT-GUIDE-VERSION: 5 -->';
+        const versionTag = '<!-- DBHT-GUIDE-VERSION: 6 -->';
         if (await fs.pathExists(guidePath)) {
             const existing = await fs.readFile(guidePath, 'utf-8');
             // 已是最新版本则跳过
@@ -1441,7 +1465,7 @@ AI 智能体在开发过程中必须遵循以下规则：
                             updated++;
                         else {
                             const content = await fs.readFile(path.join(wc.path, 'DBHT-GUIDE.md'), 'utf-8');
-                            if (content.includes('<!-- DBHT-GUIDE-VERSION: 4 -->'))
+                            if (content.includes('<!-- DBHT-GUIDE-VERSION: 5 -->'))
                                 updated++;
                         }
                     }
@@ -2015,6 +2039,36 @@ electron_1.ipcMain.handle('vector:import', async (_, projectName, data) => {
     if (!rootPath)
         return { success: false, message: 'Root path not configured' };
     return await (0, vector_engine_1.importVectorIndex)(rootPath, projectName, data);
+});
+electron_1.ipcMain.handle('vector:ingest-files', async (event, projectName, filePaths, workingCopyPath, commitId) => {
+    const rootPath = await getRootPath();
+    if (!rootPath)
+        return { success: false, message: 'Root path not configured' };
+    const send = (msg) => {
+        if (!event.sender.isDestroyed())
+            event.sender.send('vector:progress', msg);
+    };
+    return await (0, vector_engine_1.ingestFiles)(rootPath, filePaths, projectName, commitId, send);
+});
+electron_1.ipcMain.handle('vector:open-files-dialog', async () => {
+    if (!mainWindow)
+        return { canceled: true, filePaths: [] };
+    const result = await electron_1.dialog.showOpenDialog(mainWindow, {
+        properties: ['openFile', 'multiSelections'],
+        title: 'Select files to add to Vector Knowledge Base',
+        filters: [
+            { name: 'All Supported', extensions: ['pdf', 'docx', 'txt', 'md', 'csv', 'json', 'xml', 'html', 'css', 'yaml', 'yml', 'ts', 'tsx', 'js', 'jsx', 'py', 'java', 'cs', 'go', 'rs', 'c', 'cpp', 'h', 'rb', 'php', 'kt', 'swift', 'dart', 'lua', 'sh', 'scss', 'sql', 'toml', 'ini', 'bat', 'ps1'] },
+            { name: 'Documents', extensions: ['pdf', 'docx', 'txt', 'md'] },
+            { name: 'Code', extensions: ['ts', 'tsx', 'js', 'jsx', 'py', 'java', 'cs', 'go', 'rs', 'cpp', 'c', 'h', 'rb', 'php', 'kt', 'swift', 'dart', 'lua', 'sh', 'sql'] },
+            { name: 'Data', extensions: ['csv', 'json', 'xml', 'yaml', 'yml', 'toml', 'ini'] },
+            { name: 'Web', extensions: ['html', 'htm', 'css', 'scss'] },
+            { name: 'All Files', extensions: ['*'] },
+        ],
+    });
+    return { canceled: result.canceled, filePaths: result.filePaths };
+});
+electron_1.ipcMain.handle('vector:get-supported-extensions', async () => {
+    return (0, vector_engine_1.getSupportedExtensions)();
 });
 // ==================== 项目列表辅助函数 ====================
 async function getProjectsList(rootPath) {

@@ -148,6 +148,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('vector:export', projectName),
   vectorImport: (projectName: string, data: string) =>
     ipcRenderer.invoke('vector:import', projectName, data),
+  vectorIngestFiles: (projectName: string, filePaths: string[], workingCopyPath: string, commitId: string) =>
+    ipcRenderer.invoke('vector:ingest-files', projectName, filePaths, workingCopyPath, commitId),
+  vectorOpenFilesDialog: () =>
+    ipcRenderer.invoke('vector:open-files-dialog'),
+  vectorGetSupportedExtensions: () =>
+    ipcRenderer.invoke('vector:get-supported-extensions'),
   onVectorProgress: (callback: (msg: string) => void) => {
     ipcRenderer.on('vector:progress', (_, msg) => callback(msg))
     return () => ipcRenderer.removeAllListeners('vector:progress')
@@ -340,6 +346,10 @@ export interface ElectronAPI {
     Promise<{ success: boolean; index?: Record<string, unknown>; message?: string }>
   vectorExport: (projectName: string) => Promise<{ success: boolean; data?: string; message?: string }>
   vectorImport: (projectName: string, data: string) => Promise<{ success: boolean; index?: Record<string, unknown>; message?: string }>
+  vectorIngestFiles: (projectName: string, filePaths: string[], workingCopyPath: string, commitId: string) =>
+    Promise<{ success: boolean; result?: Record<string, unknown>; message?: string }>
+  vectorOpenFilesDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>
+  vectorGetSupportedExtensions: () => Promise<{ extensions: Array<{ extension: string; description: string; category: string }> }>
   onVectorProgress: (callback: (msg: string) => void) => () => void
 
   // Quality & health

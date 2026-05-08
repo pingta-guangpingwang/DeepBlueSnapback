@@ -142,6 +142,10 @@ export interface ElectronAPI {
   vectorExport: (projectName: string) => Promise<{ success: boolean; data?: string; message?: string }>
   vectorImport: (projectName: string, data: string) => Promise<{ success: boolean; index?: VectorIndexInfo; message?: string }>
   onVectorProgress: (callback: (msg: string) => void) => () => void
+  vectorIngestFiles: (projectName: string, filePaths: string[], workingCopyPath: string, commitId: string) =>
+    Promise<IngestFilesResult>
+  vectorOpenFilesDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>
+  vectorGetSupportedExtensions: () => Promise<{ extensions: SupportedExtension[] }>
 
   // Quality & health
   analyzeQuality: (commitId: string) => Promise<{ success: boolean; report?: Record<string, unknown>; message?: string }>
@@ -208,6 +212,29 @@ export interface IndexedFileInfo {
   chunkCount: number
   totalChars: number
   language: string
+}
+
+export interface IngestFilesResult {
+  success: boolean
+  projectName: string
+  filesProcessed: number
+  filesSucceeded: number
+  filesFailed: number
+  totalChunksAdded: number
+  fileResults: Array<{
+    name: string
+    success: boolean
+    chunksAdded: number
+    error?: string
+  }>
+  updatedIndex?: VectorIndexInfo
+  message?: string
+}
+
+export interface SupportedExtension {
+  extension: string
+  description: string
+  category: 'document' | 'code' | 'data' | 'web'
 }
 
 export {}
