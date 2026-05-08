@@ -487,6 +487,7 @@ function findNodeById(root: GraphNode, id: string): GraphNode | null {
 }
 
 function LogPanel({ messages }: { messages: string[] }) {
+  const { t } = useI18n()
   const endRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -497,7 +498,7 @@ function LogPanel({ messages }: { messages: string[] }) {
     <div className="map-log-panel">
       <div className="map-log-header">
         <span className="map-log-spinner" />
-        Building graph...
+        {t.graph.buildingMap}
       </div>
       <div className="map-log-messages">
         {messages.map((msg, i) => (
