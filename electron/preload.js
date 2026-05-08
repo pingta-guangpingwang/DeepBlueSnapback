@@ -105,6 +105,7 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     vectorSearchBatch: (projectName, queries) => electron_1.ipcRenderer.invoke('vector:search-batch', projectName, queries),
     vectorEnhanceRag: (projectName, query, topK) => electron_1.ipcRenderer.invoke('vector:enhance-rag', projectName, query, topK),
     vectorFiles: (projectName) => electron_1.ipcRenderer.invoke('vector:files', projectName),
+    vectorFileChunks: (projectName, filePath) => electron_1.ipcRenderer.invoke('vector:file-chunks', projectName, filePath),
     vectorRemoveFiles: (workingCopyPath, commitId, projectName, filePaths) => electron_1.ipcRenderer.invoke('vector:remove-files', workingCopyPath, commitId, projectName, filePaths),
     vectorExport: (projectName) => electron_1.ipcRenderer.invoke('vector:export', projectName),
     vectorImport: (projectName, data) => electron_1.ipcRenderer.invoke('vector:import', projectName, data),

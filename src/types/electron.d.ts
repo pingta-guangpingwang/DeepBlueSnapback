@@ -137,6 +137,7 @@ export interface ElectronAPI {
   vectorSearchBatch: (projectName: string, queries: VectorQuery[]) => Promise<{ success: boolean; results: VectorSearchResult[][]; message?: string }>
   vectorEnhanceRag: (projectName: string, query: string, topK?: number) => Promise<{ success: boolean; vectorResults: VectorSearchResult[]; message?: string }>
   vectorFiles: (projectName: string) => Promise<{ success: boolean; files: IndexedFileInfo[]; message?: string }>
+  vectorFileChunks: (projectName: string, filePath: string) => Promise<{ success: boolean; chunks: VectorChunkInfo[]; message?: string }>
   vectorRemoveFiles: (workingCopyPath: string, commitId: string, projectName: string, filePaths: string[]) =>
     Promise<{ success: boolean; index?: VectorIndexInfo; message?: string }>
   vectorExport: (projectName: string) => Promise<{ success: boolean; data?: string; message?: string }>
@@ -212,6 +213,16 @@ export interface IndexedFileInfo {
   filePath: string
   chunkCount: number
   totalChars: number
+  language: string
+}
+
+export interface VectorChunkInfo {
+  id: string
+  filePath: string
+  startLine: number
+  endLine: number
+  content: string
+  tokenCount: number
   language: string
 }
 

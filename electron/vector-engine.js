@@ -39,6 +39,7 @@ exports.deleteVectorIndex = deleteVectorIndex;
 exports.searchVectors = searchVectors;
 exports.searchBatchVectors = searchBatchVectors;
 exports.getIndexedFiles = getIndexedFiles;
+exports.getFileChunks = getFileChunks;
 exports.removeFilesFromIndex = removeFilesFromIndex;
 exports.ingestFiles = ingestFiles;
 exports.getSupportedExtensions = getSupportedExtensions;
@@ -492,6 +493,22 @@ async function getIndexedFiles(rootPath, projectName) {
     }
     catch (error) {
         return { success: false, files: [], message: String(error) };
+    }
+}
+async function getFileChunks(rootPath, projectName, filePath) {
+    try {
+        const indexPath = getIndexPath(rootPath, projectName);
+        if (!fs.existsSync(indexPath)) {
+            return { success: true, chunks: [] };
+        }
+        const stored = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
+        const normalizedPath = filePath.replace(/\\/g, '/');
+        const chunks = stored.chunks.filter(c => c.filePath.replace(/\\/g, '/') === normalizedPath);
+        chunks.sort((a, b) => a.startLine - b.startLine);
+        return { success: true, chunks };
+    }
+    catch (error) {
+        return { success: false, chunks: [], message: String(error) };
     }
 }
 async function removeFilesFromIndex(rootPath, workingCopyPath, commitId, projectName, filePaths, onProgress) {

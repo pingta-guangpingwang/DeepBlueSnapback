@@ -408,6 +408,19 @@ export interface ElectronAPI {
         }>;
         message?: string;
     }>;
+    vectorFileChunks: (projectName: string, filePath: string) => Promise<{
+        success: boolean;
+        chunks: Array<{
+            id: string;
+            filePath: string;
+            startLine: number;
+            endLine: number;
+            content: string;
+            tokenCount: number;
+            language: string;
+        }>;
+        message?: string;
+    }>;
     vectorRemoveFiles: (workingCopyPath: string, commitId: string, projectName: string, filePaths: string[]) => Promise<{
         success: boolean;
         index?: Record<string, unknown>;
@@ -429,6 +442,10 @@ export interface ElectronAPI {
         message?: string;
     }>;
     vectorOpenFilesDialog: () => Promise<{
+        canceled: boolean;
+        filePaths: string[];
+    }>;
+    vectorOpenFolderDialog: () => Promise<{
         canceled: boolean;
         filePaths: string[];
     }>;

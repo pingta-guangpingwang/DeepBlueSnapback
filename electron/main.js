@@ -2021,6 +2021,12 @@ electron_1.ipcMain.handle('vector:files', async (_, projectName) => {
         return { success: false, files: [], message: 'Root path not configured' };
     return await (0, vector_engine_1.getIndexedFiles)(rootPath, projectName);
 });
+electron_1.ipcMain.handle('vector:file-chunks', async (_, projectName, filePath) => {
+    const rootPath = await getRootPath();
+    if (!rootPath)
+        return { success: false, chunks: [], message: 'Root path not configured' };
+    return await (0, vector_engine_1.getFileChunks)(rootPath, projectName, filePath);
+});
 electron_1.ipcMain.handle('vector:remove-files', async (event, workingCopyPath, commitId, projectName, filePaths) => {
     const rootPath = await getRootPath();
     if (!rootPath)

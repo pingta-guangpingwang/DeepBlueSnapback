@@ -73,6 +73,11 @@ export declare function getIndexedFiles(rootPath: string, projectName: string): 
     files: IndexedFileInfo[];
     message?: string;
 }>;
+export declare function getFileChunks(rootPath: string, projectName: string, filePath: string): Promise<{
+    success: boolean;
+    chunks: VectorChunk[];
+    message?: string;
+}>;
 export declare function removeFilesFromIndex(rootPath: string, workingCopyPath: string, commitId: string, projectName: string, filePaths: string[], onProgress?: VectorProgressFn): Promise<{
     success: boolean;
     index?: VectorIndex;

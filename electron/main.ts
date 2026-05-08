@@ -14,7 +14,7 @@ import { buildGraph } from './graph-builder'
 import { saveGraph, loadGraph, listGraphs, compareGraphs } from './graph-store'
 import { switchToVersionReadonly, releaseVersionReadonly, getVersionFileList, getVersionFileContent } from './version-switch'
 import { generateHealthReport } from './health-scorer'
-import { buildVectorIndex, getVectorStatus, deleteVectorIndex, searchVectors, searchBatchVectors, enhanceRagContext, getIndexedFiles, removeFilesFromIndex, exportVectorIndex, importVectorIndex, ingestFiles, getSupportedExtensions } from './vector-engine'
+import { buildVectorIndex, getVectorStatus, deleteVectorIndex, searchVectors, searchBatchVectors, enhanceRagContext, getIndexedFiles, getFileChunks, removeFilesFromIndex, exportVectorIndex, importVectorIndex, ingestFiles, getSupportedExtensions } from './vector-engine'
 
 let mainWindow: BrowserWindow | null = null
 const dbvsRepo = new DBHTRepository()
@@ -2112,6 +2112,12 @@ ipcMain.handle('vector:files', async (_, projectName: string) => {
   const rootPath = await getRootPath()
   if (!rootPath) return { success: false, files: [], message: 'Root path not configured' }
   return await getIndexedFiles(rootPath, projectName)
+})
+
+ipcMain.handle('vector:file-chunks', async (_, projectName: string, filePath: string) => {
+  const rootPath = await getRootPath()
+  if (!rootPath) return { success: false, chunks: [], message: 'Root path not configured' }
+  return await getFileChunks(rootPath, projectName, filePath)
 })
 
 ipcMain.handle('vector:remove-files', async (event, workingCopyPath: string, commitId: string, projectName: string, filePaths: string[]) => {

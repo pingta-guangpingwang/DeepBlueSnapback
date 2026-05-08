@@ -142,6 +142,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('vector:enhance-rag', projectName, query, topK),
   vectorFiles: (projectName: string) =>
     ipcRenderer.invoke('vector:files', projectName),
+  vectorFileChunks: (projectName: string, filePath: string) =>
+    ipcRenderer.invoke('vector:file-chunks', projectName, filePath),
   vectorRemoveFiles: (workingCopyPath: string, commitId: string, projectName: string, filePaths: string[]) =>
     ipcRenderer.invoke('vector:remove-files', workingCopyPath, commitId, projectName, filePaths),
   vectorExport: (projectName: string) =>
@@ -344,6 +346,7 @@ export interface ElectronAPI {
   vectorEnhanceRag: (projectName: string, query: string, topK?: number) =>
     Promise<{ success: boolean; vectorResults: Array<{ chunk: Record<string, unknown>; similarity: number; rank: number }>; message?: string }>
   vectorFiles: (projectName: string) => Promise<{ success: boolean; files: Array<{ filePath: string; chunkCount: number; totalChars: number; language: string }>; message?: string }>
+  vectorFileChunks: (projectName: string, filePath: string) => Promise<{ success: boolean; chunks: Array<{ id: string; filePath: string; startLine: number; endLine: number; content: string; tokenCount: number; language: string }>; message?: string }>
   vectorRemoveFiles: (workingCopyPath: string, commitId: string, projectName: string, filePaths: string[]) =>
     Promise<{ success: boolean; index?: Record<string, unknown>; message?: string }>
   vectorExport: (projectName: string) => Promise<{ success: boolean; data?: string; message?: string }>

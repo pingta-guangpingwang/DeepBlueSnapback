@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useI18n } from '../../i18n'
 import { useAppState } from '../../context/AppContext'
 import { useVectorDB } from '../../hooks/useVectorDB'
-import type { SupportedExtension, IngestFilesResult } from '../../types/electron'
+import type { SupportedExtension, IngestFilesResult, VectorChunkInfo } from '../../types/electron'
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -40,6 +40,7 @@ export default function VectorPanel() {
   // Modals
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
+  const [detailFile, setDetailFile] = useState<{ filePath: string; chunks: VectorChunkInfo[]; loading: boolean } | null>(null)
 
   // UI state
   const [currentCommitId, setCurrentCommitId] = useState<string | null>(null)
@@ -255,6 +256,22 @@ export default function VectorPanel() {
 
   const selectAllFiles = () => setSelectedFiles(new Set(indexedFiles.map(f => f.filePath)))
   const deselectAllFiles = () => setSelectedFiles(new Set())
+
+  const handleFileDoubleClick = async (filePath: string) => {
+    if (!state.currentProject) return
+    setDetailFile({ filePath, chunks: [], loading: true })
+    const api = (window as any).electronAPI
+    if (api?.vectorFileChunks) {
+      const r = await api.vectorFileChunks(state.currentProject, filePath)
+      if (r?.success) {
+        setDetailFile({ filePath, chunks: r.chunks || [], loading: false })
+      } else {
+        setDetailFile({ filePath, chunks: [], loading: false })
+      }
+    } else {
+      setDetailFile({ filePath, chunks: [], loading: false })
+    }
+  }
 
   const filteredIndexedFiles = useMemo(() => {
     if (!fileFilter.trim()) return indexedFiles
@@ -494,6 +511,7 @@ export default function VectorPanel() {
                     key={f.filePath}
                     className={`vector-file-item ${selectedFiles.has(f.filePath) ? 'selected' : ''}`}
                     onClick={() => toggleFile(f.filePath)}
+                    onDoubleClick={(e) => { e.preventDefault(); handleFileDoubleClick(f.filePath) }}
                   >
                     <input
                       type="checkbox"
@@ -577,6 +595,47 @@ export default function VectorPanel() {
             <div className="vector-empty-icon">🧠</div>
             <h3>{vt('noIndex')}</h3>
             <p>{vt('noIndexHint') || '点击上方按钮构建知识库，将源代码和文档转化为可语义搜索的向量索引'}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ===== File Detail Modal ===== */}
+      {detailFile && (
+        <div className="vector-modal-overlay" onClick={() => setDetailFile(null)}>
+          <div className="vector-detail-modal" onClick={e => e.stopPropagation()}>
+            <div className="vector-detail-header">
+              <div>
+                <h3>{detailFile.filePath.split(/[\\/]/).pop()}</h3>
+                <span className="vector-detail-path">{detailFile.filePath}</span>
+              </div>
+              <button className="vector-detail-close" onClick={() => setDetailFile(null)}>✕</button>
+            </div>
+            <div className="vector-detail-body">
+              {detailFile.loading ? (
+                <div className="vector-detail-loading">{vt('loading') || 'Loading...'}</div>
+              ) : detailFile.chunks.length === 0 ? (
+                <div className="vector-detail-empty">No chunk data available</div>
+              ) : (
+                <>
+                  <div className="vector-detail-stats">
+                    <span>{detailFile.chunks.length} chunks</span>
+                    <span>{detailFile.chunks.reduce((s, c) => s + c.tokenCount, 0).toLocaleString()} tokens</span>
+                    <span>{detailFile.chunks[0]?.language || 'unknown'}</span>
+                  </div>
+                  <div className="vector-detail-chunks">
+                    {detailFile.chunks.map(chunk => (
+                      <div key={chunk.id} className="vector-detail-chunk">
+                        <div className="vector-detail-chunk-header">
+                          Lines {chunk.startLine}–{chunk.endLine}
+                          <span className="vector-detail-chunk-tokens">{chunk.tokenCount} tokens</span>
+                        </div>
+                        <pre className="vector-detail-chunk-content">{chunk.content.slice(0, 500)}{chunk.content.length > 500 ? '...' : ''}</pre>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

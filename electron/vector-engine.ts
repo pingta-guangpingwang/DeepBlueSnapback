@@ -573,6 +573,26 @@ export async function getIndexedFiles(
   }
 }
 
+export async function getFileChunks(
+  rootPath: string,
+  projectName: string,
+  filePath: string,
+): Promise<{ success: boolean; chunks: VectorChunk[]; message?: string }> {
+  try {
+    const indexPath = getIndexPath(rootPath, projectName)
+    if (!fs.existsSync(indexPath)) {
+      return { success: true, chunks: [] }
+    }
+    const stored: StoredIndex = JSON.parse(fs.readFileSync(indexPath, 'utf-8'))
+    const normalizedPath = filePath.replace(/\\/g, '/')
+    const chunks = stored.chunks.filter(c => c.filePath.replace(/\\/g, '/') === normalizedPath)
+    chunks.sort((a, b) => a.startLine - b.startLine)
+    return { success: true, chunks }
+  } catch (error) {
+    return { success: false, chunks: [], message: String(error) }
+  }
+}
+
 export async function removeFilesFromIndex(
   rootPath: string,
   workingCopyPath: string,

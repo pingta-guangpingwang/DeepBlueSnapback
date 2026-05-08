@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import type { VectorIndexInfo, VectorQuery, VectorSearchResult, IndexedFileInfo, IngestFilesResult, SupportedExtension } from '../types/electron'
+import type { VectorIndexInfo, VectorQuery, VectorSearchResult, IndexedFileInfo, VectorChunkInfo, IngestFilesResult, SupportedExtension } from '../types/electron'
 
 interface UseVectorDBReturn {
   status: VectorIndexInfo | null
@@ -10,6 +10,7 @@ interface UseVectorDBReturn {
   progressLog: string[]
   loadStatus: (projectName: string) => Promise<void>
   loadFiles: (projectName: string) => Promise<void>
+  getFileChunks: (projectName: string, filePath: string) => Promise<VectorChunkInfo[]>
   buildIndex: (repoPath: string, workingCopyPath: string, commitId: string, projectName: string) => Promise<boolean>
   search: (projectName: string, query: VectorQuery) => Promise<void>
   deleteIndex: (projectName: string) => Promise<void>
@@ -241,12 +242,20 @@ export function useVectorDB(): UseVectorDBReturn {
     return []
   }, [])
 
+  const getFileChunks = useCallback(async (projectName: string, filePath: string): Promise<VectorChunkInfo[]> => {
+    try {
+      const result = await (window as any).electronAPI?.vectorFileChunks(projectName, filePath)
+      if (result?.success) return result.chunks || []
+    } catch { /* ignore */ }
+    return []
+  }, [])
+
   const clearResults = useCallback(() => setResults([]), [])
   const clearError = useCallback(() => setError(null), [])
 
   return {
     status, indexedFiles, results, loading, error, progressLog,
-    loadStatus, loadFiles, buildIndex, search, deleteIndex, removeFiles, exportIndex, importIndex,
+    loadStatus, loadFiles, getFileChunks, buildIndex, search, deleteIndex, removeFiles, exportIndex, importIndex,
     ingestFiles, openFilesDialog, openFolderDialog, getSupportedExtensions,
     clearResults, clearError,
   }
