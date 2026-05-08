@@ -1013,5 +1013,135 @@ program.command('unregister <projectPath>')
         process.exit(1);
     }
 });
+// ==================== Vector Database ====================
+async function resolveProjectName(rootPath, inputPath) {
+    // Try to find project name from registry
+    const registryPath = path.join(rootPath, 'config', 'projects.json');
+    if (fs.pathExistsSync(registryPath)) {
+        const registry = fs.readJsonSync(registryPath);
+        const normalized = path.resolve(inputPath);
+        for (const entry of registry) {
+            if (!entry.workingCopies) continue;
+            for (const wc of entry.workingCopies) {
+                if (path.resolve(wc.path) === normalized) {
+                    return { name: entry.name, repoPath: entry.repoPath, wcPath: wc.path };
+                }
+            }
+        }
+        // Fallback: check if inputPath matches a repoPath
+        for (const entry of registry) {
+            if (path.resolve(entry.repoPath) === normalized) {
+                return { name: entry.name, repoPath: entry.repoPath, wcPath: entry.workingCopies?.[0]?.path || inputPath };
+            }
+        }
+    }
+    // Fallback: use basename of inputPath as project name
+    return { name: path.basename(inputPath), repoPath: inputPath, wcPath: inputPath };
+}
+
+const vectorCommand = program.command('vector')
+    .description('Vector database operations');
+
+vectorCommand.command('index [projectPath]')
+    .description('Build vector index for semantic search')
+    .action(async (projectPath) => {
+    const fmt = program.opts().format;
+    try {
+        const rootPath = getRootPath(program.opts());
+        const p = projectPath ? path.resolve(projectPath) : process.cwd();
+        const proj = await resolveProjectName(rootPath, p);
+        const { buildVectorIndex } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+        const history = await repo.getHistoryStructured(proj.repoPath);
+        const commitId = (history.success && history.commits?.length > 0) ? history.commits[0].id : 'unknown';
+        const result = await buildVectorIndex(rootPath, proj.wcPath, commitId, proj.name, undefined, (msg) => console.log(`  ${msg}`));
+        out(result, fmt);
+    }
+    catch (error) {
+        out({ success: false, message: String(error) }, fmt);
+        process.exit(1);
+    }
+});
+
+vectorCommand.command('search <projectName> <query>')
+    .description('Semantic search project files')
+    .option('--top-k <n>', 'Number of results', '10')
+    .option('--min-similarity <n>', 'Minimum similarity 0-1', '0.3')
+    .action(async (projectName, query, opts) => {
+    const fmt = program.opts().format;
+    try {
+        const rootPath = getRootPath(program.opts());
+        const { searchVectors } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+        const result = await searchVectors(rootPath, projectName, {
+            text: query,
+            topK: parseInt(opts.topK),
+            minSimilarity: parseFloat(opts.minSimilarity),
+        });
+        if (fmt === 'table' && result.success) {
+            console.log(`\nSearch: "${query}"`);
+            console.log('─'.repeat(80));
+            for (const r of result.results) {
+                console.log(`#${r.rank} [${(r.similarity * 100).toFixed(1)}%] ${r.chunk.filePath}:${r.chunk.startLine}-${r.chunk.endLine}`);
+                console.log(`    ${r.chunk.content.slice(0, 120).replace(/\n/g, ' ')}...`);
+                console.log('');
+            }
+            console.log('─'.repeat(80));
+            console.log(`${result.results.length} results`);
+        }
+        else {
+            out(result, fmt);
+        }
+    }
+    catch (error) {
+        out({ success: false, message: String(error) }, fmt);
+        process.exit(1);
+    }
+});
+
+vectorCommand.command('status <projectName>')
+    .description('Show vector index status')
+    .action(async (projectName) => {
+    const fmt = program.opts().format;
+    try {
+        const rootPath = getRootPath(program.opts());
+        const { getVectorStatus } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+        const result = await getVectorStatus(rootPath, projectName);
+        if (fmt === 'table' && result.success && result.index) {
+            console.log('\nVector Index Status:');
+            console.log('─'.repeat(60));
+            console.log(`Project:     ${result.index.projectName}`);
+            console.log(`Model:       ${result.index.model}`);
+            console.log(`Dimensions:  ${result.index.dimensions}`);
+            console.log(`Chunks:      ${result.index.totalChunks}`);
+            console.log(`Files:       ${result.index.totalFiles}`);
+            console.log(`Tokens:      ${result.index.totalTokens}`);
+            console.log(`Version:     ${result.index.commitId}`);
+            console.log(`Updated:     ${result.index.updatedAt}`);
+            console.log('─'.repeat(60));
+        }
+        else {
+            out(result, fmt);
+        }
+    }
+    catch (error) {
+        out({ success: false, message: String(error) }, fmt);
+        process.exit(1);
+    }
+});
+
+vectorCommand.command('delete <projectName>')
+    .description('Delete vector index')
+    .action(async (projectName) => {
+    const fmt = program.opts().format;
+    try {
+        const rootPath = getRootPath(program.opts());
+        const { deleteVectorIndex } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+        const result = await deleteVectorIndex(rootPath, projectName);
+        out(result, fmt);
+    }
+    catch (error) {
+        out({ success: false, message: String(error) }, fmt);
+        process.exit(1);
+    }
+});
 // ==================== 解析 ====================
 program.parse(process.argv);

@@ -330,6 +330,67 @@ export async function startExternalApi(rootPath: string): Promise<{
     }
   })
 
+  // POST /api/v1/projects/:name/vector/index
+  app.post('/api/v1/projects/:name/vector/index', async (req: Request, res: Response) => {
+    try {
+      const name = String(req.params.name)
+      const registry = readRegistry(rootPath)
+      const proj = registry.find(e => e.name === name)
+      if (!proj) { res.status(404).json({ error: 'Project not found' }); return }
+
+      const wc = proj.workingCopies[0]
+      if (!wc) { res.status(404).json({ error: 'No working copy for project' }); return }
+
+      const history = await dbvs.getHistoryStructured(proj.repoPath)
+      const commitId = (history.success && history.commits?.length > 0)
+        ? history.commits[0].id : 'unknown'
+
+      const { buildVectorIndex } = await import('./vector-engine')
+      const filePaths = req.body?.filePaths || undefined
+      const result = await buildVectorIndex(rootPath, wc.path, commitId, name, filePaths)
+      res.json(result)
+    } catch (e) {
+      res.status(500).json({ error: String(e) })
+    }
+  })
+
+  // GET /api/v1/projects/:name/vector/status
+  app.get('/api/v1/projects/:name/vector/status', async (req: Request, res: Response) => {
+    try {
+      const { getVectorStatus } = await import('./vector-engine')
+      const result = await getVectorStatus(rootPath, String(req.params.name))
+      res.json(result)
+    } catch (e) {
+      res.status(500).json({ error: String(e) })
+    }
+  })
+
+  // POST /api/v1/projects/:name/vector/search
+  app.post('/api/v1/projects/:name/vector/search', async (req: Request, res: Response) => {
+    try {
+      const { searchVectors } = await import('./vector-engine')
+      const { text, topK, minSimilarity, fileTypes } = req.body || {}
+      if (!text) { res.status(400).json({ error: 'text is required' }); return }
+      const result = await searchVectors(rootPath, String(req.params.name), {
+        text, topK, minSimilarity, fileTypes,
+      })
+      res.json(result)
+    } catch (e) {
+      res.status(500).json({ error: String(e) })
+    }
+  })
+
+  // DELETE /api/v1/projects/:name/vector
+  app.delete('/api/v1/projects/:name/vector', async (req: Request, res: Response) => {
+    try {
+      const { deleteVectorIndex } = await import('./vector-engine')
+      const result = await deleteVectorIndex(rootPath, String(req.params.name))
+      res.json(result)
+    } catch (e) {
+      res.status(500).json({ error: String(e) })
+    }
+  })
+
   return new Promise(resolve => {
     server = app.listen(currentConfig.port, () => {
       const addr = `http://localhost:${currentConfig.port}`
