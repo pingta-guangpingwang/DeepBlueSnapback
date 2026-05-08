@@ -196,6 +196,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 从项目列表移除工作副本（仅断开关联）
   unregisterProject: (rootPath: string, workingCopyPath: string) =>
     ipcRenderer.invoke('dbgvs:unregister-project', rootPath, workingCopyPath),
+  deleteWorkingCopy: (rootPath: string, workingCopyPath: string) =>
+    ipcRenderer.invoke('dbgvs:delete-working-copy', rootPath, workingCopyPath),
 
   // 启动检查：补全项目 DBHT-GUIDE.md
   ensureProjectDocs: (rootPath: string) =>
@@ -325,6 +327,7 @@ export interface ElectronAPI {
   checkoutTo: (rootPath: string, repoPath: string, targetParentDir: string, folderName: string) => Promise<{ success: boolean; message: string; targetPath?: string; projectName?: string }>
   registerWorkingCopy: (rootPath: string, workingCopyPath: string) => Promise<{ success: boolean; message: string; projectName?: string; repoPath?: string }>
   unregisterProject: (rootPath: string, workingCopyPath: string) => Promise<{ success: boolean; message: string }>
+  deleteWorkingCopy: (rootPath: string, workingCopyPath: string) => Promise<{ success: boolean; message: string }>
 
   // 新手引导
   getOnboardingStatus: () => Promise<{ completed: boolean }>

@@ -546,7 +546,7 @@ function RepoManager({ rootPath }: { rootPath: string }) {
 export default function RepoList() {
   const [state, dispatch] = useAppState()
   const { t, locale, setLocale } = useI18n()
-  const { importProject, confirmImport, checkoutToProject, openProject, removeProject, importProgress, setImportProgress } = useProjects()
+  const { importProject, confirmImport, checkoutToProject, openProject, removeProject, deleteProject, importProgress, setImportProgress } = useProjects()
   const { openCommitPanel } = useRepository()
   const [settingsTab, setSettingsTab] = useState<'general' | 'repository' | 'context-menu'>('general')
   const [importFolderPath, setImportFolderPath] = useState<string | null>(null)
@@ -679,6 +679,7 @@ export default function RepoList() {
                 onEnter={() => openProject(project.path)}
                 onCommit={() => openCommitPanel(project.path)}
                 onRemove={removeProject}
+                onDeleteFiles={deleteProject}
               />
             ))}
           </div>

@@ -153,6 +153,7 @@ async function getRegistryPath(rootPath: string): Promise<string> {
 async function readProjectRegistry(rootPath: string): Promise<ProjectRegistryEntry[]> {
   const registryPath = await getRegistryPath(rootPath)
   const reposDir = path.join(rootPath, 'repositories')
+  const excludedRepos = await getExcludedRepos(rootPath)
 
   let entries: ProjectRegistryEntry[] = []
 
@@ -173,12 +174,14 @@ async function readProjectRegistry(rootPath: string): Promise<ProjectRegistryEnt
   }
 
   // 2. 扫描 repositories/ 目录，补齐注册表中缺失的仓库（外部 AI 初始化）
+  //    跳过已被用户手动移除的仓库
   if (await fs.pathExists(reposDir)) {
     try {
       const dirs = await fs.readdir(reposDir)
       for (const dir of dirs) {
         const repoPath = path.join(reposDir, dir)
         const normalizedRepo = path.resolve(repoPath)
+        if (excludedRepos.has(normalizedRepo)) continue
         const existing = entries.find(e => path.resolve(e.repoPath) === normalizedRepo)
         if (existing) continue
         const stat = await fs.stat(repoPath).catch(() => null)
@@ -230,6 +233,36 @@ async function readProjectRegistry(rootPath: string): Promise<ProjectRegistryEnt
 async function writeProjectRegistry(rootPath: string, entries: ProjectRegistryEntry[]): Promise<void> {
   const registryPath = await getRegistryPath(rootPath)
   await fs.writeJson(registryPath, entries, { spaces: 2 })
+}
+
+async function getExcludedRepos(rootPath: string): Promise<Set<string>> {
+  try {
+    const excludedPath = path.join(rootPath, 'config', 'excluded-repos.json')
+    if (await fs.pathExists(excludedPath)) {
+      const list: string[] = await fs.readJson(excludedPath)
+      return new Set(list.map(p => path.resolve(p)))
+    }
+  } catch { /* ignore */ }
+  return new Set()
+}
+
+async function addExcludedRepo(rootPath: string, repoPath: string): Promise<void> {
+  const excludedPath = path.join(rootPath, 'config', 'excluded-repos.json')
+  const excluded = await getExcludedRepos(rootPath)
+  excluded.add(path.resolve(repoPath))
+  await fs.ensureDir(path.dirname(excludedPath))
+  await fs.writeJson(excludedPath, [...excluded], { spaces: 2 })
+}
+
+async function removeExcludedRepo(rootPath: string, repoPath: string): Promise<void> {
+  const excludedPath = path.join(rootPath, 'config', 'excluded-repos.json')
+  const excluded = await getExcludedRepos(rootPath)
+  excluded.delete(path.resolve(repoPath))
+  if (excluded.size === 0) {
+    await fs.remove(excludedPath).catch(() => {})
+  } else {
+    await fs.writeJson(excludedPath, [...excluded], { spaces: 2 })
+  }
 }
 
 // ==================== IPC 处理程序（仅 GUI 模式）====================
@@ -1368,6 +1401,10 @@ ipcMain.handle('dbgvs:register-project', async (_, rootPath: string, projectPath
         send('提交完成')
       }
     }
+    await writeProjectRegistry(rootPath, registry)
+
+    // 清除可能的排除标记（用户重新导入之前移除的项目）
+    await removeExcludedRepo(rootPath, repoPath)
 
     // 创建 DBHT-GUIDE.md
     await ensureProjectGuide(normalizedProjectPath, name, repoPath)
@@ -1534,6 +1571,9 @@ ipcMain.handle('dbgvs:register-working-copy', async (_, rootPath: string, workin
     }
     await writeProjectRegistry(rootPath, registry)
 
+    // 清除可能的排除标记（用户重新导入之前移除的项目）
+    await removeExcludedRepo(rootPath, repoPath)
+
     return { success: true, message: `已加载项目 "${projectName}"`, projectName, repoPath }
   } catch (error) {
     return { success: false, message: String(error) }
@@ -1545,6 +1585,7 @@ ipcMain.handle('dbgvs:unregister-project', async (_, rootPath: string, workingCo
   try {
     const registry = await readProjectRegistry(rootPath)
     const normalized = path.resolve(workingCopyPath)
+    let removedRepoPath: string | null = null
 
     // 移除匹配的工作副本，并清理空条目
     for (let i = registry.length - 1; i >= 0; i--) {
@@ -1552,6 +1593,7 @@ ipcMain.handle('dbgvs:unregister-project', async (_, rootPath: string, workingCo
       entry.workingCopies = entry.workingCopies.filter(wc => path.resolve(wc.path) !== normalized)
       // Also match repoPath for entries without working copies (external AI repos)
       if (entry.workingCopies.length === 0 && path.resolve(entry.repoPath) === normalized) {
+        removedRepoPath = entry.repoPath
         registry.splice(i, 1)
       }
       // 条目没有工作副本了，从 registry 移除
@@ -1561,7 +1603,55 @@ ipcMain.handle('dbgvs:unregister-project', async (_, rootPath: string, workingCo
     }
 
     await writeProjectRegistry(rootPath, registry)
+
+    // 如果移除了一个没有工作副本的仓库，加入排除列表防止自动扫描重新添加
+    if (removedRepoPath) {
+      await addExcludedRepo(rootPath, removedRepoPath)
+    }
+
     return { success: true, message: '已从项目列表移除' }
+  } catch (error) {
+    return { success: false, message: String(error) }
+  }
+})
+
+// 删除项目（移除列表 + 删除工作副本文件）
+ipcMain.handle('dbgvs:delete-working-copy', async (_, rootPath: string, workingCopyPath: string) => {
+  try {
+    const normalized = path.resolve(workingCopyPath)
+    if (!(await fs.pathExists(normalized))) {
+      return { success: false, message: '工作副本路径不存在' }
+    }
+
+    // 安全检查：确保要删除的是工作副本，防止误删
+    const link = await dbvsRepo.readWorkingCopyLink(normalized)
+    if (!link?.repoPath) {
+      return { success: false, message: '该目录不是有效的 DBHT 工作副本，拒绝删除' }
+    }
+
+    const repoPath = path.resolve(link.repoPath)
+
+    // 1. 删除工作副本目录
+    try {
+      await fs.remove(normalized)
+    } catch (e) {
+      return { success: false, message: `删除工作副本失败: ${String(e)}` }
+    }
+
+    // 2. 从注册表中移除
+    const registry = await readProjectRegistry(rootPath)
+    for (let i = registry.length - 1; i >= 0; i--) {
+      const entry = registry[i]
+      entry.workingCopies = entry.workingCopies.filter(wc => path.resolve(wc.path) !== normalized)
+      if (entry.workingCopies.length === 0) {
+        // 加入排除列表，防止自动扫描重新添加
+        await addExcludedRepo(rootPath, entry.repoPath)
+        registry.splice(i, 1)
+      }
+    }
+    await writeProjectRegistry(rootPath, registry)
+
+    return { success: true, message: `已删除工作副本并移除项目` }
   } catch (error) {
     return { success: false, message: String(error) }
   }

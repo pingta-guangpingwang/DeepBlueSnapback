@@ -871,6 +871,13 @@ const zh: Translations = {
     notesHint: '备注自动保存到项目目录下的 .dbvs-horsefarm-notes.md，与驾驭工程共享',
     notCheckedOut: '未检出',
     noWorkingCopy: '无工作副本，请先检出',
+    removeTitle: '移除项目',
+    unlinkOnly: '仅移除列表',
+    unlinkDesc: '只从列表中移除。文件和仓库不会被删除。',
+    deleteFiles: '删除文件',
+    deleteFilesDesc: '从磁盘删除工作副本并从列表移除。仓库历史保留。',
+    deleteFilesConfirm: '这将永久删除工作副本中的所有文件！此操作不可撤销。确认删除？',
+    deleteFilesFinal: '是，删除工作副本',
   },
 
   // App-level messages

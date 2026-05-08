@@ -877,6 +877,13 @@ const en = {
     notesHint: 'Notes auto-saved to .dbvs-horsefarm-notes.md in the project directory, shared with Harness Farm.',
     notCheckedOut: 'Not checked out',
     noWorkingCopy: 'No working copy — check out first',
+    removeTitle: 'Remove Project',
+    unlinkOnly: 'Unlink Only',
+    unlinkDesc: 'Remove from list. Files and repository will not be deleted.',
+    deleteFiles: 'Delete Files',
+    deleteFilesDesc: 'Delete the working copy from disk and remove from list. Repository history is preserved.',
+    deleteFilesConfirm: 'This will permanently delete all files in the working copy! This action is irreversible. Are you sure?',
+    deleteFilesFinal: 'Yes, delete the working copy',
   },
 
   // App-level messages

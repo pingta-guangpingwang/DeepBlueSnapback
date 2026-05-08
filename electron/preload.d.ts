@@ -274,6 +274,10 @@ export interface ElectronAPI {
         success: boolean;
         message: string;
     }>;
+    deleteWorkingCopy: (rootPath: string, workingCopyPath: string) => Promise<{
+        success: boolean;
+        message: string;
+    }>;
     getOnboardingStatus: () => Promise<{
         completed: boolean;
     }>;

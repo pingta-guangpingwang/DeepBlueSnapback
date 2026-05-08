@@ -9,10 +9,12 @@ interface ProjectCardProps {
   onEnter: () => void
   onCommit: () => void
   onRemove: (projectPath: string) => void
+  onDeleteFiles: (projectPath: string) => void
 }
 
-export default function ProjectCard({ project, onEnter, onCommit, onRemove }: ProjectCardProps) {
-  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
+export default function ProjectCard({ project, onEnter, onCommit, onRemove, onDeleteFiles }: ProjectCardProps) {
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const { t } = useI18n()
 
   const hasWorkingCopy = !!project.path
@@ -55,9 +57,15 @@ export default function ProjectCard({ project, onEnter, onCommit, onRemove }: Pr
     onRemove(hasWorkingCopy ? project.path : project.repoPath)
   }
 
-  if (showRemoveConfirm) {
+  const handleDeleteFiles = () => {
+    if (!hasWorkingCopy) return
+    onDeleteFiles(project.path)
+  }
+
+  // Remove Dialog with two options
+  if (showRemoveDialog) {
     return (
-      <div className="project-card" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '10px' }}>
+      <div className="project-card" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '12px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <strong style={{ fontSize: '14px' }}>{project.name}</strong>
@@ -65,25 +73,69 @@ export default function ProjectCard({ project, onEnter, onCommit, onRemove }: Pr
               {hasWorkingCopy ? project.path : <span style={{ color: '#d97706' }}>⚠ {t.projectCard.notCheckedOut}</span>}
             </span>
           </div>
-          <span style={{ fontSize: '12px', color: '#d97706', fontWeight: 500 }}>{t.projectCard.remove}</span>
-        </div>
-        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
-          <span style={{ fontSize: '12px', color: '#6b7280', flex: 1 }}>{t.projectCard.confirmRemove}</span>
           <button
-            className="warning-button"
-            style={{ fontSize: '12px', padding: '4px 12px' }}
-            onClick={() => { handleRemove(); setShowRemoveConfirm(false) }}
-          >
-            {t.projectCard.remove}
-          </button>
-          <button
-            className="secondary-button"
-            style={{ fontSize: '12px', padding: '4px 12px' }}
-            onClick={() => setShowRemoveConfirm(false)}
-          >
-            {t.common.cancel}
-          </button>
+            onClick={() => { setShowRemoveDialog(false); setShowDeleteConfirm(false) }}
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '16px', color: '#9ca3af' }}
+          >✕</button>
         </div>
+
+        {!showDeleteConfirm ? (
+          <>
+            <div style={{ fontSize: '13px', color: '#374151', borderBottom: '1px solid #e5e7eb', paddingBottom: '8px' }}>
+              {t.projectCard.removeTitle}
+            </div>
+
+            {/* Option 1: Unlink only */}
+            <button
+              onClick={() => { handleRemove(); setShowRemoveDialog(false) }}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px',
+                width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #d1d5db',
+                background: '#f9fafb', cursor: 'pointer', textAlign: 'left',
+              }}
+            >
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#1f2937' }}>{t.projectCard.unlinkOnly}</span>
+              <span style={{ fontSize: '11px', color: '#6b7280' }}>{t.projectCard.unlinkDesc}</span>
+            </button>
+
+            {/* Option 2: Delete files */}
+            {hasWorkingCopy && (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px',
+                  width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #fca5a5',
+                  background: '#fef2f2', cursor: 'pointer', textAlign: 'left',
+                }}
+              >
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#dc2626' }}>{t.projectCard.deleteFiles}</span>
+                <span style={{ fontSize: '11px', color: '#991b1b' }}>{t.projectCard.deleteFilesDesc}</span>
+              </button>
+            )}
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: '13px', color: '#dc2626', fontWeight: 600 }}>
+              ⚠ {t.projectCard.deleteFilesConfirm}
+            </div>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button
+                className="secondary-button"
+                style={{ fontSize: '12px', padding: '4px 12px' }}
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                {t.common.cancel}
+              </button>
+              <button
+                className="warning-button"
+                style={{ fontSize: '12px', padding: '4px 12px', background: '#dc2626' }}
+                onClick={() => { handleDeleteFiles(); setShowRemoveDialog(false); setShowDeleteConfirm(false) }}
+              >
+                {t.projectCard.deleteFilesFinal}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     )
   }
@@ -128,7 +180,7 @@ export default function ProjectCard({ project, onEnter, onCommit, onRemove }: Pr
         <button
           className="secondary-button"
           style={{ fontSize: '12px', padding: '4px 12px', color: '#9ca3af' }}
-          onClick={() => setShowRemoveConfirm(true)}
+          onClick={() => setShowRemoveDialog(true)}
         >
           {t.projectCard.remove}
         </button>

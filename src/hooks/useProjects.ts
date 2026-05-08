@@ -194,5 +194,24 @@ export function useProjects() {
     }
   }, [state.projects, dispatch, loadProjects])
 
-  return { loadProjects, createProject, importProject, confirmImport, checkoutToProject, checkoutProject, openProject, removeProject, importProgress, setImportProgress }
+  const deleteProject = useCallback(async (projectPath: string) => {
+    if (!state.rootRepositoryPath || !projectPath) return
+
+    dispatch({ type: 'SET_IS_LOADING', payload: true })
+    try {
+      const result = await window.electronAPI.deleteWorkingCopy(state.rootRepositoryPath, projectPath)
+      if (result?.success) {
+        await loadProjects()
+        dispatch({ type: 'SET_MESSAGE', payload: `已删除工作副本并从列表移除` })
+      } else {
+        dispatch({ type: 'SET_MESSAGE', payload: '删除失败：' + (result?.message || '未知错误') })
+      }
+    } catch (error) {
+      dispatch({ type: 'SET_MESSAGE', payload: '删除失败：' + (error as Error).message })
+    } finally {
+      dispatch({ type: 'SET_IS_LOADING', payload: false })
+    }
+  }, [state.rootRepositoryPath, state.projects, dispatch, loadProjects])
+
+  return { loadProjects, createProject, importProject, confirmImport, checkoutToProject, checkoutProject, openProject, removeProject, deleteProject, importProgress, setImportProgress }
 }

@@ -141,6 +141,7 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     registerWorkingCopy: (rootPath, workingCopyPath) => electron_1.ipcRenderer.invoke('dbgvs:register-working-copy', rootPath, workingCopyPath),
     // 从项目列表移除工作副本（仅断开关联）
     unregisterProject: (rootPath, workingCopyPath) => electron_1.ipcRenderer.invoke('dbgvs:unregister-project', rootPath, workingCopyPath),
+    deleteWorkingCopy: (rootPath, workingCopyPath) => electron_1.ipcRenderer.invoke('dbgvs:delete-working-copy', rootPath, workingCopyPath),
     // 启动检查：补全项目 DBHT-GUIDE.md
     ensureProjectDocs: (rootPath) => electron_1.ipcRenderer.invoke('dbgvs:ensure-project-docs', rootPath),
     // 新手引导
