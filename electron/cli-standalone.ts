@@ -17,6 +17,7 @@ import { generateHealthReport } from './health-scorer'
 import { analyzeImpact } from './impact-analyzer'
 import { generateAICommitMessage } from './commit-msg-generator'
 import { analyzeCrossReferences, type CrossProjectRef } from './cross-ref-analyzer'
+import { ingestFiles, getSupportedExtensions, getIndexedFiles, exportVectorIndex, importVectorIndex, removeFilesFromIndex, getVectorStatus } from './vector-engine'
 
 const repo = new DBHTRepository()
 const program = new Command()
@@ -1191,6 +1192,179 @@ program.command('health [projectPath]')
       out({ success: false, message: String(error) }, fmt)
       process.exit(1)
     }
+  })
+
+// ==================== 向量知识库操作 ====================
+
+const vectorCmd = program.command('vector')
+  .description('向量知识库操作：语义搜索索引的构建、导入导出和文件管理')
+
+vectorCmd.command('ingest <projectName> [files...]')
+  .description('导入外部文件到知识库索引（支持 PDF/DOCX/TXT/MD 及代码文件）')
+  .action(async (projectName: string, files: string[]) => {
+    const fmt = program.opts().format
+    try {
+      const rootPath = getRootPath(program.opts())
+      const registry = await readProjectRegistry(rootPath)
+      const proj = registry.find((e: any) => e.name === projectName)
+      if (!proj) {
+        out({ success: false, message: `项目 "${projectName}" 未找到` }, fmt)
+        return
+      }
+      const wc = proj.workingCopies?.[0]
+      if (!wc) {
+        out({ success: false, message: `项目 "${projectName}" 没有工作副本` }, fmt)
+        return
+      }
+      const history = await repo.getHistoryStructured(proj.repoPath)
+      const commitId = (history.success && history.commits?.length > 0)
+        ? history.commits[0].id : 'unknown'
+
+      const resolvedFiles = files.map((f: string) => path.resolve(f))
+      for (const f of resolvedFiles) {
+        if (!fs.existsSync(f)) {
+          out({ success: false, message: `文件不存在: ${f}` }, fmt)
+          return
+        }
+      }
+
+      console.log(`正在导入 ${resolvedFiles.length} 个文件到 "${projectName}"...`)
+      const ingestResult = await ingestFiles(rootPath, resolvedFiles, projectName, commitId)
+      if (fmt === 'table') {
+        const r = ingestResult.result
+        console.log('\n📥 导入结果:')
+        console.log('═'.repeat(60))
+        console.log(`成功: ${r?.filesSucceeded || 0}  失败: ${r?.filesFailed || 0}  新增块: ${r?.totalChunksAdded || 0}`)
+        console.log('─'.repeat(60))
+        if (r?.fileResults) {
+          for (const fr of r.fileResults) {
+            const icon = fr.success ? '✓' : '✗'
+            console.log(`  ${icon} ${fr.name}${fr.chunksAdded ? ` (+${fr.chunksAdded} chunks)` : ''}${fr.error ? ` — ${fr.error}` : ''}`)
+          }
+        }
+        console.log('═'.repeat(60))
+      } else {
+        out(ingestResult, fmt)
+      }
+    } catch (error) {
+      out({ success: false, message: String(error) }, fmt)
+      process.exit(1)
+    }
+  })
+
+vectorCmd.command('files <projectName>')
+  .description('列出已索引的文件')
+  .action(async (projectName: string) => {
+    const fmt = program.opts().format
+    try {
+      const rootPath = getRootPath(program.opts())
+      const result = await getIndexedFiles(rootPath, projectName)
+      if (fmt === 'table') {
+        console.log(`\n📄 ${projectName} — 已索引文件 (${result.files?.length || 0})`)
+        console.log('═'.repeat(80))
+        if (result.files) {
+          for (const f of result.files) {
+            console.log(`  ${f.filePath}  [${f.chunkCount} chunks, ${f.totalChars.toLocaleString()} chars, ${f.language}]`)
+          }
+        }
+        console.log('═'.repeat(80))
+      } else {
+        out(result, fmt)
+      }
+    } catch (error) {
+      out({ success: false, message: String(error) }, fmt)
+      process.exit(1)
+    }
+  })
+
+vectorCmd.command('export <projectName>')
+  .description('导出向量索引为 JSON')
+  .option('-o, --output <file>', '输出文件路径（不指定则打印到 stdout）')
+  .action(async (projectName: string, opts: any) => {
+    const fmt = program.opts().format
+    try {
+      const rootPath = getRootPath(program.opts())
+      const result = await exportVectorIndex(rootPath, projectName)
+      if (!result.success || !result.data) {
+        out(result, fmt)
+        return
+      }
+      if (opts.output) {
+        fs.writeFileSync(opts.output, result.data, 'utf-8')
+        console.log(`索引已导出到 ${opts.output}`)
+      } else {
+        console.log(result.data)
+      }
+    } catch (error) {
+      out({ success: false, message: String(error) }, fmt)
+      process.exit(1)
+    }
+  })
+
+vectorCmd.command('import <projectName> <file>')
+  .description('从 JSON 文件导入向量索引')
+  .action(async (projectName: string, file: string) => {
+    const fmt = program.opts().format
+    try {
+      const rootPath = getRootPath(program.opts())
+      if (!fs.existsSync(file)) {
+        out({ success: false, message: `文件不存在: ${file}` }, fmt)
+        return
+      }
+      const data = fs.readFileSync(file, 'utf-8')
+      const result = await importVectorIndex(rootPath, projectName, data)
+      if (fmt === 'table') {
+        console.log(result.success ? `✓ 索引导入成功` : `✗ 导入失败: ${result.message}`)
+        if (result.index) {
+          console.log(`  文件数: ${result.index.totalFiles}  块数: ${result.index.totalChunks}  词元数: ${result.index.totalTokens.toLocaleString()}`)
+        }
+      } else {
+        out(result, fmt)
+      }
+    } catch (error) {
+      out({ success: false, message: String(error) }, fmt)
+      process.exit(1)
+    }
+  })
+
+vectorCmd.command('remove <projectName> [files...]')
+  .description('从索引中移除文件')
+  .action(async (projectName: string, files: string[]) => {
+    const fmt = program.opts().format
+    try {
+      const rootPath = getRootPath(program.opts())
+      const result = await removeFilesFromIndex(rootPath, '', '', projectName, files)
+      if (fmt === 'table') {
+        console.log(result.success ? `✓ 已从索引移除 ${files.length} 个文件` : `✗ 移除失败: ${result.message}`)
+      } else {
+        out(result, fmt)
+      }
+    } catch (error) {
+      out({ success: false, message: String(error) }, fmt)
+      process.exit(1)
+    }
+  })
+
+vectorCmd.command('supported')
+  .description('列出支持的导入文件格式')
+  .action(() => {
+    const result = getSupportedExtensions()
+    console.log('\n📋 支持的导入文件格式:')
+    console.log('═'.repeat(50))
+    const byCategory: Record<string, typeof result.extensions> = {}
+    for (const ext of result.extensions) {
+      if (!byCategory[ext.category]) byCategory[ext.category] = []
+      byCategory[ext.category].push(ext)
+    }
+    for (const [cat, exts] of Object.entries(byCategory)) {
+      const catLabel = cat === 'document' ? '文档' : cat === 'data' ? '数据' : cat === 'web' ? '网页' : '代码'
+      console.log(`\n[${catLabel}]`)
+      for (const e of exts) {
+        console.log(`  ${e.extension.padEnd(8)} — ${e.description}`)
+      }
+    }
+    console.log(`\n共 ${result.extensions.length} 种格式`)
+    console.log('═'.repeat(50))
   })
 
 // ==================== 解析 ====================

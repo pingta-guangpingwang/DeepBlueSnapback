@@ -568,11 +568,11 @@ export default function VectorPanel() {
                 </select>
               </label>
               <label className="vector-option">
-                {vt('searchMode') || 'Mode'}:
+                {vt('searchMode')}:
                 <select value={searchMode} onChange={e => setSearchMode(e.target.value as any)}>
-                  <option value="hybrid">{vt('hybrid') || 'Hybrid'}</option>
-                  <option value="vector">{vt('vector') || 'Vector'}</option>
-                  <option value="bm25">BM25</option>
+                  <option value="hybrid">{vt('hybrid')}</option>
+                  <option value="vector">{vt('vector')}</option>
+                  <option value="bm25">{vt('bm25')}</option>
                 </select>
               </label>
             </div>
