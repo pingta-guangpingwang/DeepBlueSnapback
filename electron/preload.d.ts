@@ -278,6 +278,17 @@ export interface ElectronAPI {
         success: boolean;
         message: string;
     }>;
+    reorderProjects: (rootPath: string, orderedRepos: Array<{
+        repoPath: string;
+        order: number;
+    }>) => Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    setProjectRating: (rootPath: string, repoPath: string, rating: number) => Promise<{
+        success: boolean;
+        message: string;
+    }>;
     getOnboardingStatus: () => Promise<{
         completed: boolean;
     }>;

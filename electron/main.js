@@ -1272,7 +1272,9 @@ AI 智能体在开发过程中必须遵循以下规则：
                                 repoPath: entry.repoPath,
                                 status: '已同步',
                                 lastUpdate,
-                                hasChanges: false
+                                hasChanges: false,
+                                order: entry.order ?? 0,
+                                rating: entry.rating ?? 2,
                             });
                         }
                     }
@@ -1285,7 +1287,9 @@ AI 智能体在开发过程中必须遵循以下规则：
                         repoPath: entry.repoPath,
                         status: '已同步',
                         lastUpdate,
-                        hasChanges: false
+                        hasChanges: false,
+                        order: entry.order ?? 0,
+                        rating: entry.rating ?? 2,
                     });
                 }
             }
@@ -1574,6 +1578,40 @@ AI 智能体在开发过程中必须遵循以下规则：
             }
             await writeProjectRegistry(rootPath, registry);
             return { success: true, message: `已删除工作副本并移除项目` };
+        }
+        catch (error) {
+            return { success: false, message: String(error) };
+        }
+    });
+    // 更新项目排序
+    electron_1.ipcMain.handle('dbgvs:reorder-projects', async (_, rootPath, orderedRepos) => {
+        try {
+            const registry = await readProjectRegistry(rootPath);
+            for (const { repoPath, order } of orderedRepos) {
+                const entry = registry.find(e => path.resolve(e.repoPath) === path.resolve(repoPath));
+                if (entry)
+                    entry.order = order;
+            }
+            await writeProjectRegistry(rootPath, registry);
+            return { success: true, message: '排序已保存' };
+        }
+        catch (error) {
+            return { success: false, message: String(error) };
+        }
+    });
+    // 设置项目重要程度
+    electron_1.ipcMain.handle('dbgvs:set-project-rating', async (_, rootPath, repoPath, rating) => {
+        try {
+            if (rating < 1 || rating > 6 || !Number.isInteger(rating)) {
+                return { success: false, message: '评级必须在 1-6 之间' };
+            }
+            const registry = await readProjectRegistry(rootPath);
+            const entry = registry.find(e => path.resolve(e.repoPath) === path.resolve(repoPath));
+            if (!entry)
+                return { success: false, message: '项目未找到' };
+            entry.rating = rating;
+            await writeProjectRegistry(rootPath, registry);
+            return { success: true, message: `项目评级已设为 ${rating} 星` };
         }
         catch (error) {
             return { success: false, message: String(error) };
@@ -2364,7 +2402,9 @@ async function getProjectsList(rootPath) {
             repoPath: entry.repoPath,
             status: '已同步',
             lastUpdate: '',
-            hasChanges: false
+            hasChanges: false,
+            order: entry.order ?? 0,
+            rating: entry.rating ?? 2,
         });
     }
     return { success: true, projects };

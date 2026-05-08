@@ -7,5 +7,7 @@ export declare function getProjectsList(rootPath: string): Promise<{
         status: string;
         lastUpdate: string;
         hasChanges: boolean;
+        order: number;
+        rating: number;
     }[];
 }>;
