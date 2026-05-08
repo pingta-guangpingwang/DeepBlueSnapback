@@ -15,12 +15,15 @@ export default function ProjectCard({ project, onEnter, onCommit, onRemove }: Pr
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
   const { t } = useI18n()
 
+  const hasWorkingCopy = !!project.path
+
   // Notes
   const [notes, setNotes] = useState('')
   const [showNotesEditor, setShowNotesEditor] = useState(false)
   const [notesDraft, setNotesDraft] = useState('')
 
   useEffect(() => {
+    if (!hasWorkingCopy) return
     const notesPath = project.path + NOTES_FILE
     window.electronAPI.readFile(notesPath).then(r => {
       if (r.success && r.content) setNotes(r.content)
@@ -44,7 +47,12 @@ export default function ProjectCard({ project, onEnter, onCommit, onRemove }: Pr
   const notesShort = notes.length > 80 ? notes.slice(0, 80) + '...' : notes
 
   const openFolder = () => {
+    if (!hasWorkingCopy) return
     window.electronAPI.openFolder(project.path)
+  }
+
+  const handleRemove = () => {
+    onRemove(hasWorkingCopy ? project.path : project.repoPath)
   }
 
   if (showRemoveConfirm) {
@@ -53,7 +61,9 @@ export default function ProjectCard({ project, onEnter, onCommit, onRemove }: Pr
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <strong style={{ fontSize: '14px' }}>{project.name}</strong>
-            <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '10px' }}>{project.path || project.repoPath}</span>
+            <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '10px' }}>
+              {hasWorkingCopy ? project.path : <span style={{ color: '#d97706' }}>⚠ {t.projectCard.notCheckedOut}</span>}
+            </span>
           </div>
           <span style={{ fontSize: '12px', color: '#d97706', fontWeight: 500 }}>{t.projectCard.remove}</span>
         </div>
@@ -62,7 +72,7 @@ export default function ProjectCard({ project, onEnter, onCommit, onRemove }: Pr
           <button
             className="warning-button"
             style={{ fontSize: '12px', padding: '4px 12px' }}
-            onClick={() => { onRemove(project.path); setShowRemoveConfirm(false) }}
+            onClick={() => { handleRemove(); setShowRemoveConfirm(false) }}
           >
             {t.projectCard.remove}
           </button>
@@ -83,7 +93,10 @@ export default function ProjectCard({ project, onEnter, onCommit, onRemove }: Pr
       <div className="project-info" style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, flex: 1 }}>
         <h3 style={{ margin: 0, whiteSpace: 'nowrap', fontSize: '14px' }}>{project.name}</h3>
         <span style={{ fontSize: '12px', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {project.path || project.repoPath}
+          {hasWorkingCopy
+            ? project.path
+            : <span style={{ color: '#d97706', fontWeight: 500 }} title={t.projectCard.noWorkingCopy}>⚠ {t.projectCard.notCheckedOut}</span>
+          }
         </span>
         <span className={`project-status ${project.status === t.projectCard.synced ? 'synced' : 'unsynced'}`}>
           {project.status === t.projectCard.synced ? t.projectCard.synced : project.status}
@@ -93,9 +106,25 @@ export default function ProjectCard({ project, onEnter, onCommit, onRemove }: Pr
         )}
       </div>
       <div className="project-actions" style={{ flexShrink: 0 }}>
-        <button style={{ fontSize: '12px', padding: '4px 12px' }} onClick={onEnter}>{t.projectCard.enter}</button>
-        <button style={{ fontSize: '12px', padding: '4px 12px' }} onClick={onCommit}>{t.projectCard.commits}</button>
-        <button className="secondary-button" style={{ fontSize: '12px', padding: '4px 12px' }} onClick={openFolder}>{t.projectCard.openFolder}</button>
+        <button
+          style={{ fontSize: '12px', padding: '4px 12px' }}
+          onClick={hasWorkingCopy ? onEnter : undefined}
+          disabled={!hasWorkingCopy}
+          title={!hasWorkingCopy ? t.projectCard.noWorkingCopy : ''}
+        >{t.projectCard.enter}</button>
+        <button
+          style={{ fontSize: '12px', padding: '4px 12px' }}
+          onClick={hasWorkingCopy ? onCommit : undefined}
+          disabled={!hasWorkingCopy}
+          title={!hasWorkingCopy ? t.projectCard.noWorkingCopy : ''}
+        >{t.projectCard.commits}</button>
+        <button
+          className="secondary-button"
+          style={{ fontSize: '12px', padding: '4px 12px' }}
+          onClick={openFolder}
+          disabled={!hasWorkingCopy}
+          title={!hasWorkingCopy ? t.projectCard.noWorkingCopy : ''}
+        >{t.projectCard.openFolder}</button>
         <button
           className="secondary-button"
           style={{ fontSize: '12px', padding: '4px 12px', color: '#9ca3af' }}
@@ -106,32 +135,34 @@ export default function ProjectCard({ project, onEnter, onCommit, onRemove }: Pr
       </div>
 
       {/* Notes row — full width below the main row */}
-      <div
-        onClick={(e) => e.stopPropagation()}
-        onDoubleClick={(e) => { e.stopPropagation(); openNotesEditor(); }}
-        title={t.projectCard.notesPlaceholder}
-        style={{
-          width: '100%', fontSize: '11px',
-          color: notes ? '#374151' : '#9ca3af',
-          lineHeight: '1.5', cursor: 'pointer', marginTop: '4px',
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          padding: '3px 6px', borderRadius: '4px', minHeight: '20px',
-          border: notes ? '1px solid #e5e7eb' : '1px dashed #d1d5db',
-          background: notes ? '#f9fafb' : '#fafafa',
-          userSelect: 'none',
-        }}
-      >
-        {notes ? notesShort : '💬 ' + t.projectCard.notesPlaceholder}
-        {notes && notes.length > 80 && (
-          <button
-            onClick={(e) => { e.stopPropagation(); openNotesEditor(); }}
-            style={{
-              fontSize: '10px', marginLeft: '6px', padding: '0 4px', border: 'none', background: 'transparent',
-              color: '#6366f1', cursor: 'pointer', textDecoration: 'underline',
-            }}
-          >{t.projectCard.notesViewAll}</button>
-        )}
-      </div>
+      {hasWorkingCopy && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => { e.stopPropagation(); openNotesEditor(); }}
+          title={t.projectCard.notesPlaceholder}
+          style={{
+            width: '100%', fontSize: '11px',
+            color: notes ? '#374151' : '#9ca3af',
+            lineHeight: '1.5', cursor: 'pointer', marginTop: '4px',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            padding: '3px 6px', borderRadius: '4px', minHeight: '20px',
+            border: notes ? '1px solid #e5e7eb' : '1px dashed #d1d5db',
+            background: notes ? '#f9fafb' : '#fafafa',
+            userSelect: 'none',
+          }}
+        >
+          {notes ? notesShort : '💬 ' + t.projectCard.notesPlaceholder}
+          {notes && notes.length > 80 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); openNotesEditor(); }}
+              style={{
+                fontSize: '10px', marginLeft: '6px', padding: '0 4px', border: 'none', background: 'transparent',
+                color: '#6366f1', cursor: 'pointer', textDecoration: 'underline',
+              }}
+            >{t.projectCard.notesViewAll}</button>
+          )}
+        </div>
+      )}
 
       {/* Notes Editor Popup */}
       {showNotesEditor && (

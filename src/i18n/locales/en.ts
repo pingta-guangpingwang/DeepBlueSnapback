@@ -875,6 +875,8 @@ const en = {
     notesCancel: 'Cancel',
     notesViewAll: 'View all',
     notesHint: 'Notes auto-saved to .dbvs-horsefarm-notes.md in the project directory, shared with Harness Farm.',
+    notCheckedOut: 'Not checked out',
+    noWorkingCopy: 'No working copy — check out first',
   },
 
   // App-level messages

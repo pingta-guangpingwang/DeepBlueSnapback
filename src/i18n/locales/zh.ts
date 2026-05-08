@@ -869,6 +869,8 @@ const zh: Translations = {
     notesCancel: '取消',
     notesViewAll: '查看全部',
     notesHint: '备注自动保存到项目目录下的 .dbvs-horsefarm-notes.md，与驾驭工程共享',
+    notCheckedOut: '未检出',
+    noWorkingCopy: '无工作副本，请先检出',
   },
 
   // App-level messages

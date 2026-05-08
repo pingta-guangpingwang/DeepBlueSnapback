@@ -1282,11 +1282,16 @@ AI 智能体在开发过程中必须遵循以下规则：
                     registry.splice(registry.indexOf(existingEntry), 1);
                 }
             }
-            // 集中仓库路径
-            const repoPath = path.resolve(path.join(rootPath, 'repositories', name));
+            // 检查项目目录是否本身就是一个 DBHT 仓库（外部 AI 初始化的情况）
+            // 此时 repo 就在项目目录下，不需要在 repositories/ 下另建
+            const projectIsOwnRepo = await fs.pathExists(path.join(normalizedProjectPath, 'config.json')) &&
+                await fs.pathExists(path.join(normalizedProjectPath, 'HEAD.json'));
+            const repoPath = projectIsOwnRepo
+                ? normalizedProjectPath
+                : path.resolve(path.join(rootPath, 'repositories', name));
             await fs.ensureDir(path.join(rootPath, 'repositories'));
-            // 创建集中仓库
-            if (!(await fs.pathExists(path.join(repoPath, 'config.json')))) {
+            // 创建集中仓库（如果项目本身不是仓库）
+            if (!projectIsOwnRepo && !(await fs.pathExists(path.join(repoPath, 'config.json')))) {
                 const result = await dbvsRepo.createRepository(repoPath, name);
                 if (!result.success)
                     return result;
@@ -1476,8 +1481,12 @@ AI 智能体在开发过程中必须遵循以下规则：
             for (let i = registry.length - 1; i >= 0; i--) {
                 const entry = registry[i];
                 entry.workingCopies = entry.workingCopies.filter(wc => path.resolve(wc.path) !== normalized);
+                // Also match repoPath for entries without working copies (external AI repos)
+                if (entry.workingCopies.length === 0 && path.resolve(entry.repoPath) === normalized) {
+                    registry.splice(i, 1);
+                }
                 // 条目没有工作副本了，从 registry 移除
-                if (entry.workingCopies.length === 0) {
+                else if (entry.workingCopies.length === 0) {
                     registry.splice(i, 1);
                 }
             }
