@@ -24,6 +24,7 @@ export default function VectorPanel() {
   const [query, setQuery] = useState('')
   const [topK, setTopK] = useState(10)
   const [minSim, setMinSim] = useState(0.3)
+  const [searchMode, setSearchMode] = useState<'hybrid' | 'vector' | 'bm25'>('hybrid')
 
   // File management
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set())
@@ -96,7 +97,7 @@ export default function VectorPanel() {
 
   const handleSearch = async () => {
     if (!query.trim() || !state.currentProject) return
-    await search(state.currentProject, { text: query.trim(), topK, minSimilarity: minSim })
+    await search(state.currentProject, { text: query.trim(), topK, minSimilarity: minSim, searchMode })
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -564,6 +565,14 @@ export default function VectorPanel() {
                 {vt('minSimilarity')}:
                 <select value={minSim} onChange={e => setMinSim(Number(e.target.value))}>
                   {[0, 0.3, 0.5, 0.7, 0.9].map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </label>
+              <label className="vector-option">
+                {vt('searchMode') || 'Mode'}:
+                <select value={searchMode} onChange={e => setSearchMode(e.target.value as any)}>
+                  <option value="hybrid">{vt('hybrid') || 'Hybrid'}</option>
+                  <option value="vector">{vt('vector') || 'Vector'}</option>
+                  <option value="bm25">BM25</option>
                 </select>
               </label>
             </div>

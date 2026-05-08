@@ -203,6 +203,7 @@ export interface VectorQuery {
   minSimilarity?: number
   fileTypes?: string[]
   nodeId?: string
+  searchMode?: 'hybrid' | 'vector' | 'bm25'
 }
 
 export interface VectorSearchResult {

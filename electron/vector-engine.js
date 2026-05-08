@@ -271,6 +271,83 @@ function cosineSimilarity(a, b) {
     // Both vectors are already L2-normalized, so dot product = cosine similarity
     return Math.max(0, Math.min(1, dot));
 }
+// ==================== BM25 Scoring ====================
+// BM25 parameters
+const BM25_K1 = 1.5;
+const BM25_B = 0.75;
+function buildBM25Stats(chunks) {
+    const df = new Uint32Array(VECTOR_DIMS);
+    const docLengths = [];
+    let totalLen = 0;
+    for (const chunk of chunks) {
+        const grams = extractTrigrams(chunk.content);
+        docLengths.push(chunk.content.length);
+        totalLen += chunk.content.length;
+        const seenInDoc = new Set();
+        for (const gram of grams.keys()) {
+            const dim = hashGram(gram, VECTOR_DIMS);
+            if (!seenInDoc.has(dim)) {
+                seenInDoc.add(dim);
+                df[dim]++;
+            }
+        }
+    }
+    return {
+        docLengths,
+        avgDocLen: chunks.length > 0 ? totalLen / chunks.length : 1,
+        df,
+        totalDocs: chunks.length,
+    };
+}
+function bm25Score(queryText, docText, stats, docIndex) {
+    const queryGrams = extractTrigrams(queryText);
+    const docGrams = extractTrigrams(docText);
+    const docLen = stats.docLengths[docIndex] || 1;
+    let score = 0;
+    for (const [gram, qtf] of queryGrams) {
+        const dim = hashGram(gram, VECTOR_DIMS);
+        const df = stats.df[dim] || 0;
+        const idf = Math.log((stats.totalDocs - df + 0.5) / (df + 0.5) + 1);
+        const dtf = docGrams.get(gram) || 0;
+        if (dtf === 0)
+            continue;
+        const numerator = dtf * (BM25_K1 + 1);
+        const denominator = dtf + BM25_K1 * (1 - BM25_B + BM25_B * (docLen / stats.avgDocLen));
+        score += idf * (numerator / denominator);
+    }
+    return score;
+}
+function reciprocalRankFusion(vectorResults, bm25Results, k = 60) {
+    const combined = new Map();
+    for (let rank = 0; rank < vectorResults.length; rank++) {
+        const r = vectorResults[rank];
+        combined.set(r.index, { vectorScore: r.score, bm25Score: 0, vectorRank: rank + 1, bm25Rank: Infinity });
+    }
+    for (let rank = 0; rank < bm25Results.length; rank++) {
+        const r = bm25Results[rank];
+        const entry = combined.get(r.index);
+        if (entry) {
+            entry.bm25Score = r.score;
+            entry.bm25Rank = rank + 1;
+        }
+        else {
+            combined.set(r.index, { vectorScore: 0, bm25Score: r.score, vectorRank: Infinity, bm25Rank: rank + 1 });
+        }
+    }
+    const results = [];
+    for (const [index, s] of combined) {
+        const vRank = s.vectorRank < Infinity ? 1 / (k + s.vectorRank) : 0;
+        const bRank = s.bm25Rank < Infinity ? 1 / (k + s.bm25Rank) : 0;
+        results.push({
+            chunkIndex: index,
+            vectorScore: s.vectorScore,
+            bm25Score: s.bm25Score,
+            combinedScore: vRank * 0.5 + bRank * 0.5 + s.vectorScore * 0.01 + s.bm25Score * 0.001,
+        });
+    }
+    results.sort((a, b) => b.combinedScore - a.combinedScore);
+    return results;
+}
 // ==================== Public API ====================
 async function buildVectorIndex(rootPath, workingCopyPath, commitId, projectName, filePaths, onProgress) {
     try {
@@ -426,13 +503,14 @@ async function searchVectors(rootPath, projectName, query) {
         }
         const topK = query.topK || 10;
         const minSimilarity = query.minSimilarity || 0.0;
-        // Build a dummy DF for the query vector
+        const mode = query.searchMode || 'hybrid';
+        // Build vocabulary for vector search
         const { df, totalDocs } = buildVocabulary(stored.chunks);
         const queryVec = textToVector(query.text, df, totalDocs);
-        const scored = [];
-        for (let i = 0; i < vectors.length; i++) {
+        // Pre-filter chunks
+        const validIndices = [];
+        for (let i = 0; i < stored.chunks.length; i++) {
             const chunk = stored.chunks[i];
-            // Apply filters
             if (query.fileTypes && query.fileTypes.length > 0) {
                 const ext = path.extname(chunk.filePath).toLowerCase();
                 if (!query.fileTypes.some(t => ext === t || ext === `.${t}`))
@@ -440,18 +518,69 @@ async function searchVectors(rootPath, projectName, query) {
             }
             if (query.nodeId && chunk.nodeId !== query.nodeId)
                 continue;
-            const sim = cosineSimilarity(queryVec, vectors[i]);
-            if (sim >= minSimilarity) {
-                scored.push({ index: i, similarity: sim });
-            }
+            validIndices.push(i);
         }
-        // Sort by similarity descending
-        scored.sort((a, b) => b.similarity - a.similarity);
-        const results = scored.slice(0, topK).map((s, rank) => ({
-            chunk: stored.chunks[s.index],
-            similarity: Math.round(s.similarity * 10000) / 10000,
-            rank: rank + 1,
-        }));
+        let results;
+        if (mode === 'vector') {
+            const scored = [];
+            for (const i of validIndices) {
+                const sim = cosineSimilarity(queryVec, vectors[i]);
+                if (sim >= minSimilarity)
+                    scored.push({ index: i, similarity: sim });
+            }
+            scored.sort((a, b) => b.similarity - a.similarity);
+            results = scored.slice(0, topK).map((s, rank) => ({
+                chunk: stored.chunks[s.index],
+                similarity: Math.round(s.similarity * 10000) / 10000,
+                rank: rank + 1,
+            }));
+        }
+        else if (mode === 'bm25') {
+            // Pure BM25
+            const stats = buildBM25Stats(stored.chunks);
+            const scored = [];
+            for (const i of validIndices) {
+                const score = bm25Score(query.text, stored.chunks[i].content, stats, i);
+                if (score > 0)
+                    scored.push({ index: i, similarity: score });
+            }
+            // Normalize BM25 scores to 0-1 range
+            const maxScore = scored.length > 0 ? Math.max(...scored.map(s => s.similarity)) : 1;
+            if (maxScore > 0)
+                scored.forEach(s => { s.similarity /= maxScore; });
+            scored.sort((a, b) => b.similarity - a.similarity);
+            results = scored.slice(0, topK).map((s, rank) => ({
+                chunk: stored.chunks[s.index],
+                similarity: Math.round(s.similarity * 10000) / 10000,
+                rank: rank + 1,
+            }));
+        }
+        else {
+            // Hybrid: RRF fusion of vector + BM25
+            const stats = buildBM25Stats(stored.chunks);
+            const vectorScored = [];
+            for (const i of validIndices) {
+                const sim = cosineSimilarity(queryVec, vectors[i]);
+                if (sim >= minSimilarity * 0.5)
+                    vectorScored.push({ index: i, score: sim });
+            }
+            vectorScored.sort((a, b) => b.score - a.score);
+            // BM25 top candidates
+            const bm25Scored = [];
+            for (const i of validIndices) {
+                const score = bm25Score(query.text, stored.chunks[i].content, stats, i);
+                if (score > 0)
+                    bm25Scored.push({ index: i, score });
+            }
+            bm25Scored.sort((a, b) => b.score - a.score);
+            // Reciprocal rank fusion
+            const fused = reciprocalRankFusion(vectorScored.slice(0, 200), bm25Scored.slice(0, 200));
+            results = fused.slice(0, topK).map((s, rank) => ({
+                chunk: stored.chunks[s.chunkIndex],
+                similarity: Math.round(s.combinedScore * 10000) / 10000,
+                rank: rank + 1,
+            }));
+        }
         return { success: true, results };
     }
     catch (error) {
