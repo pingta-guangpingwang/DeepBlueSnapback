@@ -127,6 +127,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeAllListeners('graph:progress')
   },
 
+  // Vector Database
+  vectorIndex: (repoPath: string, workingCopyPath: string, commitId: string, projectName: string, filePaths?: string[]) =>
+    ipcRenderer.invoke('vector:index', repoPath, workingCopyPath, commitId, projectName, filePaths),
+  vectorStatus: (projectName: string) =>
+    ipcRenderer.invoke('vector:status', projectName),
+  vectorDelete: (projectName: string) =>
+    ipcRenderer.invoke('vector:delete', projectName),
+  vectorSearch: (projectName: string, query: { text: string; topK?: number; minSimilarity?: number; fileTypes?: string[] }) =>
+    ipcRenderer.invoke('vector:search', projectName, query),
+  vectorSearchBatch: (projectName: string, queries: { text: string; topK?: number; minSimilarity?: number; fileTypes?: string[] }[]) =>
+    ipcRenderer.invoke('vector:search-batch', projectName, queries),
+  vectorEnhanceRag: (projectName: string, query: string, topK?: number) =>
+    ipcRenderer.invoke('vector:enhance-rag', projectName, query, topK),
+  onVectorProgress: (callback: (msg: string) => void) => {
+    ipcRenderer.on('vector:progress', (_, msg) => callback(msg))
+    return () => ipcRenderer.removeAllListeners('vector:progress')
+  },
+
   // LAN Server
   lanStart: (rootPath: string, port?: number) => ipcRenderer.invoke('lan:start', rootPath, port),
   lanStop: () => ipcRenderer.invoke('lan:stop'),
@@ -297,6 +315,19 @@ export interface ElectronAPI {
 
   // Graph
   getRagContext: (commitId: string) => Promise<{ success: boolean; context?: Record<string, unknown>; message?: string }>
+
+  // Vector Database
+  vectorIndex: (repoPath: string, workingCopyPath: string, commitId: string, projectName: string, filePaths?: string[]) =>
+    Promise<{ success: boolean; index?: { schemaVersion: number; projectName: string; commitId: string; model: string; dimensions: number; totalChunks: number; totalFiles: number; totalTokens: number; createdAt: string; updatedAt: string }; message?: string }>
+  vectorStatus: (projectName: string) => Promise<{ success: boolean; index?: Record<string, unknown>; message?: string }>
+  vectorDelete: (projectName: string) => Promise<{ success: boolean; message?: string }>
+  vectorSearch: (projectName: string, query: { text: string; topK?: number; minSimilarity?: number; fileTypes?: string[] }) =>
+    Promise<{ success: boolean; results: Array<{ chunk: Record<string, unknown>; similarity: number; rank: number }>; message?: string }>
+  vectorSearchBatch: (projectName: string, queries: { text: string; topK?: number; minSimilarity?: number; fileTypes?: string[] }[]) =>
+    Promise<{ success: boolean; results: Array<Array<{ chunk: Record<string, unknown>; similarity: number; rank: number }>>; message?: string }>
+  vectorEnhanceRag: (projectName: string, query: string, topK?: number) =>
+    Promise<{ success: boolean; vectorResults: Array<{ chunk: Record<string, unknown>; similarity: number; rank: number }>; message?: string }>
+  onVectorProgress: (callback: (msg: string) => void) => () => void
 
   // Quality & health
   analyzeQuality: (commitId: string) => Promise<{ success: boolean; report?: Record<string, unknown>; message?: string }>

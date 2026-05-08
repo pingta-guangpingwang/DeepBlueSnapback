@@ -128,6 +128,16 @@ export interface ElectronAPI {
   // Graph
   getRagContext: (commitId: string) => Promise<{ success: boolean; context?: Record<string, unknown>; message?: string }>
 
+  // Vector Database
+  vectorIndex: (repoPath: string, workingCopyPath: string, commitId: string, projectName: string, filePaths?: string[]) =>
+    Promise<{ success: boolean; index?: VectorIndexInfo; message?: string }>
+  vectorStatus: (projectName: string) => Promise<{ success: boolean; index?: VectorIndexInfo; message?: string }>
+  vectorDelete: (projectName: string) => Promise<{ success: boolean; message?: string }>
+  vectorSearch: (projectName: string, query: VectorQuery) => Promise<{ success: boolean; results: VectorSearchResult[]; message?: string }>
+  vectorSearchBatch: (projectName: string, queries: VectorQuery[]) => Promise<{ success: boolean; results: VectorSearchResult[][]; message?: string }>
+  vectorEnhanceRag: (projectName: string, query: string, topK?: number) => Promise<{ success: boolean; vectorResults: VectorSearchResult[]; message?: string }>
+  onVectorProgress: (callback: (msg: string) => void) => () => void
+
   // Quality & health
   analyzeQuality: (commitId: string) => Promise<{ success: boolean; report?: Record<string, unknown>; message?: string }>
 
@@ -159,6 +169,33 @@ export interface GitSyncStatus {
   behind: number
   lastSync?: string
   hasChanges: boolean
+}
+
+export interface VectorIndexInfo {
+  schemaVersion: number
+  projectName: string
+  commitId: string
+  model: string
+  dimensions: number
+  totalChunks: number
+  totalFiles: number
+  totalTokens: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface VectorQuery {
+  text: string
+  topK?: number
+  minSimilarity?: number
+  fileTypes?: string[]
+  nodeId?: string
+}
+
+export interface VectorSearchResult {
+  chunk: { id: string; filePath: string; startLine: number; endLine: number; content: string; tokenCount: number; language: string; nodeId?: string }
+  similarity: number
+  rank: number
 }
 
 export {}

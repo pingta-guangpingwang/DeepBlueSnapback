@@ -14,6 +14,7 @@ import { buildGraph } from './graph-builder'
 import { saveGraph, loadGraph, listGraphs, compareGraphs } from './graph-store'
 import { switchToVersionReadonly, releaseVersionReadonly, getVersionFileList, getVersionFileContent } from './version-switch'
 import { generateHealthReport } from './health-scorer'
+import { buildVectorIndex, getVectorStatus, deleteVectorIndex, searchVectors, searchBatchVectors, enhanceRagContext } from './vector-engine'
 
 let mainWindow: BrowserWindow | null = null
 const dbvsRepo = new DBHTRepository()
@@ -1982,6 +1983,47 @@ ipcMain.handle('lan:stop', async () => {
 
 ipcMain.handle('lan:status', async () => {
   return lanServer.getStatus()
+})
+
+// ==================== Vector Database ====================
+
+ipcMain.handle('vector:index', async (event, repoPath: string, workingCopyPath: string, commitId: string, projectName: string, filePaths?: string[]) => {
+  const send = (msg: string) => {
+    if (!event.sender.isDestroyed()) {
+      event.sender.send('vector:progress', msg)
+    }
+  }
+  return await buildVectorIndex(repoPath, workingCopyPath, commitId, projectName, filePaths, send)
+})
+
+ipcMain.handle('vector:status', async (_, projectName: string) => {
+  const rootPath = await getRootPath()
+  if (!rootPath) return { success: false, message: 'Root path not configured' }
+  return await getVectorStatus(rootPath, projectName)
+})
+
+ipcMain.handle('vector:delete', async (_, projectName: string) => {
+  const rootPath = await getRootPath()
+  if (!rootPath) return { success: false, message: 'Root path not configured' }
+  return await deleteVectorIndex(rootPath, projectName)
+})
+
+ipcMain.handle('vector:search', async (_, projectName: string, query: { text: string; topK?: number; minSimilarity?: number; fileTypes?: string[] }) => {
+  const rootPath = await getRootPath()
+  if (!rootPath) return { success: false, results: [], message: 'Root path not configured' }
+  return await searchVectors(rootPath, projectName, query)
+})
+
+ipcMain.handle('vector:search-batch', async (_, projectName: string, queries: { text: string; topK?: number; minSimilarity?: number; fileTypes?: string[] }[]) => {
+  const rootPath = await getRootPath()
+  if (!rootPath) return { success: false, results: [], message: 'Root path not configured' }
+  return await searchBatchVectors(rootPath, projectName, queries)
+})
+
+ipcMain.handle('vector:enhance-rag', async (_, projectName: string, query: string, topK?: number) => {
+  const rootPath = await getRootPath()
+  if (!rootPath) return { success: false, vectorResults: [], message: 'Root path not configured' }
+  return await enhanceRagContext(rootPath, projectName, query, topK ?? 5)
 })
 
 // ==================== 项目列表辅助函数 ====================
