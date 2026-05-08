@@ -226,6 +226,45 @@ taskkill /PID <pid> /F
 
 ## Recent Updates (Apr–May 2026)
 
+### 🧬 Vector Knowledge Base (Semantic Search)
+- **TF-IDF vectorization engine** with trigram hashing — zero AI model dependencies, pure statistical math
+- 768-dimension vectors + cosine similarity, <10ms search response
+- **CLI**: `dbht vector index/status/search/delete` with table-formatted results
+- **REST API**: `POST /api/v1/projects/:name/vector/search` for AI agent integration
+- **UI**: Full vector panel with file list, progress log, delete files, import/export (JSON format)
+- Version-aware: auto-detects outdated index when new commits exist, prompts rebuild
+- Smart chunking: function/class boundary-aware code splitting, max 2000 chars/chunk
+- **Export/Import**: Share indexes across teams via `dbht-vector-export-v1` JSON format
+
+### 🏛️ Architecture Knowledge Graph
+- Interactive codebase visualization — modules as nodes, dependencies as edges
+- Tree layout, call graphs, inheritance hierarchy, circular dependency detection
+- **RAG knowledge base**: AI tools query graph via REST API (`GET /api/v1/projects/:name/rag`)
+- Version-to-version graph comparison — track architecture evolution
+- Building metaphor: buildings (root folders), floors (subdirectories), rooms (source files)
+- SVG + HTML layered rendering with zoom/pan/fullscreen, depth control slider
+- Dev View (full graph) and Simple View (building metaphor) modes
+- **CLI**: `dbht rag <project>` returns full knowledge graph context as structured JSON
+
+### 🏥 Architecture Health Analysis
+- **Code quality dashboard** — detects God Modules, orphan files, pain zone modules
+- Cyclomatic complexity analysis, Martin instability/abstractness metrics
+- Coupling analysis, clone detection, health scoring (A-F grade)
+- Actionable suggestions with specific module references
+- **REST API**: `POST /api/v1/projects/:name/health/analyze`
+
+### 🌍 Multi-Language Source Parsing
+- AST analysis engine now supports **12 languages** beyond TypeScript/JavaScript
+- Python, Java, C#, Go, Rust, C/C++, Ruby, PHP, Kotlin, Swift, Dart, Lua
+- Automatic language detection by file extension, unified graph output
+
+### 🗺️ Graph UX Improvements
+- Real-time build progress log during graph generation
+- Fullscreen graph view with ESC/button close
+- Auto-fit on depth/visibility changes
+- i18n for all graph controls, legend, tooltip (EN/ZH)
+- Flow demo animation, speed/mode controls
+
 ### 🐴 Horse Farm → DeepBlueGodHarnessFarm (Independent App)
 - Horse Farm (multi-project development management) extracted into standalone Electron app **DeepBlueGodHarnessFarm / 驾驭工程**
 - Reads DBHT project data from filesystem — zero coupling between the two apps
