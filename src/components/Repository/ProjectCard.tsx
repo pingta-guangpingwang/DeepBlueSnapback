@@ -6,15 +6,32 @@ const NOTES_FILE = '/.dbvs-horsefarm-notes.md'
 
 interface ProjectCardProps {
   project: Project
+  index: number
+  total: number
   onEnter: () => void
   onCommit: () => void
   onRemove: (projectPath: string) => void
   onDeleteFiles: (projectPath: string) => void
+  onMoveUp: () => void
+  onMoveDown: () => void
+  onMoveTop: () => void
+  onMoveBottom: () => void
+  onSetRating: (rating: number) => void
 }
 
-export default function ProjectCard({ project, onEnter, onCommit, onRemove, onDeleteFiles }: ProjectCardProps) {
+function getStarColor(rating: number): string {
+  if (rating === 1) return '#22c55e'
+  if (rating === 2) return '#16a34a'
+  if (rating === 3) return '#eab308'
+  if (rating === 4) return '#f59e0b'
+  if (rating === 5) return '#ef4444'
+  return '#dc2626'
+}
+
+export default function ProjectCard({ project, index, total, onEnter, onCommit, onRemove, onDeleteFiles, onMoveUp, onMoveDown, onMoveTop, onMoveBottom, onSetRating }: ProjectCardProps) {
   const [showRemoveDialog, setShowRemoveDialog] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showRatingPicker, setShowRatingPicker] = useState(false)
   const { t } = useI18n()
 
   const hasWorkingCopy = !!project.path
@@ -141,8 +158,85 @@ export default function ProjectCard({ project, onEnter, onCommit, onRemove, onDe
   }
 
   return (
-    <div className="project-card" style={{ flexWrap: 'wrap' }}>
-      <div className="project-info" style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, flex: 1 }}>
+    <div className="project-card" style={{ flexWrap: 'wrap', gap: '10px' }}>
+      {/* Left: Order controls */}
+      <div className="project-order-controls" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
+        <button
+          className="project-order-btn"
+          onClick={onMoveTop}
+          disabled={index === 0}
+          title={t.projectCard.moveTop}
+          style={{ fontSize: '10px', padding: '1px 5px', lineHeight: 1, border: '1px solid #d1d5db', borderRadius: '3px', background: '#fff', cursor: index === 0 ? 'default' : 'pointer', opacity: index === 0 ? 0.3 : 0.7, color: '#374151' }}
+        >⏫</button>
+        <button
+          className="project-order-btn"
+          onClick={onMoveUp}
+          disabled={index === 0}
+          title={t.projectCard.moveUp}
+          style={{ fontSize: '10px', padding: '1px 5px', lineHeight: 1, border: '1px solid #d1d5db', borderRadius: '3px', background: '#fff', cursor: index === 0 ? 'default' : 'pointer', opacity: index === 0 ? 0.3 : 0.7, color: '#374151' }}
+        >▲</button>
+        <span style={{ fontSize: '9px', color: '#9ca3af', fontWeight: 500, minWidth: '16px', textAlign: 'center' }}>{index + 1}</span>
+        <button
+          className="project-order-btn"
+          onClick={onMoveDown}
+          disabled={index >= total - 1}
+          title={t.projectCard.moveDown}
+          style={{ fontSize: '10px', padding: '1px 5px', lineHeight: 1, border: '1px solid #d1d5db', borderRadius: '3px', background: '#fff', cursor: index >= total - 1 ? 'default' : 'pointer', opacity: index >= total - 1 ? 0.3 : 0.7, color: '#374151' }}
+        >▼</button>
+        <button
+          className="project-order-btn"
+          onClick={onMoveBottom}
+          disabled={index >= total - 1}
+          title={t.projectCard.moveBottom}
+          style={{ fontSize: '10px', padding: '1px 5px', lineHeight: 1, border: '1px solid #d1d5db', borderRadius: '3px', background: '#fff', cursor: index >= total - 1 ? 'default' : 'pointer', opacity: index >= total - 1 ? 0.3 : 0.7, color: '#374151' }}
+        >⏬</button>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+      <div className="project-info" style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+        {/* Star rating */}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <button
+            onClick={() => setShowRatingPicker(!showRatingPicker)}
+            title={`${'★'.repeat(project.rating || 2)} (${project.rating || 2}/6)`}
+            style={{
+              border: 'none', background: 'transparent', cursor: 'pointer',
+              fontSize: '14px', lineHeight: 1, padding: '2px 0',
+              color: getStarColor(project.rating || 2),
+              letterSpacing: '1px',
+            }}
+          >
+            {'★'.repeat(project.rating || 2)}{'☆'.repeat(6 - (project.rating || 2))}
+          </button>
+          {showRatingPicker && (
+            <div className="project-rating-dropdown" style={{
+              position: 'absolute', top: '100%', left: 0, zIndex: 100,
+              background: '#fff', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+              border: '1px solid #e5e7eb', padding: '4px',
+              display: 'flex', flexDirection: 'column', gap: '1px',
+              minWidth: '120px',
+            }}>
+              {[1, 2, 3, 4, 5, 6].map(n => (
+                <button
+                  key={n}
+                  onClick={() => { onSetRating(n); setShowRatingPicker(false) }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '5px 10px', border: 'none', borderRadius: '4px',
+                    background: (project.rating || 2) === n ? '#f3f4f6' : 'transparent',
+                    cursor: 'pointer', textAlign: 'left', fontSize: '13px',
+                    color: getStarColor(n), fontWeight: (project.rating || 2) === n ? 600 : 400,
+                  }}
+                  onMouseEnter={e => { if ((project.rating || 2) !== n) e.currentTarget.style.background = '#f9fafb' }}
+                  onMouseLeave={e => { if ((project.rating || 2) !== n) e.currentTarget.style.background = 'transparent' }}
+                >
+                  <span style={{ letterSpacing: '1px' }}>{'★'.repeat(n)}{'☆'.repeat(6 - n)}</span>
+                  <span style={{ fontSize: '11px', color: '#6b7280' }}>{n} 级</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <h3 style={{ margin: 0, whiteSpace: 'nowrap', fontSize: '14px' }}>{project.name}</h3>
         <span style={{ fontSize: '12px', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {hasWorkingCopy
@@ -275,6 +369,7 @@ export default function ProjectCard({ project, onEnter, onCommit, onRemove, onDe
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

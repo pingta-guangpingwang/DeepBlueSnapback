@@ -389,7 +389,7 @@ export default function VectorPanel() {
                   <button
                     className="vector-upload-remove"
                     onClick={e => { e.stopPropagation(); removeUploadFile(f.path) }}
-                    title={t.common?.remove || 'Remove'}
+                    title={t.vector.removeSelected || 'Remove'}
                   >×</button>
                 </div>
               ))}

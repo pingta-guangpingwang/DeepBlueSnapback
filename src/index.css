@@ -353,6 +353,30 @@ input {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
+.project-order-btn:hover:not(:disabled) {
+  background: #f3f4f6 !important;
+  opacity: 1 !important;
+  border-color: #9ca3af !important;
+}
+
+.project-rating-dropdown {
+  animation: project-rating-fade-in 0.15s ease-out;
+}
+
+@keyframes project-rating-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.project-card.drag-over {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+.project-card.dragging {
+  opacity: 0.5;
+}
+
 .project-info h3 {
   margin: 0 0 8px;
   color: #1f2937;

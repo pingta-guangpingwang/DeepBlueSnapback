@@ -10,7 +10,7 @@ interface Props {
   onCancel: () => void
 }
 
-export default function ImportProjectModal({ folderPath, warning, onConfirm, onCancel }: Props) {
+export default function ImportProjectModal({ folderPath, warning, progressLog, onConfirm, onCancel }: Props) {
   const [state] = useAppState()
   const { t } = useI18n()
   const [projectName, setProjectName] = useState('')

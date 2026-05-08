@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAppState } from '../../context/AppContext'
 import { useProjects } from '../../hooks/useProjects'
 import { useRepository } from '../../hooks/useRepository'
@@ -546,7 +546,7 @@ function RepoManager({ rootPath }: { rootPath: string }) {
 export default function RepoList() {
   const [state, dispatch] = useAppState()
   const { t, locale, setLocale } = useI18n()
-  const { importProject, confirmImport, checkoutToProject, openProject, removeProject, deleteProject, importProgress, setImportProgress } = useProjects()
+  const { loadProjects, importProject, confirmImport, checkoutToProject, openProject, removeProject, deleteProject, importProgress, setImportProgress } = useProjects()
   const { openCommitPanel } = useRepository()
   const [settingsTab, setSettingsTab] = useState<'general' | 'repository' | 'context-menu'>('general')
   const [importFolderPath, setImportFolderPath] = useState<string | null>(null)
@@ -555,6 +555,59 @@ export default function RepoList() {
   const [showGitCloneModal, setShowGitCloneModal] = useState(false)
   const [showHelpModal, setShowHelpModal] = useState(false)
   const [cliPullTarget, setCliPullTarget] = useState<string | null>(null)
+  const [sortMode, setSortMode] = useState<'manual' | 'rating'>(() => {
+    return (localStorage.getItem('dbht-sort-mode') as 'manual' | 'rating') || 'manual'
+  })
+
+  const sortedProjects = useMemo(() => {
+    const projects = [...state.projects]
+    if (sortMode === 'rating') {
+      return projects.sort((a, b) => (b.rating || 2) - (a.rating || 2) || a.name.localeCompare(b.name))
+    }
+    return projects.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+  }, [state.projects, sortMode])
+
+  const reorderAndRefresh = async (projects: typeof state.projects) => {
+    const ordered = projects.map((p, i) => ({ repoPath: p.repoPath, order: i }))
+    await window.electronAPI.reorderProjects(state.rootRepositoryPath, ordered)
+    await loadProjects()
+  }
+
+  const handleMoveUp = async (index: number) => {
+    if (index <= 0) return
+    const projects = [...sortedProjects]
+    ;[projects[index - 1], projects[index]] = [projects[index], projects[index - 1]]
+    await reorderAndRefresh(projects)
+  }
+
+  const handleMoveDown = async (index: number) => {
+    if (index >= sortedProjects.length - 1) return
+    const projects = [...sortedProjects]
+    ;[projects[index], projects[index + 1]] = [projects[index + 1], projects[index]]
+    await reorderAndRefresh(projects)
+  }
+
+  const handleMoveTop = async (index: number) => {
+    if (index <= 0) return
+    const projects = [...sortedProjects]
+    const [moved] = projects.splice(index, 1)
+    projects.unshift(moved)
+    await reorderAndRefresh(projects)
+  }
+
+  const handleMoveBottom = async (index: number) => {
+    if (index >= sortedProjects.length - 1) return
+    const projects = [...sortedProjects]
+    const [moved] = projects.splice(index, 1)
+    projects.push(moved)
+    await reorderAndRefresh(projects)
+  }
+
+  const handleSetRating = async (repoPath: string, rating: number) => {
+    await window.electronAPI.setProjectRating(state.rootRepositoryPath, repoPath, rating)
+    await loadProjects()
+  }
+
   // 检测来自右键菜单的拉取动作
   useEffect(() => {
     if (state.pendingCliAction === 'pull' && state.cliTargetPath) {
@@ -651,6 +704,22 @@ export default function RepoList() {
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#4f46e5'; e.currentTarget.style.color = '#4f46e5' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.color = '#9ca3af' }}
               >?</button>
+              <button
+                onClick={() => {
+                  const next = sortMode === 'manual' ? 'rating' : 'manual'
+                  setSortMode(next)
+                  localStorage.setItem('dbht-sort-mode', next)
+                }}
+                title={sortMode === 'manual' ? t.projectCard.sortByRating : t.projectCard.sortManual}
+                style={{
+                  border: '1px solid #d1d5db', borderRadius: '6px',
+                  padding: '3px 10px', fontSize: '12px',
+                  background: '#fff', cursor: 'pointer', color: '#374151',
+                  fontWeight: 500, whiteSpace: 'nowrap',
+                }}
+              >
+                {sortMode === 'manual' ? '⭐' : '↕'} {sortMode === 'manual' ? t.projectCard.sortByRating : t.projectCard.sortManual}
+              </button>
             </div>
             <div className="section-actions">
               <button onClick={() => dispatch({ type: 'SET_SHOW_CREATE_PROJECT_MODAL', payload: true })}>
@@ -672,14 +741,21 @@ export default function RepoList() {
           </div>
 
           <div className="projects-grid">
-            {state.projects.map(project => (
+            {sortedProjects.map((project, index) => (
               <ProjectCard
-                key={project.path || project.name}
+                key={project.path || project.repoPath || project.name}
                 project={project}
+                index={index}
+                total={sortedProjects.length}
                 onEnter={() => openProject(project.path)}
                 onCommit={() => openCommitPanel(project.path)}
                 onRemove={removeProject}
                 onDeleteFiles={deleteProject}
+                onMoveUp={() => handleMoveUp(index)}
+                onMoveDown={() => handleMoveDown(index)}
+                onMoveTop={() => handleMoveTop(index)}
+                onMoveBottom={() => handleMoveBottom(index)}
+                onSetRating={(rating) => handleSetRating(project.repoPath, rating)}
               />
             ))}
           </div>
