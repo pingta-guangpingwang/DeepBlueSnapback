@@ -46,6 +46,7 @@ export interface ElectronAPI {
     message?: string
   }>
   getDiffContent: (repoPath: string, workingCopyPath: string, filePath: string, versionA?: string, versionB?: string) => Promise<{ success: boolean; oldContent?: string; newContent?: string; message?: string }>
+  diffImpact: (repoPath: string, workingCopyPath: string, commitId: string) => Promise<{ success: boolean; report?: Record<string, unknown>; message?: string }>
   deleteRepository: (repoPath: string) => Promise<{ success: boolean; message?: string }>
   deleteRepositoryFull: (rootPath: string, repoPath: string, deleteWorkingCopies: boolean) => Promise<{ success: boolean; message: string; deletedCopies?: string[] }>
   verify: (repoPath: string) => Promise<{ success: boolean; valid: boolean; errors: string[]; message?: string }>

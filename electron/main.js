@@ -49,6 +49,7 @@ const graph_builder_1 = require("./graph-builder");
 const graph_store_1 = require("./graph-store");
 const version_switch_1 = require("./version-switch");
 const health_scorer_1 = require("./health-scorer");
+const impact_analyzer_1 = require("./impact-analyzer");
 const vector_engine_1 = require("./vector-engine");
 let mainWindow = null;
 const dbvsRepo = new dbvs_repository_1.DBHTRepository();
@@ -413,6 +414,26 @@ function registerIPCHandlers() {
     // 获取文件的两个版本内容（repoPath + workingCopyPath）
     electron_1.ipcMain.handle('dbgvs:get-diff-content', async (_, repoPath, workingCopyPath, filePath, versionA, versionB) => {
         return await dbvsRepo.getDiffContent(repoPath, workingCopyPath, filePath, versionA, versionB);
+    });
+    // 变更影响分析
+    electron_1.ipcMain.handle('dbgvs:diff-impact', async (_, repoPath, workingCopyPath, commitId) => {
+        try {
+            const rootPath = await getRootPath();
+            if (!rootPath)
+                return { success: false, message: '根仓库未配置' };
+            const graph = await (0, graph_store_1.loadGraph)(rootPath, commitId);
+            if (!graph)
+                return { success: false, message: '未找到图谱数据，请先构建图谱' };
+            const diffResult = await dbvsRepo.getDiffSummary(repoPath, workingCopyPath);
+            if (!diffResult.success || !diffResult.files) {
+                return { success: false, message: diffResult.message || '无法获取变更信息' };
+            }
+            const report = (0, impact_analyzer_1.analyzeImpact)(graph, diffResult.files);
+            return { success: true, report };
+        }
+        catch (error) {
+            return { success: false, message: String(error) };
+        }
     });
     // 获取仓库信息（只读仓库）
     electron_1.ipcMain.handle('dbgvs:get-repository-info', async (_, repoPath) => {

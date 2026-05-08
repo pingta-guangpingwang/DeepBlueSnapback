@@ -178,6 +178,39 @@ export async function startExternalApi(rootPath: string): Promise<{
     }
   })
 
+  // GET /api/v1/projects/:name/impact — 变更影响分析
+  app.get('/api/v1/projects/:name/impact', async (req: Request, res: Response) => {
+    try {
+      const registry = readRegistry(rootPath)
+      const proj = registry.find(e => e.name === req.params.name)
+      if (!proj) { res.status(404).json({ error: 'Project not found' }); return }
+
+      const primaryCopy = proj.workingCopies?.[0]
+      if (!primaryCopy) { res.status(404).json({ error: 'No working copy' }); return }
+
+      const history = await dbvs.getHistoryStructured(proj.repoPath)
+      if (!history.success || !history.commits?.length) {
+        res.status(404).json({ error: 'No commits found' }); return
+      }
+
+      const { loadGraph } = await import('./graph-store')
+      const { analyzeImpact } = await import('./impact-analyzer')
+
+      const graph = await loadGraph(rootPath, history.commits[0].id)
+      if (!graph) { res.status(404).json({ error: 'No graph found — run AST analysis first' }); return }
+
+      const diffSummary = await dbvs.getDiffSummary(proj.repoPath, primaryCopy.path)
+      if (!diffSummary.success || !diffSummary.files) {
+        res.status(400).json({ error: diffSummary.message || 'Cannot get diff' }); return
+      }
+
+      const report = analyzeImpact(graph, diffSummary.files)
+      res.json(report)
+    } catch (e) {
+      res.status(500).json({ error: String(e) })
+    }
+  })
+
   // GET /api/v1/projects/:name/rag?q=...
   // Returns RAG-friendly knowledge graph context, optionally filtered by query
   app.get('/api/v1/projects/:name/rag', async (req: Request, res: Response) => {

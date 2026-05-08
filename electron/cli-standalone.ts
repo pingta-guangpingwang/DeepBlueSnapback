@@ -14,6 +14,7 @@ import http from 'isomorphic-git/http/node'
 import { DBHTRepository } from './dbvs-repository'
 import { loadGraph } from './graph-store'
 import { generateHealthReport } from './health-scorer'
+import { analyzeImpact } from './impact-analyzer'
 
 const repo = new DBHTRepository()
 const program = new Command()
@@ -561,16 +562,62 @@ program.command('update <projectPath>')
   })
 
 program.command('diff <projectPath>')
-  .description('查看文件差异（不指定 -f 则显示全局变更统计）')
+  .description('查看文件差异（不指定 -f 则显示全局变更统计，--impact 分析影响范围）')
   .option('-f, --file <filePath>', '指定文件路径（相对路径）')
   .option('-a, --version-a <version>', '旧版本')
   .option('-b, --version-b <version>', '新版本')
+  .option('--impact', '分析变更影响范围（需已构建知识图谱）')
   .action(async (projectPath: string, opts: any) => {
     const fmt = program.opts().format
     try {
       projectPath = path.resolve(projectPath)
       const { repoPath, workingCopyPath } = await resolveRepoPaths(projectPath)
-      if (opts.file) {
+
+      if (opts.impact && !opts.file) {
+        // 变更影响分析
+        const rootPath = getRootPath(program.opts())
+        const headPath = path.join(repoPath, 'HEAD.json')
+        if (!(await fs.pathExists(headPath))) {
+          out({ success: false, message: '仓库无提交记录' }, fmt)
+          return
+        }
+        const head = await fs.readJson(headPath)
+        if (!head.currentVersion) {
+          out({ success: false, message: '仓库无提交记录' }, fmt)
+          return
+        }
+        const graph = await loadGraph(rootPath, head.currentVersion)
+        if (!graph) {
+          out({ success: false, message: '未找到图谱数据，请先执行 dbht kg:build' }, fmt)
+          return
+        }
+        const summary = await repo.getDiffSummary(repoPath, workingCopyPath)
+        if (!summary.success || !summary.files) {
+          out({ success: false, message: summary.message || '无法获取变更' }, fmt)
+          return
+        }
+        const report = analyzeImpact(graph, summary.files)
+        if (fmt === 'table') {
+          console.log(`\n📊 变更影响分析 — ${report.timestamp}`)
+          console.log('═'.repeat(60))
+          console.log(report.summary)
+          console.log(`变更文件: ${report.changedFiles}  受影响文件: ${report.totalAffectedFiles}  高风险: ${report.highRiskCount}`)
+          console.log('─'.repeat(60))
+          for (const imp of report.impacts) {
+            const icon = imp.riskLevel === 'high' ? '🔴' : imp.riskLevel === 'medium' ? '🟡' : '🔵'
+            console.log(`${icon} [${imp.status}] ${imp.filePath}`)
+            if (imp.directDependents.length > 0) {
+              console.log(`   直接影响: ${imp.directDependents.slice(0, 5).join(', ')}${imp.directDependents.length > 5 ? ` ...+${imp.directDependents.length - 5}` : ''}`)
+            }
+            if (imp.indirectDependents.length > 0) {
+              console.log(`   间接影响: ${imp.indirectDependents.slice(0, 5).join(', ')}${imp.indirectDependents.length > 5 ? ` ...+${imp.indirectDependents.length - 5}` : ''}`)
+            }
+          }
+          console.log('═'.repeat(60))
+        } else {
+          out({ success: true, report }, fmt)
+        }
+      } else if (opts.file) {
         out(await repo.getDiff(repoPath, workingCopyPath, opts.file, opts.versionA, opts.versionB), fmt)
       } else {
         // 全局变更统计

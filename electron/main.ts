@@ -14,6 +14,7 @@ import { buildGraph } from './graph-builder'
 import { saveGraph, loadGraph, listGraphs, compareGraphs } from './graph-store'
 import { switchToVersionReadonly, releaseVersionReadonly, getVersionFileList, getVersionFileContent } from './version-switch'
 import { generateHealthReport } from './health-scorer'
+import { analyzeImpact } from './impact-analyzer'
 import { buildVectorIndex, getVectorStatus, deleteVectorIndex, searchVectors, searchBatchVectors, enhanceRagContext, getIndexedFiles, getFileChunks, removeFilesFromIndex, exportVectorIndex, importVectorIndex, ingestFiles, getSupportedExtensions } from './vector-engine'
 
 let mainWindow: BrowserWindow | null = null
@@ -423,6 +424,27 @@ ipcMain.handle('dbgvs:get-diff-summary', async (_, repoPath: string, workingCopy
 // 获取文件的两个版本内容（repoPath + workingCopyPath）
 ipcMain.handle('dbgvs:get-diff-content', async (_, repoPath: string, workingCopyPath: string, filePath: string, versionA?: string, versionB?: string) => {
   return await dbvsRepo.getDiffContent(repoPath, workingCopyPath, filePath, versionA, versionB)
+})
+
+// 变更影响分析
+ipcMain.handle('dbgvs:diff-impact', async (_, repoPath: string, workingCopyPath: string, commitId: string) => {
+  try {
+    const rootPath = await getRootPath()
+    if (!rootPath) return { success: false, message: '根仓库未配置' }
+
+    const graph = await loadGraph(rootPath, commitId)
+    if (!graph) return { success: false, message: '未找到图谱数据，请先构建图谱' }
+
+    const diffResult = await dbvsRepo.getDiffSummary(repoPath, workingCopyPath)
+    if (!diffResult.success || !diffResult.files) {
+      return { success: false, message: diffResult.message || '无法获取变更信息' }
+    }
+
+    const report = analyzeImpact(graph, diffResult.files)
+    return { success: true, report }
+  } catch (error) {
+    return { success: false, message: String(error) }
+  }
 })
 
 // 获取仓库信息（只读仓库）

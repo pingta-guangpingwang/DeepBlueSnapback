@@ -159,6 +159,11 @@ export interface ElectronAPI {
         newContent?: string;
         message?: string;
     }>;
+    diffImpact: (repoPath: string, workingCopyPath: string, commitId: string) => Promise<{
+        success: boolean;
+        report?: Record<string, unknown>;
+        message?: string;
+    }>;
     deleteRepository: (repoPath: string) => Promise<{
         success: boolean;
         message?: string;
