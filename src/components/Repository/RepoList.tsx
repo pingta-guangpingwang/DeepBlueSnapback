@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useAppState } from '../../context/AppContext'
 import { useProjects } from '../../hooks/useProjects'
 import { useRepository } from '../../hooks/useRepository'
@@ -558,6 +558,10 @@ export default function RepoList() {
   const [sortMode, setSortMode] = useState<'manual' | 'rating'>(() => {
     return (localStorage.getItem('dbht-sort-mode') as 'manual' | 'rating') || 'manual'
   })
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+  const autoScrollRef = useRef<number | null>(null)
 
   const sortedProjects = useMemo(() => {
     const projects = [...state.projects]
@@ -606,6 +610,70 @@ export default function RepoList() {
   const handleSetRating = async (repoPath: string, rating: number) => {
     await window.electronAPI.setProjectRating(state.rootRepositoryPath, repoPath, rating)
     await loadProjects()
+  }
+
+  const stopAutoScroll = () => {
+    if (autoScrollRef.current !== null) {
+      cancelAnimationFrame(autoScrollRef.current)
+      autoScrollRef.current = null
+    }
+  }
+
+  const handleDragStart = (index: number) => {
+    setDragIndex(index)
+    setDragOverIndex(index)
+  }
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    setDragOverIndex(index)
+
+    // Auto-scroll when near the edges of the list
+    const container = listRef.current
+    if (!container) return
+    const rect = container.getBoundingClientRect()
+    const scrollZone = 60
+    const scrollSpeed = 8
+    const dy = e.clientY - rect.top
+
+    stopAutoScroll()
+
+    if (dy < scrollZone) {
+      const speed = -scrollSpeed * (1 - dy / scrollZone)
+      const scroll = () => {
+        container.scrollTop += speed
+        autoScrollRef.current = requestAnimationFrame(scroll)
+      }
+      autoScrollRef.current = requestAnimationFrame(scroll)
+    } else if (dy > rect.height - scrollZone) {
+      const speed = scrollSpeed * (1 - (rect.height - dy) / scrollZone)
+      const scroll = () => {
+        container.scrollTop += speed
+        autoScrollRef.current = requestAnimationFrame(scroll)
+      }
+      autoScrollRef.current = requestAnimationFrame(scroll)
+    }
+  }
+
+  const handleDrop = async (targetIndex: number) => {
+    stopAutoScroll()
+    if (dragIndex === null || dragIndex === targetIndex) {
+      setDragIndex(null)
+      setDragOverIndex(null)
+      return
+    }
+    const projects = [...sortedProjects]
+    const [moved] = projects.splice(dragIndex, 1)
+    projects.splice(targetIndex, 0, moved)
+    setDragIndex(null)
+    setDragOverIndex(null)
+    await reorderAndRefresh(projects)
+  }
+
+  const handleDragEnd = () => {
+    stopAutoScroll()
+    setDragIndex(null)
+    setDragOverIndex(null)
   }
 
   // 检测来自右键菜单的拉取动作
@@ -740,7 +808,7 @@ export default function RepoList() {
             </div>
           </div>
 
-          <div className="projects-grid">
+          <div className="projects-grid" ref={listRef}>
             {sortedProjects.map((project, index) => (
               <ProjectCard
                 key={project.path || project.repoPath || project.name}
@@ -756,6 +824,11 @@ export default function RepoList() {
                 onMoveTop={() => handleMoveTop(index)}
                 onMoveBottom={() => handleMoveBottom(index)}
                 onSetRating={(rating) => handleSetRating(project.repoPath, rating)}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
+                isDragOver={dragOverIndex === index && dragIndex !== index}
               />
             ))}
           </div>

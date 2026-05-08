@@ -298,6 +298,13 @@ taskkill /PID <pid> /F
 - `rollback-ai` command to batch revert all commits from one AI session
 - Structured history output with `getHistoryStructured()`
 
+### 📋 Project Ordering & Rating
+- **Manual reorder**: ⏫ ▲ ▼ ⏬ buttons on each project card for precise position control
+- **Star rating 1–6**: Green (1–2), Yellow (3–4), Red (5–6) with clickable color-coded dropdown picker
+- **Sort toggle**: Switch between manual order and importance (rating) order — persisted in localStorage
+- **Drag-and-drop**: Grab any project card to drag-reorder the list, with auto-scroll near list edges
+- Order and rating persisted in project registry via IPC, survives app restarts
+
 ## Contact & Support
 
 DBHT is free and open-source software. If you find it helpful, your support is greatly appreciated!

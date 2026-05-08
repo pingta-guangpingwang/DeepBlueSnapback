@@ -17,6 +17,11 @@ interface ProjectCardProps {
   onMoveTop: () => void
   onMoveBottom: () => void
   onSetRating: (rating: number) => void
+  onDragStart: (index: number) => void
+  onDragOver: (e: React.DragEvent, index: number) => void
+  onDrop: (index: number) => void
+  onDragEnd: () => void
+  isDragOver: boolean
 }
 
 function getStarColor(rating: number): string {
@@ -28,7 +33,7 @@ function getStarColor(rating: number): string {
   return '#dc2626'
 }
 
-export default function ProjectCard({ project, index, total, onEnter, onCommit, onRemove, onDeleteFiles, onMoveUp, onMoveDown, onMoveTop, onMoveBottom, onSetRating }: ProjectCardProps) {
+export default function ProjectCard({ project, index, total, onEnter, onCommit, onRemove, onDeleteFiles, onMoveUp, onMoveDown, onMoveTop, onMoveBottom, onSetRating, onDragStart, onDragOver, onDrop, onDragEnd, isDragOver }: ProjectCardProps) {
   const [showRemoveDialog, setShowRemoveDialog] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showRatingPicker, setShowRatingPicker] = useState(false)
@@ -158,37 +163,42 @@ export default function ProjectCard({ project, index, total, onEnter, onCommit, 
   }
 
   return (
-    <div className="project-card" style={{ flexWrap: 'wrap', gap: '10px' }}>
+    <div
+      className={`project-card${isDragOver ? ' drag-over' : ''}`}
+      draggable
+      onDragStart={() => onDragStart(index)}
+      onDragOver={(e) => onDragOver(e, index)}
+      onDragEnd={() => onDragEnd()}
+      onDrop={() => onDrop(index)}
+      style={{ flexWrap: 'wrap', gap: '10px' }}
+    >
       {/* Left: Order controls */}
-      <div className="project-order-controls" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
-        <button
-          className="project-order-btn"
-          onClick={onMoveTop}
-          disabled={index === 0}
-          title={t.projectCard.moveTop}
-          style={{ fontSize: '10px', padding: '1px 5px', lineHeight: 1, border: '1px solid #d1d5db', borderRadius: '3px', background: '#fff', cursor: index === 0 ? 'default' : 'pointer', opacity: index === 0 ? 0.3 : 0.7, color: '#374151' }}
+      <div className="project-order-controls" style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
+        flexShrink: 0, padding: '2px 10px 2px 0',
+        borderRight: '1px solid #f3f4f6', marginRight: '4px',
+      }}>
+        <button className="project-order-btn" onClick={onMoveTop} disabled={index === 0} title={t.projectCard.moveTop}
+          style={{ border: 'none', background: 'transparent', cursor: index === 0 ? 'default' : 'pointer', fontSize: '14px', lineHeight: 1, padding: '3px 7px', borderRadius: '4px', color: '#6b7280', opacity: index === 0 ? 0.25 : 0.7 }}
         >⏫</button>
-        <button
-          className="project-order-btn"
-          onClick={onMoveUp}
-          disabled={index === 0}
-          title={t.projectCard.moveUp}
-          style={{ fontSize: '10px', padding: '1px 5px', lineHeight: 1, border: '1px solid #d1d5db', borderRadius: '3px', background: '#fff', cursor: index === 0 ? 'default' : 'pointer', opacity: index === 0 ? 0.3 : 0.7, color: '#374151' }}
+        <button className="project-order-btn" onClick={onMoveUp} disabled={index === 0} title={t.projectCard.moveUp}
+          style={{ border: 'none', background: 'transparent', cursor: index === 0 ? 'default' : 'pointer', fontSize: '14px', lineHeight: 1, padding: '3px 7px', borderRadius: '4px', color: '#6b7280', opacity: index === 0 ? 0.25 : 0.7 }}
         >▲</button>
-        <span style={{ fontSize: '9px', color: '#9ca3af', fontWeight: 500, minWidth: '16px', textAlign: 'center' }}>{index + 1}</span>
-        <button
-          className="project-order-btn"
-          onClick={onMoveDown}
-          disabled={index >= total - 1}
-          title={t.projectCard.moveDown}
-          style={{ fontSize: '10px', padding: '1px 5px', lineHeight: 1, border: '1px solid #d1d5db', borderRadius: '3px', background: '#fff', cursor: index >= total - 1 ? 'default' : 'pointer', opacity: index >= total - 1 ? 0.3 : 0.7, color: '#374151' }}
+        <span className="project-order-index" title="Drag to reorder"
+          style={{
+            fontSize: '13px', fontWeight: 700, color: '#4f46e5',
+            background: '#eef2ff', borderRadius: '6px',
+            minWidth: '28px', height: '24px', display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            border: '1px solid #c7d2fe', cursor: 'grab', userSelect: 'none',
+            margin: '1px 0',
+          }}
+        >{index + 1}</span>
+        <button className="project-order-btn" onClick={onMoveDown} disabled={index >= total - 1} title={t.projectCard.moveDown}
+          style={{ border: 'none', background: 'transparent', cursor: index >= total - 1 ? 'default' : 'pointer', fontSize: '14px', lineHeight: 1, padding: '3px 7px', borderRadius: '4px', color: '#6b7280', opacity: index >= total - 1 ? 0.25 : 0.7 }}
         >▼</button>
-        <button
-          className="project-order-btn"
-          onClick={onMoveBottom}
-          disabled={index >= total - 1}
-          title={t.projectCard.moveBottom}
-          style={{ fontSize: '10px', padding: '1px 5px', lineHeight: 1, border: '1px solid #d1d5db', borderRadius: '3px', background: '#fff', cursor: index >= total - 1 ? 'default' : 'pointer', opacity: index >= total - 1 ? 0.3 : 0.7, color: '#374151' }}
+        <button className="project-order-btn" onClick={onMoveBottom} disabled={index >= total - 1} title={t.projectCard.moveBottom}
+          style={{ border: 'none', background: 'transparent', cursor: index >= total - 1 ? 'default' : 'pointer', fontSize: '14px', lineHeight: 1, padding: '3px 7px', borderRadius: '4px', color: '#6b7280', opacity: index >= total - 1 ? 0.25 : 0.7 }}
         >⏬</button>
       </div>
 
@@ -201,9 +211,9 @@ export default function ProjectCard({ project, index, total, onEnter, onCommit, 
             title={`${'★'.repeat(project.rating || 2)} (${project.rating || 2}/6)`}
             style={{
               border: 'none', background: 'transparent', cursor: 'pointer',
-              fontSize: '14px', lineHeight: 1, padding: '2px 0',
+              fontSize: '15px', lineHeight: 1, padding: '2px 4px',
               color: getStarColor(project.rating || 2),
-              letterSpacing: '1px',
+              letterSpacing: '1px', borderRadius: '4px',
             }}
           >
             {'★'.repeat(project.rating || 2)}{'☆'.repeat(6 - (project.rating || 2))}
@@ -231,7 +241,7 @@ export default function ProjectCard({ project, index, total, onEnter, onCommit, 
                   onMouseLeave={e => { if ((project.rating || 2) !== n) e.currentTarget.style.background = 'transparent' }}
                 >
                   <span style={{ letterSpacing: '1px' }}>{'★'.repeat(n)}{'☆'.repeat(6 - n)}</span>
-                  <span style={{ fontSize: '11px', color: '#6b7280' }}>{n} 级</span>
+                  <span style={{ fontSize: '11px', color: '#6b7280', fontWeight: 400 }}>Lv.{n}</span>
                 </button>
               ))}
             </div>

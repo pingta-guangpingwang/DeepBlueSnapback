@@ -355,8 +355,13 @@ input {
 
 .project-order-btn:hover:not(:disabled) {
   background: #f3f4f6 !important;
+  color: #374151 !important;
   opacity: 1 !important;
-  border-color: #9ca3af !important;
+}
+
+.project-order-index:hover {
+  background: #e0e7ff !important;
+  border-color: #a5b4fc !important;
 }
 
 .project-rating-dropdown {
