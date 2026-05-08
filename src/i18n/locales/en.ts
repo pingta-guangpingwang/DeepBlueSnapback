@@ -145,6 +145,8 @@ const en = {
     uploadZoneActive: 'Drop files to add to knowledge base',
     addFiles: 'Add Files',
     addFolder: 'Add Folder',
+    pendingFiles: 'Pending Files',
+    startIngest: 'Ingest All',
     addFilesDesc: 'Upload external documents and code files',
     importIndexDesc: 'Restore from JSON export',
     exportIndexDesc: 'Download index as JSON',

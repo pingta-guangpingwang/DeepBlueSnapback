@@ -313,21 +313,36 @@ export default function VectorPanel() {
         )}
       </div>
 
-      {/* ===== Upload File Chips ===== */}
+      {/* ===== Upload File List ===== */}
       {uploadFilePaths.length > 0 && (
-        <div className="vector-file-chips">
-          {fileNames.map(f => (
-            <div key={f.path} className="vector-file-chip">
-              <span className="vector-file-chip-ext">{f.ext}</span>
-              <span className="vector-file-chip-name" title={f.path}>{f.name}</span>
-              <button className="vector-file-chip-remove" onClick={e => { e.stopPropagation(); removeUploadFile(f.path) }}>×</button>
+        <div className="vector-upload-list-card">
+          <div className="vector-upload-list-header">
+            <span>{vt('pendingFiles') || 'Pending Files'} ({uploadFilePaths.length})</span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="vector-btn-small vector-btn-remove" onClick={clearUploadFiles}>
+                {vt('clearFiles')}
+              </button>
+              <button className="vector-btn-primary" onClick={handleIngestFiles} disabled={loading}>
+                {loading ? vt('ingesting') : vt('startIngest') || 'Ingest All'}
+              </button>
             </div>
-          ))}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 4 }}>
-            <button className="vector-btn-primary" onClick={handleIngestFiles} disabled={loading}>
-              {loading ? vt('ingesting') : `${vt('addFiles')} (${uploadFilePaths.length})`}
-            </button>
-            <button className="vector-btn-small" onClick={clearUploadFiles}>{vt('clearFiles')}</button>
+          </div>
+          <div className="vector-upload-list">
+            {fileNames.map((f, i) => (
+              <div key={f.path} className="vector-upload-item">
+                <span className="vector-upload-index">{i + 1}</span>
+                <span className={`vector-upload-ext ${f.ext.slice(1)}`}>{f.ext}</span>
+                <span className="vector-upload-name" title={f.path}>{f.name}</span>
+                <span className="vector-upload-path" title={f.path}>{f.path}</span>
+                <button
+                  className="vector-file-chip-remove"
+                  onClick={e => { e.stopPropagation(); removeUploadFile(f.path) }}
+                  title="Remove"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}

@@ -147,6 +147,8 @@ const zh: Translations = {
     uploadZoneActive: '释放文件以添加到知识库',
     addFiles: '添加文件',
     addFolder: '添加文件夹',
+    pendingFiles: '待处理文件',
+    startIngest: '全部导入',
     addFilesDesc: '上传外部文档和代码文件',
     importIndexDesc: '从 JSON 导出文件恢复',
     exportIndexDesc: '下载索引为 JSON 文件',

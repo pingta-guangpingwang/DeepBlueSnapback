@@ -4714,6 +4714,107 @@ pre {
   to { transform: rotate(360deg); }
 }
 
+/* ===== Upload File List ===== */
+
+.vector-upload-list-card {
+  margin-top: 14px;
+  background: rgba(15, 30, 55, 0.6);
+  border: 1px solid rgba(75, 130, 200, 0.2);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.vector-upload-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(25, 50, 85, 0.5);
+  border-bottom: 1px solid rgba(75, 130, 200, 0.15);
+  font-size: 13px;
+  font-weight: 600;
+  color: #b8cfe0;
+}
+
+.vector-upload-list {
+  max-height: 240px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(75, 130, 200, 0.3) transparent;
+}
+
+.vector-upload-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.vector-upload-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.vector-upload-list::-webkit-scrollbar-thumb {
+  background: rgba(75, 130, 200, 0.3);
+  border-radius: 3px;
+}
+
+.vector-upload-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 16px;
+  border-bottom: 1px solid rgba(75, 130, 200, 0.06);
+  font-size: 12px;
+  transition: background 0.12s;
+}
+
+.vector-upload-item:hover {
+  background: rgba(40, 70, 110, 0.3);
+}
+
+.vector-upload-item:last-child {
+  border-bottom: none;
+}
+
+.vector-upload-index {
+  color: #3d5a80;
+  font-size: 11px;
+  min-width: 22px;
+  text-align: right;
+  font-family: 'Consolas', 'Courier New', monospace;
+}
+
+.vector-upload-ext {
+  color: #4a90e2;
+  background: rgba(74, 144, 226, 0.12);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-weight: 600;
+  min-width: 42px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.vector-upload-name {
+  color: #e0e8f0;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vector-upload-path {
+  color: #4a6580;
+  font-size: 11px;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'Consolas', 'Courier New', monospace;
+  flex-shrink: 1;
+}
+
 /* =============================================
    Vector Upload Progress
    ============================================= */
