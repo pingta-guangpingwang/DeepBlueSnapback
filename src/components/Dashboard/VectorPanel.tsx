@@ -31,9 +31,11 @@ export default function VectorPanel() {
 
   // Upload / ingestion
   const [uploadFilePaths, setUploadFilePaths] = useState<string[]>([])
+  const [uploadSelected, setUploadSelected] = useState<Set<number>>(new Set())
   const [ingestResult, setIngestResult] = useState<IngestFilesResult | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [supportedExts, setSupportedExts] = useState<SupportedExtension[]>([])
+  const lastCheckRef = useRef<number | null>(null)
 
   // Modals
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -191,12 +193,41 @@ export default function VectorPanel() {
     setUploadFilePaths(prev => prev.filter(p => p !== filePath))
   }
 
-  const clearUploadFiles = () => setUploadFilePaths([])
+  const clearUploadFiles = () => { setUploadFilePaths([]); setUploadSelected(new Set()) }
+
+  const toggleUploadFile = (index: number, shiftKey: boolean) => {
+    setUploadSelected(prev => {
+      const next = new Set(prev)
+      if (shiftKey && lastCheckRef.current !== null) {
+        // Shift+click: range select
+        const start = Math.min(lastCheckRef.current, index)
+        const end = Math.max(lastCheckRef.current, index)
+        const targetState = !prev.has(index)
+        for (let i = start; i <= end; i++) {
+          if (targetState) next.add(i); else next.delete(i)
+        }
+      } else {
+        if (next.has(index)) next.delete(index); else next.add(index)
+      }
+      return next
+    })
+    lastCheckRef.current = index
+  }
+
+  const selectAllUpload = () => {
+    setUploadSelected(new Set(uploadFilePaths.map((_, i) => i)))
+  }
+
+  const deselectAllUpload = () => {
+    setUploadSelected(new Set())
+  }
 
   const handleIngestFiles = async () => {
-    if (!state.currentProject || uploadFilePaths.length === 0) return
+    if (!state.currentProject || uploadSelected.size === 0) return
+    const selectedPaths = Array.from(uploadSelected).map(i => uploadFilePaths[i]).filter(Boolean)
+    if (selectedPaths.length === 0) return
     const cid = await getCurrentCommitId()
-    const result = await ingestFiles(state.currentProject, uploadFilePaths, state.projectPath || '', cid)
+    const result = await ingestFiles(state.currentProject, selectedPaths, state.projectPath || '', cid)
     if (result?.success) {
       setIngestResult(result)
       const succ = result.filesSucceeded || 0
@@ -205,7 +236,10 @@ export default function VectorPanel() {
       else if (succ > 0) flash(vt('ingestPartial').replace('{succeeded}', String(succ)).replace('{failed}', String(fail)))
       else flash(vt('ingestFailed'))
       setCurrentCommitId(cid)
-      setUploadFilePaths([])
+      // Remove ingested files from pending list
+      const ingestedSet = new Set(selectedPaths)
+      setUploadFilePaths(prev => prev.filter(p => !ingestedSet.has(p)))
+      setUploadSelected(new Set())
     }
   }
 
@@ -245,9 +279,6 @@ export default function VectorPanel() {
       {/* ===== Toolbar ===== */}
       <div className="vector-toolbar">
         <div className="vector-toolbar-group">
-          <button className="vector-btn vector-btn-build" onClick={handleBuildIndex} disabled={loading}>
-            {loading && progressLog.length > 0 ? '⏳ ' + vt('building') : status ? vt('rebuildIndex') : vt('buildIndex')}
-          </button>
           <button className="vector-btn-primary" onClick={handleOpenFileDialog} disabled={loading}>
             + {vt('addFiles')}
           </button>
@@ -255,18 +286,18 @@ export default function VectorPanel() {
             📂 {vt('addFolder') || 'Add Folder'}
           </button>
         </div>
-        <div className="vector-toolbar-divider" />
-        <div className="vector-toolbar-group">
-          <span className="vector-toolbar-label">{vt('exportIndex')}</span>
-          <button className="vector-btn vector-btn-export" onClick={handleExport} disabled={!status}>
-            {vt('exportIndex')}
-          </button>
-          <button className="vector-btn vector-btn-import" onClick={handleImport} disabled={importing}>
-            {importing ? vt('importing') || 'Importing...' : vt('importIndex')}
-          </button>
-        </div>
         {status && (
           <>
+            <div className="vector-toolbar-divider" />
+            <div className="vector-toolbar-group">
+              <span className="vector-toolbar-label">{vt('exportIndex')}</span>
+              <button className="vector-btn vector-btn-export" onClick={handleExport} disabled={!status}>
+                {vt('exportIndex')}
+              </button>
+              <button className="vector-btn vector-btn-import" onClick={handleImport} disabled={importing}>
+                {importing ? vt('importing') || 'Importing...' : vt('importIndex')}
+              </button>
+            </div>
             <div className="vector-toolbar-divider" />
             <button className="vector-btn vector-btn-delete" onClick={() => setShowDeleteConfirm(true)}>
               {vt('deleteIndex')}
@@ -277,85 +308,127 @@ export default function VectorPanel() {
 
       {actionMsg && <div className="vector-action-msg">{actionMsg}</div>}
 
+      {/* ===== Step 1: Source Area (Drop Zone) ===== */}
+      <div className="vector-section">
+        <div className="vector-section-label">{vt('stepSource') || '📥 Source Files'}</div>
+        <div
+          className={`vector-dropzone ${isDragging ? 'drag-active' : ''}`}
+          onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
+          onDragLeave={e => { e.preventDefault(); setIsDragging(false) }}
+          onDrop={handleDrop}
+          onClick={handleOpenFileDialog}
+        >
+          <div className="vector-dropzone-icon">📁</div>
+          <div className="vector-dropzone-text">
+            {isDragging ? vt('uploadZoneActive') : vt('uploadZone')}
+          </div>
+          <div className="vector-dropzone-hint">
+            {vt('uploadZoneHint')}
+          </div>
+          {formatCount > 0 && (
+            <div className="vector-formats-bar">
+              {supportedExts.map(e => (
+                <span key={e.extension} className={`vector-format-badge cat-${e.category}`}>
+                  {e.extension}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ===== Step 2: Pending Files ===== */}
+      {uploadFilePaths.length > 0 && (
+        <div className="vector-section">
+          <div className="vector-upload-list-card">
+            <div className="vector-upload-list-header">
+              <span>{vt('pendingFiles') || 'Pending Files'} ({uploadFilePaths.length})</span>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button className="vector-btn-small" onClick={selectAllUpload}>{vt('selectAll')}</button>
+                <button className="vector-btn-small" onClick={deselectAllUpload}>{vt('deselectAll')}</button>
+                <button className="vector-btn-small vector-btn-remove" onClick={clearUploadFiles}>
+                  {vt('clearFiles')}
+                </button>
+              </div>
+            </div>
+            <div className="vector-upload-list">
+              {fileNames.map((f, i) => (
+                <div
+                  key={f.path}
+                  className={`vector-upload-item ${uploadSelected.has(i) ? 'selected' : ''}`}
+                  onClick={e => toggleUploadFile(i, e.shiftKey)}
+                >
+                  <input
+                    type="checkbox"
+                    className="vector-upload-checkbox"
+                    checked={uploadSelected.has(i)}
+                    onChange={e => { e.stopPropagation(); toggleUploadFile(i, false) }}
+                    onClick={e => e.stopPropagation()}
+                  />
+                  <span className={`vector-upload-ext ${f.ext.slice(1)}`}>{f.ext}</span>
+                  <span className="vector-upload-name" title={f.path}>{f.name}</span>
+                  <span className="vector-upload-path" title={f.path}>{f.path}</span>
+                  <button
+                    className="vector-upload-remove"
+                    onClick={e => { e.stopPropagation(); removeUploadFile(f.path) }}
+                    title={t.common?.remove || 'Remove'}
+                  >×</button>
+                </div>
+              ))}
+            </div>
+            <div className="vector-upload-list-footer">
+              <span className="vector-upload-count">
+                {uploadSelected.size > 0
+                  ? `${uploadSelected.size} of ${uploadFilePaths.length} selected`
+                  : `${uploadFilePaths.length} file(s) pending`}
+              </span>
+              <button
+                className="vector-btn-primary"
+                onClick={handleIngestFiles}
+                disabled={loading || uploadSelected.size === 0}
+              >
+                {loading ? vt('ingesting') : vt('startIngest') || 'Import Selected'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Step 3: Main Action — Build / Vectorize ===== */}
+      <div className="vector-section vector-action-section">
+        <button
+          className="vector-btn-build-main"
+          onClick={handleBuildIndex}
+          disabled={loading}
+        >
+          {loading && progressLog.length > 0
+            ? <><span className="vector-spinner-sm" /> {vt('building')}</>
+            : vt('buildBtn')}
+        </button>
+        <p className="vector-action-desc">{vt('buildDesc')}</p>
+      </div>
+
+      {/* ===== Progress Log ===== */}
+      {loading && progressLog.length > 0 && (
+        <div className="vector-section">
+          <div className="vector-progress">
+            <div className="vector-progress-header">
+              <span>{vt('progress')}</span>
+            </div>
+            <div className="vector-progress-bar">
+              <div className="vector-progress-fill" style={{ width: `${Math.min(100, (progressLog.length / 15) * 100)}%` }} />
+            </div>
+            {progressLog.slice(-8).map((msg, i) => (
+              <div key={i} className="vector-progress-line">{msg}</div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ===== Version Warning ===== */}
       {versionMismatch && (
         <div className="vector-version-warning">
           ⚠ {vt('versionMismatch')}
-        </div>
-      )}
-
-      {/* ===== Drop Zone ===== */}
-      <div
-        className={`vector-dropzone ${isDragging ? 'drag-active' : ''}`}
-        onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
-        onDragLeave={e => { e.preventDefault(); setIsDragging(false) }}
-        onDrop={handleDrop}
-        onClick={handleOpenFileDialog}
-      >
-        <div className="vector-dropzone-icon">📁</div>
-        <div className="vector-dropzone-text">
-          {isDragging ? vt('uploadZoneActive') : vt('uploadZone')}
-        </div>
-        <div className="vector-dropzone-hint">
-          {vt('uploadZoneHint')}
-        </div>
-        {formatCount > 0 && (
-          <div className="vector-formats-bar">
-            <span className="vector-formats-label">
-              {vt('supportedFormatsCount').replace('{count}', String(formatCount))}:
-            </span>
-            {supportedExts.map(e => (
-              <span key={e.extension} className={`vector-format-badge cat-${e.category}`}>
-                {e.extension}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ===== Upload File List ===== */}
-      {uploadFilePaths.length > 0 && (
-        <div className="vector-upload-list-card">
-          <div className="vector-upload-list-header">
-            <span>{vt('pendingFiles') || 'Pending Files'} ({uploadFilePaths.length})</span>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="vector-btn-small vector-btn-remove" onClick={clearUploadFiles}>
-                {vt('clearFiles')}
-              </button>
-              <button className="vector-btn-primary" onClick={handleIngestFiles} disabled={loading}>
-                {loading ? vt('ingesting') : vt('startIngest') || 'Ingest All'}
-              </button>
-            </div>
-          </div>
-          <div className="vector-upload-list">
-            {fileNames.map((f, i) => (
-              <div key={f.path} className="vector-upload-item">
-                <span className="vector-upload-index">{i + 1}</span>
-                <span className={`vector-upload-ext ${f.ext.slice(1)}`}>{f.ext}</span>
-                <span className="vector-upload-name" title={f.path}>{f.name}</span>
-                <span className="vector-upload-path" title={f.path}>{f.path}</span>
-                <button
-                  className="vector-file-chip-remove"
-                  onClick={e => { e.stopPropagation(); removeUploadFile(f.path) }}
-                  title="Remove"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ===== Progress Log ===== */}
-      {loading && progressLog.length > 0 && (
-        <div className="vector-progress">
-          <div className="vector-progress-header">
-            <span>{vt('progress')}</span>
-          </div>
-          {progressLog.map((msg, i) => (
-            <div key={i} className="vector-progress-line">{msg}</div>
-          ))}
         </div>
       )}
 
@@ -364,155 +437,149 @@ export default function VectorPanel() {
         <div className="vector-error" onClick={clearError}>{error}</div>
       )}
 
-      {/* ===== Index Status Card ===== */}
-      <div className="vector-status-card">
-        <div className="vector-status-header">
-          <h3>{vt('indexStatus')}</h3>
-          {status && (
-            <span style={{ fontSize: 11, color: '#5b7a9e' }}>
-              {vt('supportedFormatsCount').replace('{count}', String(formatCount))}
-            </span>
-          )}
-        </div>
-        {status ? (
-          <div className="vector-status-grid">
-            <div className="vector-stat">
-              <span className="vector-stat-label">{vt('model')}</span>
-              <span className="vector-stat-value">{status.model}</span>
-            </div>
-            <div className="vector-stat">
-              <span className="vector-stat-label">{vt('dimensions')}</span>
-              <span className="vector-stat-value">{status.dimensions}</span>
-            </div>
-            <div className="vector-stat">
-              <span className="vector-stat-label">{vt('chunks')}</span>
-              <span className="vector-stat-value">{status.totalChunks.toLocaleString()}</span>
-            </div>
-            <div className="vector-stat">
-              <span className="vector-stat-label">{vt('files')}</span>
-              <span className="vector-stat-value">{status.totalFiles.toLocaleString()}</span>
-            </div>
-            <div className="vector-stat">
-              <span className="vector-stat-label">{vt('tokens')}</span>
-              <span className="vector-stat-value">{status.totalTokens.toLocaleString()}</span>
-            </div>
-            <div className="vector-stat">
-              <span className="vector-stat-label">{vt('version')}</span>
-              <span className={`vector-stat-value mono ${versionMismatch ? 'vector-version-stale' : ''}`}>
-                {status.commitId.slice(0, 14)}
-              </span>
+      {/* ===== Step 4: Knowledge Base Result ===== */}
+      {status && (
+        <div className="vector-section">
+          <div className="vector-section-label">{vt('knowledgeBase') || '📊 Knowledge Base'}</div>
+
+          {/* Status Grid */}
+          <div className="vector-status-card">
+            <div className="vector-status-grid">
+              <div className="vector-stat">
+                <span className="vector-stat-value-lg">{status.totalFiles.toLocaleString()}</span>
+                <span className="vector-stat-label">{vt('files')}</span>
+              </div>
+              <div className="vector-stat">
+                <span className="vector-stat-value-lg">{status.totalChunks.toLocaleString()}</span>
+                <span className="vector-stat-label">{vt('chunks')}</span>
+              </div>
+              <div className="vector-stat">
+                <span className="vector-stat-value-lg">{status.totalTokens.toLocaleString()}</span>
+                <span className="vector-stat-label">{vt('tokens')}</span>
+              </div>
+              <div className="vector-stat">
+                <span className="vector-stat-value-lg">{status.dimensions}d</span>
+                <span className="vector-stat-label">{status.model}</span>
+              </div>
             </div>
           </div>
-        ) : (
-          <div className="vector-status-empty">{vt('noIndex')}</div>
-        )}
-      </div>
 
-      {/* ===== Indexed Files Card ===== */}
-      {status && indexedFiles.length > 0 && (
-        <div className="vector-files-card">
-          <div className="vector-files-header">
-            <h3>{vt('indexedFiles')} ({indexedFiles.length})</h3>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {/* Indexed Files */}
+          {indexedFiles.length > 0 && (
+            <div className="vector-files-card" style={{ marginTop: 12 }}>
+              <div className="vector-files-header">
+                <h3>{vt('indexedFiles')} ({indexedFiles.length})</h3>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    className="vector-filter-input"
+                    type="text"
+                    placeholder={vt('filterFiles')}
+                    value={fileFilter}
+                    onChange={e => setFileFilter(e.target.value)}
+                  />
+                  <button className="vector-btn-small" onClick={selectAllFiles}>{vt('selectAll')}</button>
+                  <button className="vector-btn-small" onClick={deselectAllFiles}>{vt('deselectAll')}</button>
+                  <button
+                    className="vector-btn-small vector-btn-remove"
+                    disabled={selectedFiles.size === 0}
+                    onClick={() => setShowRemoveConfirm(true)}
+                  >
+                    {vt('removeSelected')} ({selectedFiles.size})
+                  </button>
+                </div>
+              </div>
+              <div className="vector-files-list">
+                {filteredIndexedFiles.map(f => (
+                  <div
+                    key={f.filePath}
+                    className={`vector-file-item ${selectedFiles.has(f.filePath) ? 'selected' : ''}`}
+                    onClick={() => toggleFile(f.filePath)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedFiles.has(f.filePath)}
+                      onChange={() => toggleFile(f.filePath)}
+                      onClick={e => e.stopPropagation()}
+                    />
+                    <span className="vector-file-path">{f.filePath}</span>
+                    <span className="vector-file-meta">
+                      <span className="vector-file-chunks">{f.chunkCount} chunks</span>
+                      <span className="vector-file-lang">{f.language}</span>
+                    </span>
+                  </div>
+                ))}
+                {filteredIndexedFiles.length === 0 && fileFilter.trim() !== '' && (
+                  <div className="vector-no-results">No files match "{fileFilter}"</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Semantic Search */}
+          <div className="vector-search-card" style={{ marginTop: 12 }}>
+            <h3>{vt('semanticSearch')}</h3>
+            <div className="vector-search-bar">
               <input
-                className="vector-filter-input"
                 type="text"
-                placeholder={vt('filterFiles')}
-                value={fileFilter}
-                onChange={e => setFileFilter(e.target.value)}
+                className="vector-search-input"
+                placeholder={vt('searchPlaceholder')}
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
               />
-              <button className="vector-btn-small" onClick={selectAllFiles}>{vt('selectAll')}</button>
-              <button className="vector-btn-small" onClick={deselectAllFiles}>{vt('deselectAll')}</button>
               <button
-                className="vector-btn-small vector-btn-remove"
-                disabled={selectedFiles.size === 0}
-                onClick={() => setShowRemoveConfirm(true)}
+                className="vector-btn vector-btn-search"
+                onClick={handleSearch}
+                disabled={loading || !query.trim()}
               >
-                {vt('removeSelected')} ({selectedFiles.size})
+                {vt('search')}
               </button>
             </div>
-          </div>
-          <div className="vector-files-list">
-            {filteredIndexedFiles.map(f => (
-              <div
-                key={f.filePath}
-                className={`vector-file-item ${selectedFiles.has(f.filePath) ? 'selected' : ''}`}
-                onClick={() => toggleFile(f.filePath)}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedFiles.has(f.filePath)}
-                  onChange={() => toggleFile(f.filePath)}
-                  onClick={e => e.stopPropagation()}
-                />
-                <span className="vector-file-path">{f.filePath}</span>
-                <span className="vector-file-meta">
-                  <span className="vector-file-chunks">{f.chunkCount} chunks</span>
-                  <span className="vector-file-lang">{f.language}</span>
-                </span>
-              </div>
-            ))}
-            {filteredIndexedFiles.length === 0 && fileFilter.trim() !== '' && (
-              <div style={{ color: '#5b7a9e', fontSize: 13, padding: '20px 0', textAlign: 'center' }}>
-                No files match "{fileFilter}"
+            <div className="vector-search-options">
+              <label className="vector-option">
+                {vt('topK')}:
+                <select value={topK} onChange={e => setTopK(Number(e.target.value))}>
+                  {[5, 10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </label>
+              <label className="vector-option">
+                {vt('minSimilarity')}:
+                <select value={minSim} onChange={e => setMinSim(Number(e.target.value))}>
+                  {[0, 0.3, 0.5, 0.7, 0.9].map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </label>
+            </div>
+
+            {results.length > 0 && (
+              <div className="vector-results">
+                <h4>{vt('results')} ({results.length})</h4>
+                {results.map(r => (
+                  <div key={r.chunk.id} className="vector-result-item">
+                    <div className="vector-result-header">
+                      <span className="vector-result-rank">#{r.rank}</span>
+                      <span className="vector-result-sim">{(r.similarity * 100).toFixed(1)}%</span>
+                      <span className="vector-result-file">{r.chunk.filePath}:{r.chunk.startLine}-{r.chunk.endLine}</span>
+                      <span className="vector-result-lang">{r.chunk.language}</span>
+                    </div>
+                    <pre className="vector-result-content">{r.chunk.content.slice(0, 300)}</pre>
+                  </div>
+                ))}
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* ===== Search Card ===== */}
-      <div className="vector-search-card">
-        <h3>{vt('semanticSearch')}</h3>
-        <div className="vector-search-bar">
-          <input
-            type="text"
-            className="vector-search-input"
-            placeholder={vt('searchPlaceholder')}
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-          <button
-            className="vector-btn vector-btn-search"
-            onClick={handleSearch}
-            disabled={loading || !query.trim()}
-          >
-            {vt('search')}
-          </button>
-        </div>
-        <div className="vector-search-options">
-          <label className="vector-option">
-            {vt('topK')}:
-            <select value={topK} onChange={e => setTopK(Number(e.target.value))}>
-              {[5, 10, 20, 50].map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </label>
-          <label className="vector-option">
-            {vt('minSimilarity')}:
-            <select value={minSim} onChange={e => setMinSim(Number(e.target.value))}>
-              {[0, 0.3, 0.5, 0.7, 0.9].map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </label>
-        </div>
-
-        {results.length > 0 && (
-          <div className="vector-results">
-            <h4>{vt('results')} ({results.length})</h4>
-            {results.map(r => (
-              <div key={r.chunk.id} className="vector-result-item">
-                <div className="vector-result-header">
-                  <span className="vector-result-rank">#{r.rank}</span>
-                  <span className="vector-result-sim">{(r.similarity * 100).toFixed(1)}%</span>
-                  <span className="vector-result-file">{r.chunk.filePath}:{r.chunk.startLine}-{r.chunk.endLine}</span>
-                  <span className="vector-result-lang">{r.chunk.language}</span>
-                </div>
-                <pre className="vector-result-content">{r.chunk.content.slice(0, 300)}</pre>
-              </div>
-            ))}
+      {/* ===== Empty State ===== */}
+      {!status && !loading && (
+        <div className="vector-section">
+          <div className="vector-empty-state">
+            <div className="vector-empty-icon">🧠</div>
+            <h3>{vt('noIndex')}</h3>
+            <p>{vt('noIndexHint') || '点击上方按钮构建知识库，将源代码和文档转化为可语义搜索的向量索引'}</p>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ===== Delete Confirmation Modal ===== */}
       {showDeleteConfirm && (

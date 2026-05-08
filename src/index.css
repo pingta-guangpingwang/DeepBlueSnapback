@@ -4616,7 +4616,7 @@ pre {
 
 .vector-dropzone-hint {
   font-size: 12px;
-  color: #5b7a9e;
+  color: #7a95b0;
   max-width: 450px;
   line-height: 1.5;
 }
@@ -4714,6 +4714,130 @@ pre {
   to { transform: rotate(360deg); }
 }
 
+/* ===== Vector Panel Sections ===== */
+
+.vector-section {
+  margin-top: 16px;
+}
+
+.vector-section-label {
+  font-size: 12px;
+  color: #7a95b0;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* ===== Main Build Action ===== */
+
+.vector-action-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 20px 16px;
+  background: rgba(15, 30, 55, 0.5);
+  border: 1px solid rgba(75, 130, 200, 0.15);
+  border-radius: 12px;
+}
+
+.vector-btn-build-main {
+  padding: 14px 48px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vector-btn-build-main:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.4);
+}
+
+.vector-btn-build-main:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vector-action-desc {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #6a85a0;
+  text-align: center;
+}
+
+.vector-spinner-sm {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: vec-spin 0.6s linear infinite;
+}
+
+@keyframes vec-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===== Status Grid (Large Numbers) ===== */
+
+.vector-stat-value-lg {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  color: #d4e4f8;
+  font-family: 'Consolas', 'Courier New', monospace;
+  line-height: 1.2;
+}
+
+/* ===== Empty State ===== */
+
+.vector-empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  background: rgba(15, 30, 55, 0.4);
+  border: 1px dashed rgba(75, 130, 200, 0.2);
+  border-radius: 12px;
+}
+
+.vector-empty-icon {
+  font-size: 42px;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+
+.vector-empty-state h3 {
+  margin: 0 0 8px;
+  color: #8aafcf;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.vector-empty-state p {
+  margin: 0;
+  color: #5b7a9e;
+  font-size: 13px;
+  max-width: 420px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.vector-no-results {
+  color: #5b7a9e;
+  font-size: 13px;
+  padding: 20px 0;
+  text-align: center;
+}
+
 /* ===== Upload File List ===== */
 
 .vector-upload-list-card {
@@ -4760,26 +4884,33 @@ pre {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 7px 16px;
+  padding: 6px 16px;
   border-bottom: 1px solid rgba(75, 130, 200, 0.06);
   font-size: 12px;
   transition: background 0.12s;
+  cursor: pointer;
+  user-select: none;
 }
 
 .vector-upload-item:hover {
   background: rgba(40, 70, 110, 0.3);
 }
 
+.vector-upload-item.selected {
+  background: rgba(74, 144, 226, 0.12);
+  border-bottom-color: rgba(74, 144, 226, 0.15);
+}
+
 .vector-upload-item:last-child {
   border-bottom: none;
 }
 
-.vector-upload-index {
-  color: #3d5a80;
-  font-size: 11px;
-  min-width: 22px;
-  text-align: right;
-  font-family: 'Consolas', 'Courier New', monospace;
+.vector-upload-checkbox {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  accent-color: #4a90e2;
+  cursor: pointer;
 }
 
 .vector-upload-ext {
@@ -4796,16 +4927,17 @@ pre {
 }
 
 .vector-upload-name {
-  color: #e0e8f0;
+  color: #d4dde8;
   min-width: 0;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 13px;
 }
 
 .vector-upload-path {
-  color: #4a6580;
+  color: #7a95b0;
   font-size: 11px;
   max-width: 280px;
   overflow: hidden;
@@ -4813,6 +4945,38 @@ pre {
   white-space: nowrap;
   font-family: 'Consolas', 'Courier New', monospace;
   flex-shrink: 1;
+}
+
+.vector-upload-remove {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #5b7a9e;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color 0.1s;
+  border-radius: 3px;
+}
+
+.vector-upload-remove:hover {
+  color: #ff7a7a;
+  background: rgba(255, 100, 100, 0.1);
+}
+
+.vector-upload-list-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(25, 50, 85, 0.4);
+  border-top: 1px solid rgba(75, 130, 200, 0.12);
+}
+
+.vector-upload-count {
+  font-size: 12px;
+  color: #7a95b0;
 }
 
 /* =============================================
