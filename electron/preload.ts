@@ -198,6 +198,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('dbgvs:unregister-project', rootPath, workingCopyPath),
   deleteWorkingCopy: (rootPath: string, workingCopyPath: string) =>
     ipcRenderer.invoke('dbgvs:delete-working-copy', rootPath, workingCopyPath),
+  reorderProjects: (rootPath: string, orderedRepos: Array<{ repoPath: string; order: number }>) =>
+    ipcRenderer.invoke('dbgvs:reorder-projects', rootPath, orderedRepos),
+  setProjectRating: (rootPath: string, repoPath: string, rating: number) =>
+    ipcRenderer.invoke('dbgvs:set-project-rating', rootPath, repoPath, rating),
 
   // 启动检查：补全项目 DBHT-GUIDE.md
   ensureProjectDocs: (rootPath: string) =>
@@ -328,6 +332,8 @@ export interface ElectronAPI {
   registerWorkingCopy: (rootPath: string, workingCopyPath: string) => Promise<{ success: boolean; message: string; projectName?: string; repoPath?: string }>
   unregisterProject: (rootPath: string, workingCopyPath: string) => Promise<{ success: boolean; message: string }>
   deleteWorkingCopy: (rootPath: string, workingCopyPath: string) => Promise<{ success: boolean; message: string }>
+  reorderProjects: (rootPath: string, orderedRepos: Array<{ repoPath: string; order: number }>) => Promise<{ success: boolean; message: string }>
+  setProjectRating: (rootPath: string, repoPath: string, rating: number) => Promise<{ success: boolean; message: string }>
 
   // 新手引导
   getOnboardingStatus: () => Promise<{ completed: boolean }>

@@ -125,6 +125,8 @@ interface ProjectRegistryEntry {
   repoPath: string                           // 集中仓库路径 repositories/<name>
   workingCopies: Array<{ path: string }>     // 工作副本路径列表
   created: string
+  order?: number                              // 手动排序序号（0-based）
+  rating?: number                             // 重要程度 1-6，默认 2
   gitConfig?: {
     remoteUrl: string
     branch: string
@@ -1320,7 +1322,9 @@ ipcMain.handle('dbgvs:get-projects', async (_, rootPath: string) => {
               repoPath: entry.repoPath,
               status: '已同步',
               lastUpdate,
-              hasChanges: false
+              hasChanges: false,
+              order: entry.order ?? 0,
+              rating: entry.rating ?? 2,
             })
           }
         }
@@ -1332,7 +1336,9 @@ ipcMain.handle('dbgvs:get-projects', async (_, rootPath: string) => {
           repoPath: entry.repoPath,
           status: '已同步',
           lastUpdate,
-          hasChanges: false
+          hasChanges: false,
+          order: entry.order ?? 0,
+          rating: entry.rating ?? 2,
         })
       }
     }
@@ -1652,6 +1658,38 @@ ipcMain.handle('dbgvs:delete-working-copy', async (_, rootPath: string, workingC
     await writeProjectRegistry(rootPath, registry)
 
     return { success: true, message: `已删除工作副本并移除项目` }
+  } catch (error) {
+    return { success: false, message: String(error) }
+  }
+})
+
+// 更新项目排序
+ipcMain.handle('dbgvs:reorder-projects', async (_, rootPath: string, orderedRepos: Array<{ repoPath: string; order: number }>) => {
+  try {
+    const registry = await readProjectRegistry(rootPath)
+    for (const { repoPath, order } of orderedRepos) {
+      const entry = registry.find(e => path.resolve(e.repoPath) === path.resolve(repoPath))
+      if (entry) entry.order = order
+    }
+    await writeProjectRegistry(rootPath, registry)
+    return { success: true, message: '排序已保存' }
+  } catch (error) {
+    return { success: false, message: String(error) }
+  }
+})
+
+// 设置项目重要程度
+ipcMain.handle('dbgvs:set-project-rating', async (_, rootPath: string, repoPath: string, rating: number) => {
+  try {
+    if (rating < 1 || rating > 6 || !Number.isInteger(rating)) {
+      return { success: false, message: '评级必须在 1-6 之间' }
+    }
+    const registry = await readProjectRegistry(rootPath)
+    const entry = registry.find(e => path.resolve(e.repoPath) === path.resolve(repoPath))
+    if (!entry) return { success: false, message: '项目未找到' }
+    entry.rating = rating
+    await writeProjectRegistry(rootPath, registry)
+    return { success: true, message: `项目评级已设为 ${rating} 星` }
   } catch (error) {
     return { success: false, message: String(error) }
   }
@@ -2460,7 +2498,9 @@ export async function getProjectsList(rootPath: string) {
       repoPath: entry.repoPath,
       status: '已同步',
       lastUpdate: '',
-      hasChanges: false
+      hasChanges: false,
+      order: entry.order ?? 0,
+      rating: entry.rating ?? 2,
     })
   }
   return { success: true, projects }

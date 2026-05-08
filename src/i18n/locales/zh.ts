@@ -878,6 +878,12 @@ const zh: Translations = {
     deleteFilesDesc: '从磁盘删除工作副本并从列表移除。仓库历史保留。',
     deleteFilesConfirm: '这将永久删除工作副本中的所有文件！此操作不可撤销。确认删除？',
     deleteFilesFinal: '是，删除工作副本',
+    moveUp: '上移',
+    moveDown: '下移',
+    moveTop: '置顶',
+    moveBottom: '置底',
+    sortManual: '手动排序',
+    sortByRating: '按重要程度',
   },
 
   // App-level messages

@@ -87,6 +87,8 @@ export interface ElectronAPI {
   // 从项目列表移除工作副本
   unregisterProject: (rootPath: string, workingCopyPath: string) => Promise<{ success: boolean; message: string }>
   deleteWorkingCopy: (rootPath: string, workingCopyPath: string) => Promise<{ success: boolean; message: string }>
+  reorderProjects: (rootPath: string, orderedRepos: Array<{ repoPath: string; order: number }>) => Promise<{ success: boolean; message: string }>
+  setProjectRating: (rootPath: string, repoPath: string, rating: number) => Promise<{ success: boolean; message: string }>
 
   // 启动检查：补全项目 DBHT-GUIDE.md
   ensureProjectDocs: (rootPath: string) => Promise<{ success: boolean; added: number; total: number; message?: string }>

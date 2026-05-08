@@ -10,6 +10,8 @@ export interface Project {
   status: string
   lastUpdate?: string
   hasChanges?: boolean
+  order?: number      // 手动排序序号
+  rating?: number     // 重要程度 1-6，默认 2
 }
 
 export interface AppState {

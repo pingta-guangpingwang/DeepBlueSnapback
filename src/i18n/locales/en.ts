@@ -884,6 +884,12 @@ const en = {
     deleteFilesDesc: 'Delete the working copy from disk and remove from list. Repository history is preserved.',
     deleteFilesConfirm: 'This will permanently delete all files in the working copy! This action is irreversible. Are you sure?',
     deleteFilesFinal: 'Yes, delete the working copy',
+    moveUp: 'Move up',
+    moveDown: 'Move down',
+    moveTop: 'Move to top',
+    moveBottom: 'Move to bottom',
+    sortManual: 'Manual order',
+    sortByRating: 'By importance',
   },
 
   // App-level messages
