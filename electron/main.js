@@ -1272,13 +1272,19 @@ AI 智能体在开发过程中必须遵循以下规则：
             await dbvsRepo.initWorkingCopy(repoPath, normalizedProjectPath);
             // 初始提交：将工作副本所有文件提交到仓库
             if (initWithCommit) {
+                const send = (msg) => mainWindow?.webContents.send('project:progress', msg);
+                send('正在扫描文件...');
                 const treeResult = await dbvsRepo.getFileTree(normalizedProjectPath);
                 if (treeResult.success && treeResult.files && treeResult.files.length > 0) {
                     const filePaths = treeResult.files.map(f => f.path);
-                    const commitResult = await dbvsRepo.commit(repoPath, normalizedProjectPath, '初始导入', filePaths);
+                    send(`正在提交 ${filePaths.length} 个文件...`);
+                    const commitResult = await dbvsRepo.commit(repoPath, normalizedProjectPath, '初始导入', filePaths, {
+                        onProgress: (msg) => send(`提交中: ${msg}`)
+                    });
                     if (!commitResult.success) {
                         return { success: false, message: `初始提交失败: ${commitResult.message}` };
                     }
+                    send('提交完成');
                 }
             }
             // 创建 DBHT-GUIDE.md

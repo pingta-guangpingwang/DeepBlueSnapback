@@ -314,11 +314,14 @@ class DBHTRepository {
                     headFilesMap.set(f.path.replace(/\\/g, '/'), f);
                 }
             }
+            const total = selectedFiles.length;
+            let done = 0;
             for (const relPath of selectedFiles) {
                 const normalizedPath = relPath.replace(/\\/g, '/');
                 const fullPath = path.join(workingCopyPath, relPath);
                 if (!(await fs.pathExists(fullPath))) {
                     headFilesMap.delete(normalizedPath);
+                    done++;
                     continue;
                 }
                 const content = await fs.readFile(fullPath);
@@ -328,6 +331,8 @@ class DBHTRepository {
                     await fs.writeFile(blobPath, content);
                 }
                 headFilesMap.set(normalizedPath, { path: normalizedPath, hash: fileHash, size: content.length });
+                done++;
+                options?.onProgress?.(`${done}/${total} ${normalizedPath}`);
             }
             const finalFiles = Array.from(headFilesMap.values());
             const totalSize = finalFiles.reduce((sum, f) => sum + f.size, 0);

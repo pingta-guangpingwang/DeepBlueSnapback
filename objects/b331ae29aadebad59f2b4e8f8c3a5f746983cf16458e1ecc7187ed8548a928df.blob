@@ -1,0 +1,163 @@
+# 深蓝生态开发计划 — DBHT (版本管理工程)
+
+> **项目路径**: `H:\SourceTree`  
+> **角色**: 深蓝生态版本控制基础设施 / 知识图谱引擎  
+> **技术栈**: Node.js / CLI / SQLite + Vector DB  
+> **当前版本**: v1.0.0  
+> **目标版本**: v1.2.0  
+
+---
+
+## 1. 当前状态 (v1.0.0)
+
+### 已完成功能
+- 本地版本控制核心 (init/commit/status/history/rollback)
+- 文件差异对比 (diff)
+- 版本回滚 + 撤销回滚 (rollback/undo-rollback)
+- AI 会话回滚 (rollback-ai)
+- 自动快照 (auto-snapshot)
+- 根仓库管理 (set-root/get-root)
+- 多项目管理 (create/import/delete/list)
+- 知识图谱 (kg:query/stats/subgraph/search)
+- 向量存储与搜索 (sqlite-vec)
+- JSON/Bash 两种输出格式
+- DBHT CLI 全局安装
+
+### 数据架构
+```
+J:\gencangk\
+├── config/              # 配置信息
+├── projects/            # 项目工作副本
+├── projects.json        # 项目注册表
+├── repositories/        # Git-like 版本库
+├── vectors/             # 向量嵌入存储
+├── graphs/              # 知识图谱数据
+└── analysis-cache/      # 分析结果缓存
+```
+
+---
+
+## 2. 生态角色定位
+
+DBHT 是深蓝生态的**版本控制基础设施**，所有项目统一通过 DBHT 管理：
+
+```
+shenlanAI ───┐
+DBGHF ───────┼──→ DBHT (版本控制 + 知识图谱)
+Middleware ──┘         │
+                       └── 向量搜索 / 跨项目关联 / AI 审计
+```
+
+**核心职责**:
+1. 所有生态项目的版本控制
+2. 跨项目知识图谱关联 (代码/文档/AI 产物的语义关系)
+3. 向量嵌入搜索 (自然语言查找代码/模板/配置)
+4. AI 操作审计追踪 (谁在什么时候做了什么)
+5. 版本化配置管理
+
+---
+
+## 3. 版本路线图
+
+### v1.1 — 跨项目增强 (Phase 3, T+2周)
+
+**目标**: 跨项目关联、向量搜索增强、AI 提交信息
+
+| # | 任务 | 说明 | 预估 |
+|---|------|------|------|
+| 1 | 跨项目知识图谱关联 | 自动发现 shenlanAI ↔ DBGHF ↔ Middleware 的引用关系 | 3d |
+| 2 | 向量搜索增强 | 全文 + 语义混合搜索 (BM25 + embedding) | 3d |
+| 3 | AI 提交信息生成 | `dbht commit --ai` 自动生成中文提交信息 | 2d |
+| 4 | 变更影响分析 | `dbht diff --impact` 分析变更影响范围 | 2d |
+| 5 | 项目健康仪表盘 | `dbht health` 检测项目状态/死代码/依赖过期 | 2d |
+
+**新增命令**:
+```bash
+dbht cross-ref <projectPath>          # 跨项目引用分析
+dbht search --semantic "<query>"      # 语义搜索
+dbht commit --ai <projectPath>        # AI 生成提交信息
+dbht diff --impact <projectPath>      # 变更影响分析
+dbht health <projectPath>             # 项目健康检查
+```
+
+### v1.2 — 生态整合 (Phase 3, T+2周)
+
+| # | 任务 | 说明 |
+|---|------|------|
+| 1 | OpenClaw Tool 注册 | DBHT 命令暴露为 OpenClaw Agent Tool |
+| 2 | 审计日志聚合 API | 为 Middleware Box 提供统一审计查询 |
+| 3 | 版本化配置同步 | `dbht config sync` 跨项目同步配置模板 |
+| 4 | 插件化知识图谱 | 允许 OpenClaw 插件写入自定义图谱节点 |
+
+---
+
+## 4. OpenClaw Tool 注册计划
+
+```typescript
+// DBHT 命令以 OpenClaw Tools 暴露
+const dbhtTools: ToolDefinition[] = [
+  {
+    name: "dbht_commit",
+    description: "提交项目变更到版本控制",
+    parameters: {
+      projectPath: "项目路径",
+      message: "提交信息 (可选, 留空则 AI 生成)",
+    },
+    handler: async (params) => execDBHT(`commit "${params.projectPath}" -m "${params.message}"`),
+  },
+  {
+    name: "dbht_history",
+    description: "查看项目版本历史",
+    parameters: { projectPath: "项目路径", limit: "返回条数" },
+  },
+  {
+    name: "dbht_search",
+    description: "跨项目语义搜索代码/文档",
+    parameters: { query: "自然语言查询", projectPath: "限定项目 (可选)" },
+  },
+  {
+    name: "dbht_cross_ref",
+    description: "分析跨项目引用关系",
+    parameters: { projectPath: "目标项目路径" },
+  },
+  {
+    name: "dbht_rollback",
+    description: "回滚项目到指定版本 (需二次确认)",
+    parameters: { projectPath: "项目路径", version: "目标版本号" },
+  },
+]
+```
+
+---
+
+## 5. 知识图谱 Schema 扩展
+
+### 当前节点类型
+- `project` — 项目
+- `commit` — 提交记录
+- `file` — 文件
+- `author` — 作者
+
+### 新增节点类型 (v1.1)
+- `agent_session` — AI Agent 会话
+- `tool_call` — 工具调用记录
+- `skill_fragment` — 技能碎片 (对接 DBGHF 角色系统)
+- `cross_ref` — 跨项目引用
+- `audit_entry` — 审计条目
+
+---
+
+## 6. 开发环境
+
+```bash
+cd H:\SourceTree
+npm install          # 安装依赖
+npm run build        # TypeScript 编译
+npm test             # 运行测试
+node bin/dbvs-cli.js # 本地运行
+```
+
+---
+
+> **同步到**: 本文件同时存放于 `H:\SourceTree\` 和底座项目  
+> **进度追踪**: 参见底座项目 [深蓝生态开发进度](H:\YunSvn\webRes\shenlangod\shenlanai\深蓝生态开发进度.md)

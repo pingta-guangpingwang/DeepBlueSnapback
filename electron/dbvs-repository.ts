@@ -310,7 +310,7 @@ export class DBHTRepository {
    * @param repoPath 仓库路径
    * @param workingCopyPath 工作副本路径
    */
-  async commit(repoPath: string, workingCopyPath: string, message: string, selectedFiles: string[], options?: { summary?: string; author?: string; sessionId?: string }): Promise<{ success: boolean; message: string; version?: string }> {
+  async commit(repoPath: string, workingCopyPath: string, message: string, selectedFiles: string[], options?: { summary?: string; author?: string; sessionId?: string; onProgress?: (msg: string) => void }): Promise<{ success: boolean; message: string; version?: string }> {
     try {
       const objectsPath = path.join(repoPath, 'objects')
       const commitsPath = path.join(repoPath, 'commits')
@@ -333,12 +333,15 @@ export class DBHTRepository {
         }
       }
 
+      const total = selectedFiles.length
+      let done = 0
       for (const relPath of selectedFiles) {
         const normalizedPath = relPath.replace(/\\/g, '/')
         const fullPath = path.join(workingCopyPath, relPath)
 
         if (!(await fs.pathExists(fullPath))) {
           headFilesMap.delete(normalizedPath)
+          done++
           continue
         }
 
@@ -351,6 +354,8 @@ export class DBHTRepository {
         }
 
         headFilesMap.set(normalizedPath, { path: normalizedPath, hash: fileHash, size: content.length })
+        done++
+        options?.onProgress?.(`${done}/${total} ${normalizedPath}`)
       }
 
       const finalFiles = Array.from(headFilesMap.values())

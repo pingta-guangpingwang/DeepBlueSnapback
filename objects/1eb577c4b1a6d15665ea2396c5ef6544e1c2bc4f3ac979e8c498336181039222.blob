@@ -1,0 +1,538 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getExternalApiConfig = getExternalApiConfig;
+exports.loadExternalApiConfig = loadExternalApiConfig;
+exports.saveExternalApiConfig = saveExternalApiConfig;
+exports.startExternalApi = startExternalApi;
+exports.stopExternalApi = stopExternalApi;
+exports.getExternalApiStatus = getExternalApiStatus;
+const express_1 = __importDefault(require("express"));
+const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
+const dbvs_repository_1 = require("./dbvs-repository");
+const CONFIG_FILENAME = 'external-api.json';
+let server = null;
+let currentConfig = { enabled: false, port: 3281, token: '' };
+function getExternalApiConfig() {
+    return { ...currentConfig };
+}
+function loadExternalApiConfig(rootPath) {
+    try {
+        const configPath = path_1.default.join(rootPath, 'config', CONFIG_FILENAME);
+        if (fs_1.default.existsSync(configPath)) {
+            const data = fs_1.default.readFileSync(configPath, 'utf-8');
+            currentConfig = { ...currentConfig, ...JSON.parse(data) };
+        }
+    }
+    catch { /* use defaults */ }
+    return { ...currentConfig };
+}
+function saveExternalApiConfig(rootPath, config) {
+    const configDir = path_1.default.join(rootPath, 'config');
+    if (!fs_1.default.existsSync(configDir))
+        fs_1.default.mkdirSync(configDir, { recursive: true });
+    fs_1.default.writeFileSync(path_1.default.join(configDir, CONFIG_FILENAME), JSON.stringify(config, null, 2), 'utf-8');
+    currentConfig = { ...config };
+}
+function authMiddleware(req, res, next) {
+    if (!currentConfig.token) {
+        next();
+        return;
+    }
+    const auth = req.headers.authorization;
+    if (!auth || !auth.startsWith('Bearer ') || auth.slice(7) !== currentConfig.token) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Invalid or missing Bearer token' });
+        return;
+    }
+    next();
+}
+function readRegistry(rootPath) {
+    try {
+        const registryPath = path_1.default.join(rootPath, 'config', 'projects.json');
+        if (fs_1.default.existsSync(registryPath)) {
+            const raw = JSON.parse(fs_1.default.readFileSync(registryPath, 'utf-8'));
+            return raw.map((entry) => {
+                if (entry.repoPath)
+                    return entry;
+                // compat with old format
+                return {
+                    name: entry.name,
+                    repoPath: entry.path,
+                    workingCopies: [{ path: entry.path }],
+                    created: entry.created,
+                };
+            });
+        }
+    }
+    catch { /* fall through */ }
+    // Fallback: scan repositories/ directory
+    const reposDir = path_1.default.join(rootPath, 'repositories');
+    const entries = [];
+    if (fs_1.default.existsSync(reposDir)) {
+        try {
+            const dirs = fs_1.default.readdirSync(reposDir);
+            for (const dir of dirs) {
+                const repoPath = path_1.default.join(reposDir, dir);
+                const stat = fs_1.default.statSync(repoPath);
+                if (stat.isDirectory() && fs_1.default.existsSync(path_1.default.join(repoPath, 'config.json'))) {
+                    entries.push({
+                        name: dir, repoPath, workingCopies: [],
+                        created: stat.mtime.toISOString(),
+                    });
+                }
+            }
+        }
+        catch { /* ignore */ }
+    }
+    return entries;
+}
+async function startExternalApi(rootPath) {
+    if (server) {
+        return { success: false, message: `API server is already running on port ${currentConfig.port}` };
+    }
+    const dbvs = new dbvs_repository_1.DBHTRepository();
+    const app = (0, express_1.default)();
+    app.use(express_1.default.json());
+    app.use(authMiddleware);
+    // GET /api/v1/status
+    app.get('/api/v1/status', async (_req, res) => {
+        try {
+            const registry = readRegistry(rootPath);
+            res.json({
+                status: 'running',
+                rootPath,
+                projects: registry.length,
+                timestamp: new Date().toISOString(),
+            });
+        }
+        catch (e) {
+            res.status(500).json({ error: 'Internal error', message: String(e) });
+        }
+    });
+    // GET /api/v1/projects
+    app.get('/api/v1/projects', async (_req, res) => {
+        try {
+            const registry = readRegistry(rootPath);
+            res.json(registry.map(e => ({
+                name: e.name,
+                path: e.repoPath,
+                workingCopies: e.workingCopies.map(w => w.path),
+                gitConfig: e.gitConfig,
+            })));
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // GET /api/v1/projects/:name/graph-versions
+    app.get('/api/v1/projects/:name/graph-versions', async (_req, res) => {
+        try {
+            const graphsDir = path_1.default.join(rootPath, 'graphs');
+            if (!fs_1.default.existsSync(graphsDir)) {
+                res.json({ graphs: [] });
+                return;
+            }
+            const files = fs_1.default.readdirSync(graphsDir).filter(f => f.endsWith('.json'));
+            res.json({ graphs: files.map(f => f.replace('.json', '')) });
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // GET /api/v1/projects/:name/health
+    app.get('/api/v1/projects/:name/health', async (req, res) => {
+        try {
+            const registry = readRegistry(rootPath);
+            const proj = registry.find(e => e.name === req.params.name);
+            if (!proj) {
+                res.status(404).json({ error: 'Project not found' });
+                return;
+            }
+            const history = await dbvs.getHistoryStructured(proj.repoPath);
+            if (!history.success || !history.commits?.length) {
+                res.status(404).json({ error: 'No commits found' });
+                return;
+            }
+            const { loadGraph } = await Promise.resolve().then(() => __importStar(require('./graph-store')));
+            const { generateHealthReport } = await Promise.resolve().then(() => __importStar(require('./health-scorer')));
+            const graph = await loadGraph(rootPath, history.commits[0].id);
+            if (!graph) {
+                res.status(404).json({ error: 'No graph found — run AST analysis first' });
+                return;
+            }
+            const report = generateHealthReport(graph);
+            res.json(report);
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // GET /api/v1/projects/:name/rag?q=...
+    // Returns RAG-friendly knowledge graph context, optionally filtered by query
+    app.get('/api/v1/projects/:name/rag', async (req, res) => {
+        try {
+            const registry = readRegistry(rootPath);
+            const proj = registry.find(e => e.name === req.params.name);
+            if (!proj) {
+                res.status(404).json({ error: 'Project not found' });
+                return;
+            }
+            const history = await dbvs.getHistoryStructured(proj.repoPath);
+            if (!history.success || !history.commits?.length) {
+                res.status(404).json({ error: 'No commits found' });
+                return;
+            }
+            const { loadGraph } = await Promise.resolve().then(() => __importStar(require('./graph-store')));
+            const graph = await loadGraph(rootPath, history.commits[0].id);
+            if (!graph) {
+                res.status(404).json({ error: 'No graph found — run AST analysis first' });
+                return;
+            }
+            const query = typeof req.query.q === 'string' ? req.query.q.toLowerCase() : '';
+            // Collect all nodes
+            const allNodes = [];
+            function collectNodes(node, parentId, depth) {
+                allNodes.push({
+                    id: node.id, label: node.label, type: node.type, path: node.path,
+                    fileCount: node.fileCount, lineCount: node.lineCount, exportsCount: node.exportsCount,
+                    parentId, depth, childCount: node.children?.length ?? 0,
+                });
+                if (node.children) {
+                    for (const child of node.children)
+                        collectNodes(child, node.id, depth + 1);
+                }
+            }
+            collectNodes(graph.rootNode, null, 1);
+            // Key relationships
+            const keyRelationships = [];
+            for (const e of graph.edges) {
+                const src = allNodes.find(n => n.id === e.source);
+                const tgt = allNodes.find(n => n.id === e.target);
+                if (src && tgt) {
+                    keyRelationships.push(`[${e.type}] ${String(src.label)} -> ${String(tgt.label)}${e.label ? ` (${e.label})` : ''}`);
+                }
+            }
+            // Filter by query if provided
+            const filteredRels = query
+                ? keyRelationships.filter(r => r.toLowerCase().includes(query)).slice(0, 50)
+                : keyRelationships.slice(0, 50);
+            const filteredNodes = query
+                ? allNodes.filter(n => {
+                    const label = String(n.label).toLowerCase();
+                    const path = String(n.path).toLowerCase();
+                    const type = String(n.type).toLowerCase();
+                    return label.includes(query) || path.includes(query) || type.includes(query);
+                }).slice(0, 100)
+                : allNodes.slice(0, 100);
+            // Build summary
+            const buildings = allNodes.filter(n => n.type === 'building');
+            const floors = allNodes.filter(n => n.type === 'floor');
+            const rooms = allNodes.filter(n => n.type === 'room');
+            const summary = [
+                `Project "${graph.projectName}" at commit ${history.commits[0].id.slice(0, 14)}.`,
+                `Structure: ${buildings.length} buildings (modules), ${floors.length} floors (subdirectories), ${rooms.length} rooms (source files).`,
+                `Total: ${graph.metrics.totalLines.toLocaleString()} lines of code across ${graph.metrics.totalFiles} files.`,
+                `Circular dependencies: ${graph.metrics.circularDepCount}. Orphan modules: ${graph.metrics.orphanCount}.`,
+            ].join('\n');
+            res.json({
+                projectName: graph.projectName,
+                commitId: history.commits[0].id,
+                naturalLanguageSummary: summary,
+                buildingCount: buildings.length,
+                floorCount: floors.length,
+                roomCount: rooms.length,
+                totalRelationships: keyRelationships.length,
+                keyRelationships: filteredRels,
+                nodes: filteredNodes,
+                metrics: graph.metrics,
+                query: query || null,
+            });
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // POST /api/v1/tasks/complete
+    app.post('/api/v1/tasks/complete', async (req, res) => {
+        try {
+            const { projectName, message, author } = req.body;
+            if (!projectName) {
+                res.status(400).json({ error: 'projectName is required' });
+                return;
+            }
+            const registry = readRegistry(rootPath);
+            const proj = registry.find(e => e.name === projectName);
+            if (!proj) {
+                res.status(404).json({ error: 'Project not found' });
+                return;
+            }
+            const wc = proj.workingCopies[0];
+            if (!wc) {
+                res.status(404).json({ error: 'No working copy for project' });
+                return;
+            }
+            const status = await dbvs.getStatus(proj.repoPath, wc.path);
+            const changedFiles = (status.status || []).filter((s) => !s.startsWith('?'));
+            if (changedFiles.length === 0) {
+                res.json({ success: true, message: 'No changes to commit', version: null });
+                return;
+            }
+            const result = await dbvs.commit(proj.repoPath, wc.path, message || '[External API] Task completed — auto snapshot', changedFiles, { author: author || 'external-api' });
+            res.json({ success: result.success, message: result.message });
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // POST /api/v1/projects/:name/commit
+    app.post('/api/v1/projects/:name/commit', async (req, res) => {
+        try {
+            const { message: commitMsg, author, files: specifiedFiles } = req.body;
+            if (!commitMsg) {
+                res.status(400).json({ error: 'message is required' });
+                return;
+            }
+            const registry = readRegistry(rootPath);
+            const proj = registry.find(e => e.name === req.params.name);
+            if (!proj) {
+                res.status(404).json({ error: 'Project not found' });
+                return;
+            }
+            const wc = proj.workingCopies[0];
+            if (!wc) {
+                res.status(404).json({ error: 'No working copy' });
+                return;
+            }
+            const status = await dbvs.getStatus(proj.repoPath, wc.path);
+            let files = specifiedFiles;
+            if (!files || files.length === 0) {
+                files = (status.status || []).filter((s) => !s.startsWith('?'));
+            }
+            if (files.length === 0) {
+                res.json({ success: true, message: 'No files to commit' });
+                return;
+            }
+            const result = await dbvs.commit(proj.repoPath, wc.path, commitMsg, files, {
+                author: author || 'external-api',
+            });
+            res.json({ success: result.success, message: result.message });
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // POST /api/v1/projects/:name/vector/index
+    app.post('/api/v1/projects/:name/vector/index', async (req, res) => {
+        try {
+            const name = String(req.params.name);
+            const registry = readRegistry(rootPath);
+            const proj = registry.find(e => e.name === name);
+            if (!proj) {
+                res.status(404).json({ error: 'Project not found' });
+                return;
+            }
+            const wc = proj.workingCopies[0];
+            if (!wc) {
+                res.status(404).json({ error: 'No working copy for project' });
+                return;
+            }
+            const history = await dbvs.getHistoryStructured(proj.repoPath);
+            const commitId = (history.success && history.commits?.length > 0)
+                ? history.commits[0].id : 'unknown';
+            const { buildVectorIndex } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            const filePaths = req.body?.filePaths || undefined;
+            const result = await buildVectorIndex(rootPath, wc.path, commitId, name, filePaths);
+            res.json(result);
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // GET /api/v1/projects/:name/vector/status
+    app.get('/api/v1/projects/:name/vector/status', async (req, res) => {
+        try {
+            const { getVectorStatus } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            const result = await getVectorStatus(rootPath, String(req.params.name));
+            res.json(result);
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // POST /api/v1/projects/:name/vector/search
+    app.post('/api/v1/projects/:name/vector/search', async (req, res) => {
+        try {
+            const { searchVectors } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            const { text, topK, minSimilarity, fileTypes } = req.body || {};
+            if (!text) {
+                res.status(400).json({ error: 'text is required' });
+                return;
+            }
+            const result = await searchVectors(rootPath, String(req.params.name), {
+                text, topK, minSimilarity, fileTypes,
+            });
+            res.json(result);
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // DELETE /api/v1/projects/:name/vector
+    app.delete('/api/v1/projects/:name/vector', async (req, res) => {
+        try {
+            const { deleteVectorIndex } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            const result = await deleteVectorIndex(rootPath, String(req.params.name));
+            res.json(result);
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // POST /api/v1/projects/:name/vector/ingest — ingest external files
+    app.post('/api/v1/projects/:name/vector/ingest', async (req, res) => {
+        try {
+            const { filePaths } = req.body || {};
+            if (!filePaths || !Array.isArray(filePaths) || filePaths.length === 0) {
+                return res.status(400).json({ success: false, message: 'filePaths array required' });
+            }
+            const { ingestFiles } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            const name = String(req.params.name);
+            const registry = readRegistry(rootPath);
+            const proj = registry.find(e => e.name === name);
+            if (!proj) {
+                res.status(404).json({ error: 'Project not found' });
+                return;
+            }
+            const history = await dbvs.getHistoryStructured(proj.repoPath);
+            const commitId = (history.success && history.commits?.length > 0)
+                ? history.commits[0].id : 'unknown';
+            const result = await ingestFiles(rootPath, filePaths, name, commitId);
+            res.json(result);
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // GET /api/v1/projects/:name/vector/files — list indexed files
+    app.get('/api/v1/projects/:name/vector/files', async (req, res) => {
+        try {
+            const { getIndexedFiles } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            const result = await getIndexedFiles(rootPath, String(req.params.name));
+            res.json(result);
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // DELETE /api/v1/projects/:name/vector/files — remove files from index
+    app.delete('/api/v1/projects/:name/vector/files', async (req, res) => {
+        try {
+            const { filePaths } = req.body || {};
+            if (!filePaths || !Array.isArray(filePaths) || filePaths.length === 0) {
+                return res.status(400).json({ success: false, message: 'filePaths array required' });
+            }
+            const { removeFilesFromIndex } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            const name = String(req.params.name);
+            const result = await removeFilesFromIndex(rootPath, '', '', name, filePaths);
+            res.json(result);
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // GET /api/v1/projects/:name/vector/export — export index
+    app.get('/api/v1/projects/:name/vector/export', async (req, res) => {
+        try {
+            const { exportVectorIndex } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            const result = await exportVectorIndex(rootPath, String(req.params.name));
+            if (result.success && result.data) {
+                res.type('application/json').send(result.data);
+            }
+            else {
+                res.json(result);
+            }
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // POST /api/v1/projects/:name/vector/import — import index
+    app.post('/api/v1/projects/:name/vector/import', async (req, res) => {
+        try {
+            const data = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+            const { importVectorIndex } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            const result = await importVectorIndex(rootPath, String(req.params.name), data);
+            res.json(result);
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    // GET /api/v1/projects/:name/vector/supported — list supported formats
+    app.get('/api/v1/projects/:name/vector/supported', async (_req, res) => {
+        try {
+            const { getSupportedExtensions } = await Promise.resolve().then(() => __importStar(require('./vector-engine')));
+            res.json(getSupportedExtensions());
+        }
+        catch (e) {
+            res.status(500).json({ error: String(e) });
+        }
+    });
+    return new Promise(resolve => {
+        server = app.listen(currentConfig.port, () => {
+            const addr = `http://localhost:${currentConfig.port}`;
+            resolve({ success: true, message: `API server started on ${addr}`, port: currentConfig.port, address: addr });
+        });
+        server.on('error', (err) => {
+            server = null;
+            resolve({ success: false, message: `Failed to start API server: ${err.message}` });
+        });
+    });
+}
+function stopExternalApi() {
+    if (!server) {
+        return { success: false, message: 'API server is not running' };
+    }
+    server.close();
+    server = null;
+    return { success: true, message: 'API server stopped' };
+}
+function getExternalApiStatus() {
+    return { running: server !== null, port: currentConfig.port };
+}

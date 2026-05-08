@@ -84,6 +84,7 @@ export declare class DBHTRepository {
         summary?: string;
         author?: string;
         sessionId?: string;
+        onProgress?: (msg: string) => void;
     }): Promise<{
         success: boolean;
         message: string;

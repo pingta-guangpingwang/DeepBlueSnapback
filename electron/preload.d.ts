@@ -457,6 +457,7 @@ export interface ElectronAPI {
         }>;
     }>;
     onVectorProgress: (callback: (msg: string) => void) => () => void;
+    onProjectProgress: (callback: (msg: string) => void) => () => void;
     analyzeQuality: (commitId: string) => Promise<{
         success: boolean;
         report?: Record<string, unknown>;

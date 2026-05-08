@@ -143,6 +143,7 @@ export interface ElectronAPI {
   vectorExport: (projectName: string) => Promise<{ success: boolean; data?: string; message?: string }>
   vectorImport: (projectName: string, data: string) => Promise<{ success: boolean; index?: VectorIndexInfo; message?: string }>
   onVectorProgress: (callback: (msg: string) => void) => () => void
+  onProjectProgress: (callback: (msg: string) => void) => () => void
   vectorIngestFiles: (projectName: string, filePaths: string[], workingCopyPath: string, commitId: string) =>
     Promise<IngestFilesResult>
   vectorOpenFilesDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>

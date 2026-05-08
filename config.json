@@ -1,0 +1,14 @@
+{
+  "name": "SourceTree",
+  "version": "3.0.0",
+  "created": "2026-05-08T15:47:59.505Z",
+  "ignorePatterns": [
+    ".dbvs",
+    ".dbvs-link.json",
+    "node_modules",
+    ".git",
+    ".DS_Store",
+    "Thumbs.db",
+    "DBHT-GUIDE.md"
+  ]
+}

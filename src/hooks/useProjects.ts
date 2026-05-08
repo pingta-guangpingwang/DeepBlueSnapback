@@ -1,8 +1,9 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useAppState } from '../context/AppContext'
 
 export function useProjects() {
   const [state, dispatch] = useAppState()
+  const [importProgress, setImportProgress] = useState<string[]>([])
 
   const loadProjects = useCallback(async () => {
     if (!state.rootRepositoryPath) return
@@ -68,6 +69,13 @@ export function useProjects() {
             folder,
             warning: `检测到旧的工作副本关联（${resolved.repoPath}），但仓库已不存在。确认后将重新创建仓库并提交文件。`
           }
+        } else if (result?.message?.includes('.dbvs-link.json')) {
+          // 目录是 DBHT 仓库但缺少工作副本链接文件（外部 AI 初始化）
+          dispatch({ type: 'SET_IS_LOADING', payload: false })
+          return {
+            folder,
+            warning: `检测到该目录已是 DBHT 仓库（由外部工具初始化），但缺少工作副本链接。确认后将注册到项目列表并创建初始版本。`
+          }
         } else {
           dispatch({ type: 'SET_MESSAGE', payload: result?.message || '加载失败' })
         }
@@ -86,6 +94,11 @@ export function useProjects() {
   const confirmImport = useCallback(async (folderPath: string, projectName: string, initWithCommit: boolean) => {
     if (!state.rootRepositoryPath) return
 
+    setImportProgress([])
+    const unsub = (window as any).electronAPI?.onProjectProgress?.((msg: string) => {
+      setImportProgress(prev => [...prev, msg])
+    })
+
     dispatch({ type: 'SET_IS_LOADING', payload: true })
     try {
       const result = await window.electronAPI.registerProject(state.rootRepositoryPath, folderPath, projectName, initWithCommit)
@@ -98,6 +111,7 @@ export function useProjects() {
     } catch (error) {
       dispatch({ type: 'SET_MESSAGE', payload: '导入项目失败：' + (error as Error).message })
     } finally {
+      unsub?.()
       dispatch({ type: 'SET_IS_LOADING', payload: false })
     }
   }, [state.rootRepositoryPath, dispatch, loadProjects])
@@ -180,5 +194,5 @@ export function useProjects() {
     }
   }, [state.projects, dispatch, loadProjects])
 
-  return { loadProjects, createProject, importProject, confirmImport, checkoutToProject, checkoutProject, openProject, removeProject }
+  return { loadProjects, createProject, importProject, confirmImport, checkoutToProject, checkoutProject, openProject, removeProject, importProgress, setImportProgress }
 }

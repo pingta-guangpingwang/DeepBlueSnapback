@@ -53,7 +53,7 @@ export default function ProjectCard({ project, onEnter, onCommit, onRemove }: Pr
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <strong style={{ fontSize: '14px' }}>{project.name}</strong>
-            <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '10px' }}>{project.path}</span>
+            <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '10px' }}>{project.path || project.repoPath}</span>
           </div>
           <span style={{ fontSize: '12px', color: '#d97706', fontWeight: 500 }}>{t.projectCard.remove}</span>
         </div>
@@ -83,7 +83,7 @@ export default function ProjectCard({ project, onEnter, onCommit, onRemove }: Pr
       <div className="project-info" style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, flex: 1 }}>
         <h3 style={{ margin: 0, whiteSpace: 'nowrap', fontSize: '14px' }}>{project.name}</h3>
         <span style={{ fontSize: '12px', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {project.path}
+          {project.path || project.repoPath}
         </span>
         <span className={`project-status ${project.status === t.projectCard.synced ? 'synced' : 'unsynced'}`}>
           {project.status === t.projectCard.synced ? t.projectCard.synced : project.status}

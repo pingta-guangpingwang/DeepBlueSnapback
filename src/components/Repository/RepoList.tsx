@@ -546,7 +546,7 @@ function RepoManager({ rootPath }: { rootPath: string }) {
 export default function RepoList() {
   const [state, dispatch] = useAppState()
   const { t, locale, setLocale } = useI18n()
-  const { importProject, confirmImport, checkoutToProject, openProject, removeProject } = useProjects()
+  const { importProject, confirmImport, checkoutToProject, openProject, removeProject, importProgress, setImportProgress } = useProjects()
   const { openCommitPanel } = useRepository()
   const [settingsTab, setSettingsTab] = useState<'general' | 'repository' | 'context-menu'>('general')
   const [importFolderPath, setImportFolderPath] = useState<string | null>(null)
@@ -843,12 +843,13 @@ export default function RepoList() {
         <ImportProjectModal
           folderPath={importFolderPath}
           warning={importWarning}
+          progressLog={importProgress}
           onConfirm={async (projectName, initWithCommit) => {
             await confirmImport(importFolderPath, projectName, initWithCommit)
             setImportFolderPath(null)
             setImportWarning(undefined)
           }}
-          onCancel={() => { setImportFolderPath(null); setImportWarning(undefined) }}
+          onCancel={() => { setImportFolderPath(null); setImportWarning(undefined); setImportProgress([]) }}
         />
       )}
 

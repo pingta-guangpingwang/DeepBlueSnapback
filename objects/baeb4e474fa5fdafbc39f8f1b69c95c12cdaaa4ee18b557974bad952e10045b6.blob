@@ -1,0 +1,54 @@
+appId: com.deepblue.dbht
+productName: DBHT
+copyright: Copyright © 2026 深蓝驭溯
+
+directories:
+  output: release
+  buildResources: assets
+
+files:
+  - dist/**/*
+  - electron/**/*
+  - bin/**/*
+  - package.json
+  - node_modules/**/*
+  - "!electron/*.ts"
+  - "!electron/*.map"
+  - "!test*"
+  - "!docs"
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: assets/icon.ico
+  artifactName: DBHT-Setup-${version}.${ext}
+
+nsis:
+  oneClick: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: DBHT
+  installerIcon: assets/icon.ico
+  uninstallerIcon: assets/icon.ico
+  installerHeaderIcon: assets/icon.ico
+  allowToChangeInstallationDirectory: false
+  deleteAppDataOnUninstall: false
+  # 安装后注册右键菜单（可选，用户也可在设置中手动注册）
+  # include: build/nsis-menu.nsh
+
+mac:
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+  icon: assets/icon.icns
+  category: public.app-category.developer-tools
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  icon: assets
+  category: Development
+
+asar: true

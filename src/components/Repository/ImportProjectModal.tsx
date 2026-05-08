@@ -5,6 +5,7 @@ import { useI18n } from '../../i18n'
 interface Props {
   folderPath: string
   warning?: string
+  progressLog: string[]
   onConfirm: (projectName: string, initWithCommit: boolean) => void
   onCancel: () => void
 }
@@ -137,6 +138,22 @@ export default function ImportProjectModal({ folderPath, warning, onConfirm, onC
           }}>
             {t.importProject.importInfo}
           </div>
+
+          {/* 进度日志 */}
+          {progressLog.length > 0 && (
+            <div style={{
+              padding: '8px 12px', background: '#1e293b', borderRadius: '8px',
+              marginBottom: '12px', maxHeight: '140px', overflowY: 'auto',
+              fontFamily: 'Consolas, monospace', fontSize: '11px',
+              color: '#94a3b8', lineHeight: '1.6',
+            }}>
+              {progressLog.map((msg, i) => (
+                <div key={i} style={{ color: msg.includes('完成') ? '#4ade80' : '#94a3b8' }}>
+                  {msg}
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* 操作按钮 */}
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>

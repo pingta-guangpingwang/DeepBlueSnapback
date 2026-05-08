@@ -162,6 +162,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('vector:progress', (_, msg) => callback(msg))
     return () => ipcRenderer.removeAllListeners('vector:progress')
   },
+  onProjectProgress: (callback: (msg: string) => void) => {
+    ipcRenderer.on('project:progress', (_, msg) => callback(msg))
+    return () => ipcRenderer.removeAllListeners('project:progress')
+  },
 
   // LAN Server
   lanStart: (rootPath: string, port?: number) => ipcRenderer.invoke('lan:start', rootPath, port),
@@ -357,6 +361,7 @@ export interface ElectronAPI {
   vectorOpenFolderDialog: () => Promise<{ canceled: boolean; filePaths: string[] }>
   vectorGetSupportedExtensions: () => Promise<{ extensions: Array<{ extension: string; description: string; category: string }> }>
   onVectorProgress: (callback: (msg: string) => void) => () => void
+  onProjectProgress: (callback: (msg: string) => void) => () => void
 
   // Quality & health
   analyzeQuality: (commitId: string) => Promise<{ success: boolean; report?: Record<string, unknown>; message?: string }>

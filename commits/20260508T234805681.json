@@ -1,0 +1,945 @@
+{
+  "id": "20260508T234805681",
+  "message": "Phase 0: 新增深蓝生态开发计划 — DBHT 跨项目增强路线 (v1.0 → v1.2)",
+  "timestamp": "2026-05-08T15:48:05.682Z",
+  "files": [
+    {
+      "path": "94407fbdd42a797af5a902bc107d72e8.jpg",
+      "hash": "b68463c430b6ffc262ea6d2a4935c6423b515cc05cfd9de26ef7270b39e833e5",
+      "size": 92264
+    },
+    {
+      "path": "bin/dbvs-cli.js",
+      "hash": "f37a67af78d2f2d01fed667bab844d8e3f59d4092b94e4d8596c031f1721ee7d",
+      "size": 222
+    },
+    {
+      "path": "cd5741cc158ccc6be0b524f0444cc22c.jpg",
+      "hash": "a98dea1f8e7f042f256e225924f3013765da9fbef2d3515e4f2ed071109b0709",
+      "size": 147111
+    },
+    {
+      "path": "CLAUDE.md",
+      "hash": "1463a29b33814836fa91ca782f38b7f8ea6a2bb8fe0418699f689e005bf9b649",
+      "size": 2032
+    },
+    {
+      "path": "config.json",
+      "hash": "93dae00a4f2fdc616d6791aed292438506c9a4e1a2bbef0a5d58da41cc2a2ece",
+      "size": 239
+    },
+    {
+      "path": "DEV-ROADMAP.md",
+      "hash": "8f33c6dbd856e362587ba63f0e6439c2603e108c72421692256034e499e31807",
+      "size": 29871
+    },
+    {
+      "path": "DEVLOG.md",
+      "hash": "b81fdf3a5aea215ab7777b3f59183bd89180228427ef57eb8a70c02afcd9b9f7",
+      "size": 1260
+    },
+    {
+      "path": "dist/alipay.jpg",
+      "hash": "a98dea1f8e7f042f256e225924f3013765da9fbef2d3515e4f2ed071109b0709",
+      "size": 147111
+    },
+    {
+      "path": "dist/assets/index-CDePuBJg.css",
+      "hash": "dc7d0df241c79a3b924289e5b7f0f14a8e095f13ed633319eadbdee39de85710",
+      "size": 69514
+    },
+    {
+      "path": "dist/assets/index-D1QBx1OS.js",
+      "hash": "f1bac8fb294bef393972d5231384e3e75a10c9bee8be929444473a1c6f4f831d",
+      "size": 493827
+    },
+    {
+      "path": "dist/index.html",
+      "hash": "c0baf12f6e489cb70c47c681582cf5361038e18797af607535566968c9c5ab1e",
+      "size": 464
+    },
+    {
+      "path": "dist/wechat-pay.jpg",
+      "hash": "221674e252094afeb1d72bda1cb5ea37aa68446bb5f97cc0e921cd630091b889",
+      "size": 80797
+    },
+    {
+      "path": "docs/dbvs-features.md",
+      "hash": "0e2dfb7d05acafa6017dd818564e49c49cb328a2d03265eaf1c540032c2e4ae2",
+      "size": 11428
+    },
+    {
+      "path": "docs/REDESIGN.md",
+      "hash": "c0fa988b3e36f4b5f0d66779a7004506027ed37d060723abe9cb382a5414d3f8",
+      "size": 10310
+    },
+    {
+      "path": "docs/svn-features.md",
+      "hash": "7bdaf05e578be68e664c9da89f05439f06c6b39379c4ee8ba83ca28213d6321c",
+      "size": 12983
+    },
+    {
+      "path": "electron/ast-analyzer.d.ts",
+      "hash": "7f3bd8129fb6a4e3aaf14471ccc3e6a2d4b863b75f3964ac7d5f244dff3d9cc4",
+      "size": 1198
+    },
+    {
+      "path": "electron/ast-analyzer.js",
+      "hash": "c2658280a59c2a983e3c809fdbbb65b258037a09cc2d63f0a1c39a1b50dc3c01",
+      "size": 34354
+    },
+    {
+      "path": "electron/ast-analyzer.ts",
+      "hash": "05358bcebc7f27c33d2d0cc9ad8ede6eddc32106416374088d378d899a79c8d3",
+      "size": 31605
+    },
+    {
+      "path": "electron/cli-standalone.d.ts",
+      "hash": "e915d6c58eddd132dea798e191162b48d6a6ada4202a83601fa67c409d900571",
+      "size": 228
+    },
+    {
+      "path": "electron/cli-standalone.js",
+      "hash": "530c0149e09d2bc7af22116da0ab8b21cee4ae4ccb815b17fa50ab09b4ec6256",
+      "size": 54277
+    },
+    {
+      "path": "electron/cli-standalone.ts",
+      "hash": "2feca09b43f245687edc7345665bfcd42d584c2488321e02d628d4a542cd78fd",
+      "size": 37318
+    },
+    {
+      "path": "electron/cli.d.ts",
+      "hash": "b028112b495a0cc85b75ec0436e7744bf3fc86b4893af4f16fe85af01e1947a5",
+      "size": 270
+    },
+    {
+      "path": "electron/cli.js",
+      "hash": "90df3e2b01e99ef4242d17b3cc32f27a6cdc6c2391eb31ffed10c2382a64a227",
+      "size": 12503
+    },
+    {
+      "path": "electron/cli.ts",
+      "hash": "15cf9351d5cae75ceb6b3011a17b02c41c30c794b3e8109a17bed3b4aa775556",
+      "size": 10455
+    },
+    {
+      "path": "electron/context-menu.d.ts",
+      "hash": "a9dea636b988e281053d970e361fc25a222ba6a301c3fb3ec18360498e77b24d",
+      "size": 637
+    },
+    {
+      "path": "electron/context-menu.js",
+      "hash": "e2540fd487d55d1d563a41c3850daf8485cf95b2cbc6ee08d2e58c1f1533a663",
+      "size": 7216
+    },
+    {
+      "path": "electron/context-menu.ts",
+      "hash": "d90770fc8ee3842f449f35caa9889aff745a63d0967493177202c590ad4b396f",
+      "size": 5506
+    },
+    {
+      "path": "electron/dbvs-launcher.d.ts",
+      "hash": "b7e6ad3fbeee7be62dc19e816fbee214801c25363336f8c7cf5b080f47245bf0",
+      "size": 521
+    },
+    {
+      "path": "electron/dbvs-launcher.js",
+      "hash": "e98f5df0469ca881a3dbf5846edc41a2c5e77cc25a379215cf57da49358d4e62",
+      "size": 6626
+    },
+    {
+      "path": "electron/dbvs-launcher.ts",
+      "hash": "8d772f40836654b595ce9acf5bd8b03c14e2de5659500ad120268ea0195bda77",
+      "size": 4703
+    },
+    {
+      "path": "electron/dbvs-repository.d.ts",
+      "hash": "a7de6ee7832f33ccce050978320e0293e81cff79d5c03d4cb752803f10c52cd8",
+      "size": 6580
+    },
+    {
+      "path": "electron/dbvs-repository.js",
+      "hash": "79a2a8f66263c5c25cd43ca62e3d4e0f69d2b995835c5721104259179bb76de7",
+      "size": 46395
+    },
+    {
+      "path": "electron/dbvs-repository.ts",
+      "hash": "d047c756e5a6e7e4cd8f45e60c8fcb35ca1a53e3e9760eb6bc802fc4bc694884",
+      "size": 42309
+    },
+    {
+      "path": "electron/external-api.d.ts",
+      "hash": "115b9bf1cddc854e3125ff6c3f4271166de4b234e9aed295e3511d10fa3ade60",
+      "size": 689
+    },
+    {
+      "path": "electron/external-api.js",
+      "hash": "1eb577c4b1a6d15665ea2396c5ef6544e1c2bc4f3ac979e8c498336181039222",
+      "size": 23595
+    },
+    {
+      "path": "electron/external-api.ts",
+      "hash": "b4594467ecac653776fdda8339aa56697987a87e3d7c87d5bb4cae714b296bbb",
+      "size": 18949
+    },
+    {
+      "path": "electron/file-parser.d.ts",
+      "hash": "a0f4147fb1e4eb7ed16619337a66020d4903cb8240cb2d52ad299e7ebc199e5e",
+      "size": 485
+    },
+    {
+      "path": "electron/file-parser.js",
+      "hash": "001527d00747cf72174bbc72b09ff334b53ff498026a9a674a383f9835b60119",
+      "size": 7649
+    },
+    {
+      "path": "electron/file-parser.ts",
+      "hash": "51627068d98a0e133be11555dc92fb7c79b2d11af7f6f5af41332d71ee984c02",
+      "size": 6303
+    },
+    {
+      "path": "electron/git-bridge.d.ts",
+      "hash": "6a3ae4d267aaced7d9dc8c17b93f0249f1f18f248b05352ceae90bbe35cc77e9",
+      "size": 2069
+    },
+    {
+      "path": "electron/git-bridge.js",
+      "hash": "5cf84bbd4848e628b29d6b94af396de4f37f2239770c1c24caf82b77b1a8b3f6",
+      "size": 16702
+    },
+    {
+      "path": "electron/git-bridge.ts",
+      "hash": "d08b6451c78c171d2259ac0302fb07818337b412f923007556c16e987068a792",
+      "size": 13385
+    },
+    {
+      "path": "electron/graph-builder.d.ts",
+      "hash": "3cdef83ac2a0f4805e076a2e57320fd3142dbab014eae9be7d3f1e1e789ec117",
+      "size": 319
+    },
+    {
+      "path": "electron/graph-builder.js",
+      "hash": "12ba2ec541df7f02a06356838302c0afb5eced15620cbef8b6c4dab520b34fad",
+      "size": 14678
+    },
+    {
+      "path": "electron/graph-builder.ts",
+      "hash": "d6e9c9bc6f9f63da5ac035f697f161e8660795514a7e7bd91d73cdedeec078ea",
+      "size": 12211
+    },
+    {
+      "path": "electron/graph-store.d.ts",
+      "hash": "fdd539e831a47e01f021aea0b79d79375611f550f2e31159bcc003560a7b3ca4",
+      "size": 1287
+    },
+    {
+      "path": "electron/graph-store.js",
+      "hash": "4cd21c4a19377af1e566794746b572fa86a277ccc62f04bca02bacf5c6502949",
+      "size": 8030
+    },
+    {
+      "path": "electron/graph-store.ts",
+      "hash": "29d9266be8e03f6325fbd0c36357f18e77bd71a412fb63825b2e7535eed1db7f",
+      "size": 6804
+    },
+    {
+      "path": "electron/graph-types.d.ts",
+      "hash": "ec2fa52e8ae91e31367536e558d83275e5f15c3bd19c779bad047dfed8d24008",
+      "size": 1304
+    },
+    {
+      "path": "electron/graph-types.js",
+      "hash": "aafaeaa1b501337b59b0ffe1ce2898d14ff69dd0635662f7ff53e6a582eb040b",
+      "size": 216
+    },
+    {
+      "path": "electron/graph-types.ts",
+      "hash": "db707f539b608763193d82aece8807d8de596d674ed99b46607d489ee5eef012",
+      "size": 1394
+    },
+    {
+      "path": "electron/health-scorer.d.ts",
+      "hash": "d02e783a4b1d9f457095aabc42230c8373f8f1b4aaa88e3794fd755babe511a5",
+      "size": 595
+    },
+    {
+      "path": "electron/health-scorer.js",
+      "hash": "2fab09c77ee0005750f4c8859806de491bb0c7c67cff11cc6b597f4f6949f1a7",
+      "size": 2428
+    },
+    {
+      "path": "electron/health-scorer.ts",
+      "hash": "219e6b9c0a285b1564c377dd1431efa45d90855acf9bac4f830990b58529e102",
+      "size": 2548
+    },
+    {
+      "path": "electron/lan-server.d.ts",
+      "hash": "6703fb55533e73c3cc118f3a0e8fea42ce2723367f7fc1baac803434e89886d0",
+      "size": 496
+    },
+    {
+      "path": "electron/lan-server.js",
+      "hash": "05f7294822ce7a36a9f4c9d6d018e9788ba83bc7da1861ecf1977147cfe916af",
+      "size": 11355
+    },
+    {
+      "path": "electron/lan-server.ts",
+      "hash": "aa102126b0f79d52f9c4f8862b860c5ee888486358376ca51a461c154789dcb3",
+      "size": 8248
+    },
+    {
+      "path": "electron/main.d.ts",
+      "hash": "a66174f4d16796e6cc302561561e8670c583a99bbcb191f0e1f1506d86f418fa",
+      "size": 271
+    },
+    {
+      "path": "electron/main.js",
+      "hash": "0381355b3d5469976143ab9bc513ff7b02d20178dc94b9daf2ac0f483f4b5111",
+      "size": 95888
+    },
+    {
+      "path": "electron/main.ts",
+      "hash": "242765408d3ecf2ee6374f1c7f1ed70e5067377bb3d786db0c1eb0c62c4f170a",
+      "size": 84906
+    },
+    {
+      "path": "electron/preload.d.ts",
+      "hash": "e2ca85c12fe1b18a07fcc870ee6a155ad73ec1d1ab3fe2a6cc4125d256b542cf",
+      "size": 16196
+    },
+    {
+      "path": "electron/preload.js",
+      "hash": "cd9a94d8dff5d6b189c0e0e8d1edb29973fb43cd26fe2aa0b663761640cd0641",
+      "size": 14355
+    },
+    {
+      "path": "electron/preload.ts",
+      "hash": "db82d250fd39b46a4f3210d9648271ccfd606c2229db2299039ef91de8a4df75",
+      "size": 27501
+    },
+    {
+      "path": "electron/quality-analyzer.d.ts",
+      "hash": "ad65ed68e47cc092398c0fb71fb04070e4e3674195984797a686180c2a3c349a",
+      "size": 883
+    },
+    {
+      "path": "electron/quality-analyzer.js",
+      "hash": "d52daba0d20403fd6623d025a8987e77d5b7f70d21c79bb1c6f4e6cce22553ce",
+      "size": 6619
+    },
+    {
+      "path": "electron/quality-analyzer.ts",
+      "hash": "2e9a556c55ca974cfdcf4d878a24bdc838fd757504fcd8c4f2b5ee9024123aa5",
+      "size": 7113
+    },
+    {
+      "path": "electron/vector-engine.d.ts",
+      "hash": "ca06317132e22c80084dd9d363fca70479638158b9795f77639def101abc7bb9",
+      "size": 3833
+    },
+    {
+      "path": "electron/vector-engine.js",
+      "hash": "71d5d0c247fda2387008955ca3bba6b907d746442e58fd62de0124603627a825",
+      "size": 30005
+    },
+    {
+      "path": "electron/vector-engine.ts",
+      "hash": "b0fa09483503c6a6c7b46bd8a69b5c882c3e1ad3dc3fb1fb82fd9198516a4d8a",
+      "size": 28561
+    },
+    {
+      "path": "electron/version-switch.d.ts",
+      "hash": "a954f44c356ec245cd193ff85624d2b13aa9628d20b099dfd9071da3fad5b96a",
+      "size": 1226
+    },
+    {
+      "path": "electron/version-switch.js",
+      "hash": "c124bf3a718746a927dd9912c572a1d036da5d4375e822b5d76bf67312f5d997",
+      "size": 5167
+    },
+    {
+      "path": "electron/version-switch.ts",
+      "hash": "4780be7fca11e0a0caa046692055674493af716189e1f04b4772a39a55cd52e1",
+      "size": 3803
+    },
+    {
+      "path": "electron-builder.yml",
+      "hash": "baeb4e474fa5fdafbc39f8f1b69c95c12cdaaa4ee18b557974bad952e10045b6",
+      "size": 1074
+    },
+    {
+      "path": "f9e661730d92fb35985a8d0dffcfb624.jpg",
+      "hash": "221674e252094afeb1d72bda1cb5ea37aa68446bb5f97cc0e921cd630091b889",
+      "size": 80797
+    },
+    {
+      "path": "HEAD.json",
+      "hash": "e1de30f2496d620f144bacc1ff49c18f1e9ba60e8574252710a04b51339ac160",
+      "size": 94
+    },
+    {
+      "path": "index.html",
+      "hash": "a1d1c7dd986c7bf4d1ddfa689981745e65523923563703c8f86fee371aedb2c4",
+      "size": 364
+    },
+    {
+      "path": "LICENSE",
+      "hash": "a38f140477fdd71f6813befd6768ae5b7c06af9cba56283e229486a066a40e19",
+      "size": 1099
+    },
+    {
+      "path": "OPENCLAW_SKILL.md",
+      "hash": "34defcaeb261d3b65ca5be58cb660e1f2007cd3a6a980997580dfd3c72445e79",
+      "size": 4557
+    },
+    {
+      "path": "package-lock.json",
+      "hash": "a78073902d6739ae3235739aa2a2ff8eb4f8c7c9dc2fa74b3454d7809e8d0c39",
+      "size": 265631
+    },
+    {
+      "path": "package.json",
+      "hash": "0e92982e4cc557aa0ca1aa212a6ec9386bdd065896aaa271d37f9367961ebc77",
+      "size": 1823
+    },
+    {
+      "path": "public/alipay.jpg",
+      "hash": "a98dea1f8e7f042f256e225924f3013765da9fbef2d3515e4f2ed071109b0709",
+      "size": 147111
+    },
+    {
+      "path": "public/wechat-pay.jpg",
+      "hash": "221674e252094afeb1d72bda1cb5ea37aa68446bb5f97cc0e921cd630091b889",
+      "size": 80797
+    },
+    {
+      "path": "README.md",
+      "hash": "71a443dcc383fd5fbb75b824d7659b1ef56e99817fb49146ab3798584a6262e4",
+      "size": 12170
+    },
+    {
+      "path": "README_CHINA.md",
+      "hash": "d504fef910350b7fad312d02539eddf5b7e2d348b85e6a1dfd5e005010a5e6eb",
+      "size": 11518
+    },
+    {
+      "path": "src/App.tsx",
+      "hash": "9e3cfd9bd7635bd5b5798f43fe46a548a82cf2637f2b6b1e54285de8b8c534e6",
+      "size": 10641
+    },
+    {
+      "path": "src/components/Dashboard/About.tsx",
+      "hash": "e472bb8dc37a0cadeef1b887d86b5f3f2a7865dccbef58181f1ad8174661eee6",
+      "size": 5590
+    },
+    {
+      "path": "src/components/Dashboard/ArchitectureMap/ArchitectureMap.tsx",
+      "hash": "d4832a74e561c0fd923d6854341bb809ada7e0b2ecdf7ad95e9247f53350a642",
+      "size": 24884
+    },
+    {
+      "path": "src/components/Dashboard/ArchitectureMap/EdgeRenderer.tsx",
+      "hash": "b85ab721d830bc262407435c088b2d18aaac06585732674c40591399b3f86ea5",
+      "size": 2760
+    },
+    {
+      "path": "src/components/Dashboard/ArchitectureMap/MapCanvas.tsx",
+      "hash": "74e541804110dd5786e55680a00de53b674935a08eeb4df03e4f6a84b02b4a3d",
+      "size": 16858
+    },
+    {
+      "path": "src/components/Dashboard/ArchitectureMap/MapControls.tsx",
+      "hash": "2c28867f54ff8b03d865b2b7362a45be20bf3c0500a31ae322c497d208e81bd6",
+      "size": 2890
+    },
+    {
+      "path": "src/components/Dashboard/ArchitectureMap/MapLegend.tsx",
+      "hash": "f75a7d0f56eb160c1254a21b03a3c2edb84f35f624c2f2ce8cba5d735da8230a",
+      "size": 1894
+    },
+    {
+      "path": "src/components/Dashboard/ArchitectureMap/MapTooltip.tsx",
+      "hash": "880cabba2fa03cab8a447db0716ae189f5440752da7ff3b153c6e20e15989e0c",
+      "size": 2239
+    },
+    {
+      "path": "src/components/Dashboard/ArchitectureMap/NodeRenderer.tsx",
+      "hash": "e475eaf202dbd69021b5ef2b1a362580b040ac302bf4e059b1ed905f152cc941",
+      "size": 3396
+    },
+    {
+      "path": "src/components/Dashboard/CommitPanel.tsx",
+      "hash": "4db87539d59e43836fdcaec5022aa74f177cff778321560c8c527e257b4f9774",
+      "size": 19204
+    },
+    {
+      "path": "src/components/Dashboard/ConflictModal.tsx",
+      "hash": "cc8541f9d3b5343c66f872cd0ae1e973d32c38c8e55dbe422e7c12035059faa2",
+      "size": 3787
+    },
+    {
+      "path": "src/components/Dashboard/Dashboard.tsx",
+      "hash": "d0eadb6b3f21479d90b8e21a3fdcf1d9d7db5c9ae9817d61d26ed4e5350982da",
+      "size": 5763
+    },
+    {
+      "path": "src/components/Dashboard/DiffView.tsx",
+      "hash": "bfc71a226e2c759488e61253ad72f089cbc051c72084d89be20d6f1ae900860d",
+      "size": 2942
+    },
+    {
+      "path": "src/components/Dashboard/DiffViewer.tsx",
+      "hash": "a13f568f882426eb5021f5ea0b0e2e9a25a34ab35a8e1a2b34febc273bf0eff8",
+      "size": 7407
+    },
+    {
+      "path": "src/components/Dashboard/FileExplorer.tsx",
+      "hash": "d31479d254abaf1c02a610dafa3fdac4ba92ad19b17421c5ec44c03f4c3fcf0c",
+      "size": 10377
+    },
+    {
+      "path": "src/components/Dashboard/GitRemoteModal.tsx",
+      "hash": "63e38207c42e784390a7870827d5db8d4ee11935ef69b24f8d955c42ec3f56e6",
+      "size": 5325
+    },
+    {
+      "path": "src/components/Dashboard/GraphDiffView.tsx",
+      "hash": "e9cc99dd4298a31adcdc0ee16243105290cfea8feed2442c272b6ea91d84ccab",
+      "size": 8082
+    },
+    {
+      "path": "src/components/Dashboard/HealthDashboard.tsx",
+      "hash": "8a18b5605460f98c1c09b070377f9b9bc365a33a04f88ad007f80955a1e8fb4f",
+      "size": 9690
+    },
+    {
+      "path": "src/components/Dashboard/History.tsx",
+      "hash": "229fba0b3b272d502531ae9bb2bf7b4a1a794cc76551c2610a630e447583d9a5",
+      "size": 29489
+    },
+    {
+      "path": "src/components/Dashboard/Overview.tsx",
+      "hash": "825ba4cae498141d55da30930f9bb402501f6570f9dd78f2ddc577b12e2fb1c2",
+      "size": 19584
+    },
+    {
+      "path": "src/components/Dashboard/Settings.tsx",
+      "hash": "11287e9f58ee7c82421bb979fb1dd714df0fd297a3a5dac21df5fda2cf7921da",
+      "size": 12348
+    },
+    {
+      "path": "src/components/Dashboard/SimpleView.tsx",
+      "hash": "54730c05eee1c117dfd61afd690655679a2b61f97924aa90a2b9302f93321e1b",
+      "size": 9227
+    },
+    {
+      "path": "src/components/Dashboard/VectorPanel.tsx",
+      "hash": "1c280b707e1488eb03c2cfe96f32e9ac9ba657770cc879354c78ee41f2b9c33f",
+      "size": 28706
+    },
+    {
+      "path": "src/components/Dashboard/VersionSwitcher.tsx",
+      "hash": "329708b658f9ee12f74a69a8e03191701edfe340ac547033441528f19fb4588a",
+      "size": 2219
+    },
+    {
+      "path": "src/components/Layout/TitleBar.tsx",
+      "hash": "7a2b0675f5990fe4dc6871dfa5e130a842ee9be20eadea05aff219a469752766",
+      "size": 2355
+    },
+    {
+      "path": "src/components/Onboarding/OnboardingGuide.tsx",
+      "hash": "c49bf3c5c1e1cc97c9116077b1cdca2a72097b0b45e1d376585b37976f6fd091",
+      "size": 8783
+    },
+    {
+      "path": "src/components/Repository/CheckoutModal.tsx",
+      "hash": "1ba74b90e1ac9af11e9a55622b3be3b19ea92155d52ada285cb22ab74eebaa54",
+      "size": 8520
+    },
+    {
+      "path": "src/components/Repository/CreateProjectModal.tsx",
+      "hash": "738548a0b78f805d54b9a2e7044b96cf7852963815d7bc36f280827ecb79be20",
+      "size": 5663
+    },
+    {
+      "path": "src/components/Repository/GitCloneModal.tsx",
+      "hash": "ce2a32e137805d601b6e499cd8c60944212bb8419f379da5075c86991f08f99d",
+      "size": 13560
+    },
+    {
+      "path": "src/components/Repository/ImportProjectModal.tsx",
+      "hash": "c1ec0ba82c7d0ab08391397a45adff49c7071c446b9749b4282c5466c4abcc7d",
+      "size": 5941
+    },
+    {
+      "path": "src/components/Repository/ProjectCard.tsx",
+      "hash": "9839fb53d0aa87a599fbfa77d5d28fb35bcfa0a63b1e2271e1f6bbe1d68a5819",
+      "size": 8378
+    },
+    {
+      "path": "src/components/Repository/RepoList.tsx",
+      "hash": "34e455464116c84c3328bab2dce64e7c0337a86866205bab277ce36da65ae57d",
+      "size": 42992
+    },
+    {
+      "path": "src/components/Setup/RootSetup.tsx",
+      "hash": "8be25d7f05e3c69c6f826294afe2c0e514dfb5b4ea236716e9f5d147f0085689",
+      "size": 3282
+    },
+    {
+      "path": "src/context/AppContext.tsx",
+      "hash": "1a654a66c83417277322c98e92053e80a41d4acff503691b2b32af01016e0923",
+      "size": 10791
+    },
+    {
+      "path": "src/hooks/useArchitectureGraph.ts",
+      "hash": "36b8eab1aede966c1b235091e862a791b684b357f4e29db6174c6b03af8a6bc1",
+      "size": 9550
+    },
+    {
+      "path": "src/hooks/useFiles.ts",
+      "hash": "1552eafbc142aebd35df789766cfb5b493e7983b2c033b81d7f8773b78f0ceaf",
+      "size": 5532
+    },
+    {
+      "path": "src/hooks/useFlowAnimation.ts",
+      "hash": "1a2df1a9de4a15fc362ac8223829cedc7a8691d4b7ad804c399b6e06c69e36c9",
+      "size": 4496
+    },
+    {
+      "path": "src/hooks/useGit.ts",
+      "hash": "ecdfa80da600ff217d6d7ef91c429b75d87a2187b5e3d95e689d448fe4dcc8a7",
+      "size": 6677
+    },
+    {
+      "path": "src/hooks/useGraphComparison.ts",
+      "hash": "7364377ac2046cc88ee06223c7cf683135c3fd7bf5c5b8a299dcc2a923ef7453",
+      "size": 1475
+    },
+    {
+      "path": "src/hooks/useHealthMetrics.ts",
+      "hash": "16b202f692996b3879ca660f5bd574ec8ee1c87cc1cfa03ef46764e51766cb1c",
+      "size": 1161
+    },
+    {
+      "path": "src/hooks/useProjects.ts",
+      "hash": "5fdea4d65fa1e70cedc26376093a3c9ca62a38dacde6dace2df60514a66a3c33",
+      "size": 8174
+    },
+    {
+      "path": "src/hooks/useRepository.ts",
+      "hash": "bebf50fb15afb070a0ecaabc60c2bfdde81677ca6f0a15364e9eede284d77347",
+      "size": 9900
+    },
+    {
+      "path": "src/hooks/useVectorDB.ts",
+      "hash": "72e941c6a831c3c05c68dfff8c2d6e95612586bfdaf616fc9e6439aa303e739d",
+      "size": 8639
+    },
+    {
+      "path": "src/hooks/useVersionSwitch.ts",
+      "hash": "b38781573f7bf10b36d5f70a560bf6e70cd03fef15b9f43902d155335c412098",
+      "size": 2521
+    },
+    {
+      "path": "src/i18n/index.tsx",
+      "hash": "58ddaeb9e676217e59225e54afdb8cdcb3cc54fbca8757ad55a4142682a979cf",
+      "size": 1309
+    },
+    {
+      "path": "src/i18n/locales/en.ts",
+      "hash": "1cb999671ca8c686ee02a1a58ccbcc3b1aecb0ad6570808da0a75ffc8823971b",
+      "size": 37765
+    },
+    {
+      "path": "src/i18n/locales/zh.ts",
+      "hash": "3d13fc7cc76fd67d0241cdf49594f82250bf467875328cf5c3162ebc9248cdc4",
+      "size": 36472
+    },
+    {
+      "path": "src/index.css",
+      "hash": "2c725d4fef8ef8e2d0496f5e922b9619b2de7c566289f569d6c19672f92f87a9",
+      "size": 96754
+    },
+    {
+      "path": "src/main.tsx",
+      "hash": "3c4a144aca60bcda778fc4c18b345d3be397aef29bc49789caac21a6fc8bad07",
+      "size": 409
+    },
+    {
+      "path": "src/types/css.d.ts",
+      "hash": "43ae31714b3bf4f5df1b4fff2e3c46df8364d7d7c50f3bb862eae60852a42a74",
+      "size": 103
+    },
+    {
+      "path": "src/types/electron.d.ts",
+      "hash": "1ae313aa43b4943a0ec44728a3816eb7e369930ef618f38c48126ada0a11d3dd",
+      "size": 14992
+    },
+    {
+      "path": "src/types/graph.d.ts",
+      "hash": "ed6794ccf316e25646380c191f42b1f6441a263dbadfcb49f480e1ff49edd973",
+      "size": 1986
+    },
+    {
+      "path": "src/types/health.d.ts",
+      "hash": "21934828540d335622dd699ece3d9598df954461af22b96bb2a537c7f416f295",
+      "size": 923
+    },
+    {
+      "path": "start-prod.bat",
+      "hash": "584b765560282c1a8c9f1d4814b3acc416285c799e8b2999984b9aca33eeaf77",
+      "size": 534
+    },
+    {
+      "path": "start.bat",
+      "hash": "753872433c799792acc76c20dd2ad552148bef9a549cee679644461d0edd4235",
+      "size": 836
+    },
+    {
+      "path": "test-cli-e2e.js",
+      "hash": "67b1bec5dbf363039b48b18f708c0b0e05acc500413c0a4fa3d994d192ba1bfb",
+      "size": 10820
+    },
+    {
+      "path": "test-create-project.js",
+      "hash": "3d6ba1dfea469b0fcacfcaa50ea8c8e181555309b298925acfbdd35fdbc9a052",
+      "size": 2361
+    },
+    {
+      "path": "test-create-root-repo.js",
+      "hash": "adc4ae25b1469d23b92731e5efe94efb33a605808159167dbf3b401930b4c404",
+      "size": 1578
+    },
+    {
+      "path": "test-full-project-flow.js",
+      "hash": "efdb4fe0faa38342fb4934d6b937d88dc3fe34f9e3124edb93fee29d4432a343",
+      "size": 4743
+    },
+    {
+      "path": "test-ipc-create-project.js",
+      "hash": "c7ca2ed42f57d6e450c8b9d4717ac9b2e4a4e8b2a181eed25b4f802f14cfc690",
+      "size": 2837
+    },
+    {
+      "path": "test-root-repo.js",
+      "hash": "943ba02474e5019c2e1b7c20379603e54332267ef5bdaaff6b12bf4601c302ac",
+      "size": 1614
+    },
+    {
+      "path": "test-vcs-core.js",
+      "hash": "b7e7fd4eb1924fb4d978ad9e8b278772254b5241513f8c69053af2eb4b1b3ed5",
+      "size": 10094
+    },
+    {
+      "path": "tsconfig.json",
+      "hash": "bf682413dc56821a8ae15b0ca66f0e5b793d36da7946ce29c89484cf05d2744e",
+      "size": 561
+    },
+    {
+      "path": "tsconfig.node.json",
+      "hash": "23ab211fdf1726bfe86b6c9fa1b71e94be70639e7d4e290c7319c45671bf31da",
+      "size": 320
+    },
+    {
+      "path": "tsconfig.node.tsbuildinfo",
+      "hash": "d8dbfb8c0a3517827582bb73d7c41785ce3b56299e1b93ebf3b5eae198d04d8d",
+      "size": 41965
+    },
+    {
+      "path": "tsconfig.tsbuildinfo",
+      "hash": "0505336bdc5d502ed244e533497bffce27e08f47d79e2cd487f5e88ba568e932",
+      "size": 112
+    },
+    {
+      "path": "VECTOR-DB-DESIGN.md",
+      "hash": "eb42260733c55cca9edbc5326c7dbf2ebfa61b3746276de4f18950408dc06965",
+      "size": 22171
+    },
+    {
+      "path": "vite.config.ts",
+      "hash": "d5c87cc0ed2c5461c07929029db449bba0dbfced9e297237efb0846d7d0ffeb6",
+      "size": 364
+    },
+    {
+      "path": "yanshi.png",
+      "hash": "63ab1ee6e1e7881bc8059c0804ad499b0a75a543fb5fdb9c5e21e3f7b2f65082",
+      "size": 190238
+    },
+    {
+      "path": "一键启动.bat",
+      "hash": "753872433c799792acc76c20dd2ad552148bef9a549cee679644461d0edd4235",
+      "size": 836
+    },
+    {
+      "path": "深蓝生态开发计划.md",
+      "hash": "b331ae29aadebad59f2b4e8f8c3a5f746983cf16458e1ecc7187ed8548a928df",
+      "size": 5066
+    }
+  ],
+  "parentVersion": null,
+  "totalSize": 3398690,
+  "changedFiles": {
+    "added": [
+      "94407fbdd42a797af5a902bc107d72e8.jpg",
+      "bin/dbvs-cli.js",
+      "cd5741cc158ccc6be0b524f0444cc22c.jpg",
+      "CLAUDE.md",
+      "config.json",
+      "DEV-ROADMAP.md",
+      "DEVLOG.md",
+      "dist/alipay.jpg",
+      "dist/assets/index-CDePuBJg.css",
+      "dist/assets/index-D1QBx1OS.js",
+      "dist/index.html",
+      "dist/wechat-pay.jpg",
+      "docs/dbvs-features.md",
+      "docs/REDESIGN.md",
+      "docs/svn-features.md",
+      "electron/ast-analyzer.d.ts",
+      "electron/ast-analyzer.js",
+      "electron/ast-analyzer.ts",
+      "electron/cli-standalone.d.ts",
+      "electron/cli-standalone.js",
+      "electron/cli-standalone.ts",
+      "electron/cli.d.ts",
+      "electron/cli.js",
+      "electron/cli.ts",
+      "electron/context-menu.d.ts",
+      "electron/context-menu.js",
+      "electron/context-menu.ts",
+      "electron/dbvs-launcher.d.ts",
+      "electron/dbvs-launcher.js",
+      "electron/dbvs-launcher.ts",
+      "electron/dbvs-repository.d.ts",
+      "electron/dbvs-repository.js",
+      "electron/dbvs-repository.ts",
+      "electron/external-api.d.ts",
+      "electron/external-api.js",
+      "electron/external-api.ts",
+      "electron/file-parser.d.ts",
+      "electron/file-parser.js",
+      "electron/file-parser.ts",
+      "electron/git-bridge.d.ts",
+      "electron/git-bridge.js",
+      "electron/git-bridge.ts",
+      "electron/graph-builder.d.ts",
+      "electron/graph-builder.js",
+      "electron/graph-builder.ts",
+      "electron/graph-store.d.ts",
+      "electron/graph-store.js",
+      "electron/graph-store.ts",
+      "electron/graph-types.d.ts",
+      "electron/graph-types.js",
+      "electron/graph-types.ts",
+      "electron/health-scorer.d.ts",
+      "electron/health-scorer.js",
+      "electron/health-scorer.ts",
+      "electron/lan-server.d.ts",
+      "electron/lan-server.js",
+      "electron/lan-server.ts",
+      "electron/main.d.ts",
+      "electron/main.js",
+      "electron/main.ts",
+      "electron/preload.d.ts",
+      "electron/preload.js",
+      "electron/preload.ts",
+      "electron/quality-analyzer.d.ts",
+      "electron/quality-analyzer.js",
+      "electron/quality-analyzer.ts",
+      "electron/vector-engine.d.ts",
+      "electron/vector-engine.js",
+      "electron/vector-engine.ts",
+      "electron/version-switch.d.ts",
+      "electron/version-switch.js",
+      "electron/version-switch.ts",
+      "electron-builder.yml",
+      "f9e661730d92fb35985a8d0dffcfb624.jpg",
+      "HEAD.json",
+      "index.html",
+      "LICENSE",
+      "OPENCLAW_SKILL.md",
+      "package-lock.json",
+      "package.json",
+      "public/alipay.jpg",
+      "public/wechat-pay.jpg",
+      "README.md",
+      "README_CHINA.md",
+      "src/App.tsx",
+      "src/components/Dashboard/About.tsx",
+      "src/components/Dashboard/ArchitectureMap/ArchitectureMap.tsx",
+      "src/components/Dashboard/ArchitectureMap/EdgeRenderer.tsx",
+      "src/components/Dashboard/ArchitectureMap/MapCanvas.tsx",
+      "src/components/Dashboard/ArchitectureMap/MapControls.tsx",
+      "src/components/Dashboard/ArchitectureMap/MapLegend.tsx",
+      "src/components/Dashboard/ArchitectureMap/MapTooltip.tsx",
+      "src/components/Dashboard/ArchitectureMap/NodeRenderer.tsx",
+      "src/components/Dashboard/CommitPanel.tsx",
+      "src/components/Dashboard/ConflictModal.tsx",
+      "src/components/Dashboard/Dashboard.tsx",
+      "src/components/Dashboard/DiffView.tsx",
+      "src/components/Dashboard/DiffViewer.tsx",
+      "src/components/Dashboard/FileExplorer.tsx",
+      "src/components/Dashboard/GitRemoteModal.tsx",
+      "src/components/Dashboard/GraphDiffView.tsx",
+      "src/components/Dashboard/HealthDashboard.tsx",
+      "src/components/Dashboard/History.tsx",
+      "src/components/Dashboard/Overview.tsx",
+      "src/components/Dashboard/Settings.tsx",
+      "src/components/Dashboard/SimpleView.tsx",
+      "src/components/Dashboard/VectorPanel.tsx",
+      "src/components/Dashboard/VersionSwitcher.tsx",
+      "src/components/Layout/TitleBar.tsx",
+      "src/components/Onboarding/OnboardingGuide.tsx",
+      "src/components/Repository/CheckoutModal.tsx",
+      "src/components/Repository/CreateProjectModal.tsx",
+      "src/components/Repository/GitCloneModal.tsx",
+      "src/components/Repository/ImportProjectModal.tsx",
+      "src/components/Repository/ProjectCard.tsx",
+      "src/components/Repository/RepoList.tsx",
+      "src/components/Setup/RootSetup.tsx",
+      "src/context/AppContext.tsx",
+      "src/hooks/useArchitectureGraph.ts",
+      "src/hooks/useFiles.ts",
+      "src/hooks/useFlowAnimation.ts",
+      "src/hooks/useGit.ts",
+      "src/hooks/useGraphComparison.ts",
+      "src/hooks/useHealthMetrics.ts",
+      "src/hooks/useProjects.ts",
+      "src/hooks/useRepository.ts",
+      "src/hooks/useVectorDB.ts",
+      "src/hooks/useVersionSwitch.ts",
+      "src/i18n/index.tsx",
+      "src/i18n/locales/en.ts",
+      "src/i18n/locales/zh.ts",
+      "src/index.css",
+      "src/main.tsx",
+      "src/types/css.d.ts",
+      "src/types/electron.d.ts",
+      "src/types/graph.d.ts",
+      "src/types/health.d.ts",
+      "start-prod.bat",
+      "start.bat",
+      "test-cli-e2e.js",
+      "test-create-project.js",
+      "test-create-root-repo.js",
+      "test-full-project-flow.js",
+      "test-ipc-create-project.js",
+      "test-root-repo.js",
+      "test-vcs-core.js",
+      "tsconfig.json",
+      "tsconfig.node.json",
+      "tsconfig.node.tsbuildinfo",
+      "tsconfig.tsbuildinfo",
+      "VECTOR-DB-DESIGN.md",
+      "vite.config.ts",
+      "yanshi.png",
+      "一键启动.bat",
+      "深蓝生态开发计划.md"
+    ],
+    "modified": [],
+    "deleted": []
+  }
+}
