@@ -49,6 +49,8 @@ const os = __importStar(require("os"));
 const isomorphic_git_1 = __importDefault(require("isomorphic-git"));
 const node_1 = __importDefault(require("isomorphic-git/http/node"));
 const dbvs_repository_1 = require("./dbvs-repository");
+const graph_store_1 = require("./graph-store");
+const health_scorer_1 = require("./health-scorer");
 const repo = new dbvs_repository_1.DBHTRepository();
 const program = new commander_1.Command();
 program
@@ -1006,6 +1008,82 @@ program.command('unregister <projectPath>')
         }
         else {
             out({ success: true, message: `已从列表移除: ${normalized}（文件保留）` }, fmt);
+        }
+    }
+    catch (error) {
+        out({ success: false, message: String(error) }, fmt);
+        process.exit(1);
+    }
+});
+// ==================== 项目健康检查 ====================
+program.command('health [projectPath]')
+    .description('项目健康检查：代码质量、耦合度、死代码检测')
+    .option('--json', 'JSON 格式输出（默认）')
+    .action(async (projectPath, opts) => {
+    const fmt = program.opts().format;
+    try {
+        const rootPath = getRootPath(program.opts());
+        const p = projectPath ? path.resolve(projectPath) : rootPath;
+        const { repoPath } = await resolveRepoPaths(p);
+        // 获取当前版本
+        const headPath = path.join(repoPath, 'HEAD.json');
+        if (!(await fs.pathExists(headPath))) {
+            out({ success: false, message: '仓库无提交记录，请先提交版本' }, fmt);
+            return;
+        }
+        const head = await fs.readJson(headPath);
+        if (!head.currentVersion) {
+            out({ success: false, message: '仓库无提交记录，请先提交版本' }, fmt);
+            return;
+        }
+        const graph = await (0, graph_store_1.loadGraph)(rootPath, head.currentVersion);
+        if (!graph) {
+            out({ success: false, message: `未找到版本 ${head.currentVersion} 的图谱数据，请先构建图谱 (dbht kg:build)` }, fmt);
+            return;
+        }
+        const report = (0, health_scorer_1.generateHealthReport)(graph);
+        if (fmt === 'table') {
+            const s = report.summary;
+            console.log(`\n📊 项目健康报告 — ${report.timestamp}`);
+            console.log('═'.repeat(60));
+            console.log(`综合评分: ${report.score} / 100  等级: ${report.grade}`);
+            console.log(`模块总数: ${s.totalModules}  上帝模块: ${s.godModules}  孤儿模块: ${s.orphans}`);
+            console.log(`痛苦区模块: ${s.painZoneModules}  克隆组: ${s.cloneGroups}`);
+            console.log(`平均复杂度: ${s.avgComplexity.toFixed(1)}  平均耦合度: ${s.avgCoupling.toFixed(1)}`);
+            console.log('─'.repeat(60));
+            if (report.topIssues.length > 0) {
+                console.log('主要问题模块:');
+                for (const m of report.topIssues.slice(0, 12)) {
+                    const flags = [];
+                    if (m.isGodModule)
+                        flags.push('上帝模块');
+                    if (m.isOrphan)
+                        flags.push('孤儿模块');
+                    if (m.distance > 0.5)
+                        flags.push('痛苦区');
+                    if (m.instability > 0.7)
+                        flags.push('不稳定');
+                    const tag = flags.length > 0 ? ` [${flags.join(',')}]` : '';
+                    console.log(`  ${m.label || m.path} (score: ${m.score})${tag}`);
+                    if (m.issues.length > 0) {
+                        for (const issue of m.issues.slice(0, 3)) {
+                            console.log(`    └ ${issue}`);
+                        }
+                    }
+                }
+            }
+            if (report.suggestions.length > 0) {
+                console.log('─'.repeat(60));
+                console.log('改进建议:');
+                for (const sug of report.suggestions.slice(0, 8)) {
+                    const icon = sug.level === 'critical' ? '🔴' : sug.level === 'warning' ? '🟡' : '🔵';
+                    console.log(`  ${icon} [${sug.code}] ${JSON.stringify(sug.params)}`);
+                }
+            }
+            console.log('═'.repeat(60));
+        }
+        else {
+            out({ success: true, report }, fmt);
         }
     }
     catch (error) {
