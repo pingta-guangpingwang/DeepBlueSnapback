@@ -21,6 +21,10 @@ input {
 /* 可拖拽标题栏 */
 .draggable-header {
   -webkit-app-region: drag;
+}
+
+/* 窗口顶部标题栏（常驻） */
+.app-titlebar {
   position: sticky;
   top: 0;
   z-index: 200;

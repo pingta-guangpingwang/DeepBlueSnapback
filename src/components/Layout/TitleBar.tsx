@@ -26,7 +26,7 @@ export default function TitleBar() {
   }
 
   return (
-    <div className="draggable-header" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', height: 32, background: '#fff', borderBottom: '1px solid #e5e7eb', userSelect: 'none' }}>
+    <div className="draggable-header app-titlebar" style={{ display: 'flex', alignItems: 'center', padding: '0 16px', height: 32, background: '#fff', borderBottom: '1px solid #e5e7eb', userSelect: 'none' }}>
       <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{titleMap[state.currentView] ?? t.titleBar.default}</span>
       <div className="header-spacer" />
       <a
