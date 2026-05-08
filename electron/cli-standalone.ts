@@ -16,6 +16,7 @@ import { loadGraph } from './graph-store'
 import { generateHealthReport } from './health-scorer'
 import { analyzeImpact } from './impact-analyzer'
 import { generateAICommitMessage } from './commit-msg-generator'
+import { analyzeCrossReferences, type CrossProjectRef } from './cross-ref-analyzer'
 
 const repo = new DBHTRepository()
 const program = new Command()
@@ -1018,6 +1019,98 @@ program.command('unregister <projectPath>')
         out({ success: true, message: `已移除并删除: ${normalized}` }, fmt)
       } else {
         out({ success: true, message: `已从列表移除: ${normalized}（文件保留）` }, fmt)
+      }
+    } catch (error) {
+      out({ success: false, message: String(error) }, fmt)
+      process.exit(1)
+    }
+  })
+
+// ==================== 跨项目引用分析 ====================
+
+program.command('cross-ref [projectPath]')
+  .description('跨项目引用分析：发现项目间的 import/require 依赖关系')
+  .action(async (projectPath: string | undefined) => {
+    const fmt = program.opts().format
+    try {
+      const rootPath = getRootPath(program.opts())
+      const registry = await readProjectRegistry(rootPath)
+
+      if (!registry || registry.length === 0) {
+        out({ success: false, message: '没有已注册的项目' }, fmt)
+        return
+      }
+
+      let focusName: string
+      if (projectPath) {
+        const p = path.resolve(projectPath)
+        const entry = registry.find((e: any) =>
+          e.workingCopies?.some((wc: any) => path.resolve(wc.path) === p)
+        )
+        if (!entry) {
+          out({ success: false, message: '项目未在注册表中' }, fmt)
+          return
+        }
+        focusName = entry.name
+      } else {
+        // Analyze all projects against each other
+        const report = await analyzeCrossReferences(rootPath, registry[0].name, registry)
+        if (fmt === 'table') {
+          console.log(`\n🔗 跨项目引用分析 — ${report.timestamp}`)
+          console.log('═'.repeat(60))
+          console.log(`分析项目: ${report.projects.join(', ')}`)
+          console.log(`引用总数: ${report.crossRefs.length}`)
+          console.log('─'.repeat(60))
+          console.log('项目依赖关系:')
+          for (const [proj, deps] of Object.entries(report.projectDeps)) {
+            console.log(`  ${proj} → ${deps.length > 0 ? deps.join(', ') : '（无外部依赖）'}`)
+          }
+          console.log('─'.repeat(60))
+          const highRefs = report.crossRefs.filter(r => r.confidence === 'high')
+          if (highRefs.length > 0) {
+            console.log('高置信引用:')
+            for (const ref of highRefs.slice(0, 10)) {
+              console.log(`  ${ref.sourceFile} → [${ref.targetProject}] ${ref.targetFile}`)
+            }
+          }
+          console.log('═'.repeat(60))
+        } else {
+          out({ success: true, report }, fmt)
+        }
+        return
+      }
+
+      const report = await analyzeCrossReferences(rootPath, focusName, registry)
+      if (fmt === 'table') {
+        console.log(`\n🔗 跨项目引用分析: ${focusName}`)
+        console.log('═'.repeat(60))
+        console.log(report.summary)
+        if (report.crossRefs.length > 0) {
+          console.log('─'.repeat(60))
+          const deps = report.projectDeps[focusName] || []
+          console.log(`依赖项目: ${deps.length > 0 ? deps.join(', ') : '（无外部依赖）'}`)
+          const dependents = report.projectDependents[focusName] || []
+          console.log(`被依赖: ${dependents.length > 0 ? dependents.join(', ') : '（无）'}`)
+          console.log('─'.repeat(60))
+          const byTarget: Record<string, CrossProjectRef[]> = {}
+          for (const ref of report.crossRefs) {
+            if (!byTarget[ref.targetProject]) byTarget[ref.targetProject] = []
+            byTarget[ref.targetProject].push(ref)
+          }
+          for (const [target, refs] of Object.entries(byTarget)) {
+            console.log(`→ ${target}: ${refs.length} 处引用`)
+            for (const ref of refs.slice(0, 6)) {
+              const icon = ref.confidence === 'high' ? '✓' : ref.confidence === 'medium' ? '~' : '?'
+              console.log(`  ${icon} ${ref.sourceFile}`)
+            }
+            if (refs.length > 6) console.log(`  ... 等 ${refs.length - 6} 处`)
+          }
+        } else {
+          console.log('未发现跨项目引用。提示：构建知识图谱 (dbht kg:build) 以获得更准确的分析。')
+        }
+        console.log('═'.repeat(60))
+      } else {
+        out({ success: true, report }, fmt)
       }
     } catch (error) {
       out({ success: false, message: String(error) }, fmt)

@@ -53,6 +53,7 @@ const graph_store_1 = require("./graph-store");
 const health_scorer_1 = require("./health-scorer");
 const impact_analyzer_1 = require("./impact-analyzer");
 const commit_msg_generator_1 = require("./commit-msg-generator");
+const cross_ref_analyzer_1 = require("./cross-ref-analyzer");
 const repo = new dbvs_repository_1.DBHTRepository();
 const program = new commander_1.Command();
 program
@@ -1077,6 +1078,98 @@ program.command('unregister <projectPath>')
         }
         else {
             out({ success: true, message: `已从列表移除: ${normalized}（文件保留）` }, fmt);
+        }
+    }
+    catch (error) {
+        out({ success: false, message: String(error) }, fmt);
+        process.exit(1);
+    }
+});
+// ==================== 跨项目引用分析 ====================
+program.command('cross-ref [projectPath]')
+    .description('跨项目引用分析：发现项目间的 import/require 依赖关系')
+    .action(async (projectPath) => {
+    const fmt = program.opts().format;
+    try {
+        const rootPath = getRootPath(program.opts());
+        const registry = await readProjectRegistry(rootPath);
+        if (!registry || registry.length === 0) {
+            out({ success: false, message: '没有已注册的项目' }, fmt);
+            return;
+        }
+        let focusName;
+        if (projectPath) {
+            const p = path.resolve(projectPath);
+            const entry = registry.find((e) => e.workingCopies?.some((wc) => path.resolve(wc.path) === p));
+            if (!entry) {
+                out({ success: false, message: '项目未在注册表中' }, fmt);
+                return;
+            }
+            focusName = entry.name;
+        }
+        else {
+            // Analyze all projects against each other
+            const report = await (0, cross_ref_analyzer_1.analyzeCrossReferences)(rootPath, registry[0].name, registry);
+            if (fmt === 'table') {
+                console.log(`\n🔗 跨项目引用分析 — ${report.timestamp}`);
+                console.log('═'.repeat(60));
+                console.log(`分析项目: ${report.projects.join(', ')}`);
+                console.log(`引用总数: ${report.crossRefs.length}`);
+                console.log('─'.repeat(60));
+                console.log('项目依赖关系:');
+                for (const [proj, deps] of Object.entries(report.projectDeps)) {
+                    console.log(`  ${proj} → ${deps.length > 0 ? deps.join(', ') : '（无外部依赖）'}`);
+                }
+                console.log('─'.repeat(60));
+                const highRefs = report.crossRefs.filter(r => r.confidence === 'high');
+                if (highRefs.length > 0) {
+                    console.log('高置信引用:');
+                    for (const ref of highRefs.slice(0, 10)) {
+                        console.log(`  ${ref.sourceFile} → [${ref.targetProject}] ${ref.targetFile}`);
+                    }
+                }
+                console.log('═'.repeat(60));
+            }
+            else {
+                out({ success: true, report }, fmt);
+            }
+            return;
+        }
+        const report = await (0, cross_ref_analyzer_1.analyzeCrossReferences)(rootPath, focusName, registry);
+        if (fmt === 'table') {
+            console.log(`\n🔗 跨项目引用分析: ${focusName}`);
+            console.log('═'.repeat(60));
+            console.log(report.summary);
+            if (report.crossRefs.length > 0) {
+                console.log('─'.repeat(60));
+                const deps = report.projectDeps[focusName] || [];
+                console.log(`依赖项目: ${deps.length > 0 ? deps.join(', ') : '（无外部依赖）'}`);
+                const dependents = report.projectDependents[focusName] || [];
+                console.log(`被依赖: ${dependents.length > 0 ? dependents.join(', ') : '（无）'}`);
+                console.log('─'.repeat(60));
+                const byTarget = {};
+                for (const ref of report.crossRefs) {
+                    if (!byTarget[ref.targetProject])
+                        byTarget[ref.targetProject] = [];
+                    byTarget[ref.targetProject].push(ref);
+                }
+                for (const [target, refs] of Object.entries(byTarget)) {
+                    console.log(`→ ${target}: ${refs.length} 处引用`);
+                    for (const ref of refs.slice(0, 6)) {
+                        const icon = ref.confidence === 'high' ? '✓' : ref.confidence === 'medium' ? '~' : '?';
+                        console.log(`  ${icon} ${ref.sourceFile}`);
+                    }
+                    if (refs.length > 6)
+                        console.log(`  ... 等 ${refs.length - 6} 处`);
+                }
+            }
+            else {
+                console.log('未发现跨项目引用。提示：构建知识图谱 (dbht kg:build) 以获得更准确的分析。');
+            }
+            console.log('═'.repeat(60));
+        }
+        else {
+            out({ success: true, report }, fmt);
         }
     }
     catch (error) {
