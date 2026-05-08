@@ -2,8 +2,8 @@ import type { QualityResult, QualityReport } from './quality-analyzer';
 import type { ArchitectureGraph } from './graph-types';
 export interface Suggestion {
     level: 'critical' | 'warning' | 'info';
-    title: string;
-    description: string;
+    code: string;
+    params: Record<string, string | number>;
     module?: string;
 }
 export interface HealthReport {

@@ -360,12 +360,16 @@ export async function buildVectorIndex(
       '.rs', '.cpp', '.c', '.h', '.rb', '.php', '.kt', '.swift', '.dart', '.lua',
       '.md', '.json', '.yaml', '.yml', '.xml', '.html', '.css', '.scss', '.sql', '.sh'])
 
+    let fileIndex = 0
     for (const filePath of allFiles) {
       const ext = path.extname(filePath).toLowerCase()
       if (!sourceExts.has(ext)) continue
+      fileIndex++
       try {
+        const relPath = path.relative(workingCopyPath, filePath).replace(/\\/g, '/')
         const content = fs.readFileSync(filePath, 'utf-8')
         if (content.trim().length === 0) continue
+        report(`[${fileIndex}/${allFiles.length}] ${relPath}`)
         const chunks = chunkFile(filePath, content)
         for (const chunk of chunks) {
           totalTokens += chunk.tokenCount
@@ -524,6 +528,152 @@ export async function searchBatchVectors(
     allResults.push(r.success ? r.results : [])
   }
   return { success: true, results: allResults }
+}
+
+// ==================== File Info ====================
+
+export interface IndexedFileInfo {
+  filePath: string
+  chunkCount: number
+  totalChars: number
+  language: string
+}
+
+export async function getIndexedFiles(
+  rootPath: string,
+  projectName: string,
+): Promise<{ success: boolean; files: IndexedFileInfo[]; message?: string }> {
+  try {
+    const indexPath = getIndexPath(rootPath, projectName)
+    if (!fs.existsSync(indexPath)) {
+      return { success: true, files: [] }
+    }
+    const stored: StoredIndex = JSON.parse(fs.readFileSync(indexPath, 'utf-8'))
+    const fileMap = new Map<string, { chunks: number; chars: number; lang: string }>()
+    for (const chunk of stored.chunks) {
+      const existing = fileMap.get(chunk.filePath)
+      if (existing) {
+        existing.chunks++
+        existing.chars += chunk.content.length
+      } else {
+        fileMap.set(chunk.filePath, { chunks: 1, chars: chunk.content.length, lang: chunk.language })
+      }
+    }
+    const files: IndexedFileInfo[] = []
+    for (const [filePath, info] of fileMap) {
+      files.push({ filePath, chunkCount: info.chunks, totalChars: info.chars, language: info.lang })
+    }
+    files.sort((a, b) => a.filePath.localeCompare(b.filePath))
+    return { success: true, files }
+  } catch (error) {
+    return { success: false, files: [], message: String(error) }
+  }
+}
+
+export async function removeFilesFromIndex(
+  rootPath: string,
+  workingCopyPath: string,
+  commitId: string,
+  projectName: string,
+  filePaths: string[],
+  onProgress?: VectorProgressFn,
+): Promise<{ success: boolean; index?: VectorIndex; message?: string }> {
+  try {
+    const indexPath = getIndexPath(rootPath, projectName)
+    if (!fs.existsSync(indexPath)) {
+      return { success: false, message: 'No index found' }
+    }
+    const stored: StoredIndex = JSON.parse(fs.readFileSync(indexPath, 'utf-8'))
+    const removeSet = new Set(filePaths.map(p => p.replace(/\\/g, '/')))
+    const keptChunks = stored.chunks.filter(c => !removeSet.has(c.filePath.replace(/\\/g, '/')))
+    const removedCount = stored.chunks.length - keptChunks.length
+    if (removedCount === 0) {
+      return { success: true, index: stored.meta, message: 'No matching files found in index' }
+    }
+    // Rebuild vectors
+    const report = (msg: string) => onProgress?.(msg)
+    report(`Removing ${removedCount} chunks (${removeSet.size} files)...`)
+    const { df, totalDocs } = buildVocabulary(keptChunks)
+    report(`Re-vectorizing ${keptChunks.length} remaining chunks...`)
+    const vectors: Float32Array[] = []
+    for (let i = 0; i < keptChunks.length; i++) {
+      vectors.push(textToVector(keptChunks[i].content, df, totalDocs))
+      if (i % 500 === 0 && i > 0) {
+        report(`Re-vectorized ${i}/${keptChunks.length}...`)
+      }
+    }
+    const fileSet = new Set(keptChunks.map(c => c.filePath))
+    let totalTokens = 0
+    for (const c of keptChunks) totalTokens += c.tokenCount
+
+    const index: VectorIndex = {
+      ...stored.meta,
+      totalChunks: keptChunks.length,
+      totalFiles: fileSet.size,
+      totalTokens,
+      updatedAt: new Date().toISOString(),
+    }
+    const newStored: StoredIndex = { meta: index, chunks: keptChunks }
+    fs.writeFileSync(indexPath, JSON.stringify(newStored, null, 2), 'utf-8')
+    saveEmbeddings(getEmbeddingsPath(rootPath, projectName), vectors)
+    report(`Removed ${removeSet.size} files, ${keptChunks.length} chunks remaining`)
+    return { success: true, index }
+  } catch (error) {
+    return { success: false, message: String(error) }
+  }
+}
+
+export async function exportVectorIndex(
+  rootPath: string,
+  projectName: string,
+): Promise<{ success: boolean; data?: string; message?: string }> {
+  try {
+    const indexPath = getIndexPath(rootPath, projectName)
+    const embeddingsPath = getEmbeddingsPath(rootPath, projectName)
+    if (!fs.existsSync(indexPath)) {
+      return { success: false, message: 'No index found to export' }
+    }
+    const indexContent = fs.readFileSync(indexPath, 'utf-8')
+    const embeddingsBuffer = fs.existsSync(embeddingsPath)
+      ? fs.readFileSync(embeddingsPath).toString('base64')
+      : ''
+    const exportData = JSON.stringify({
+      exportedAt: new Date().toISOString(),
+      format: 'dbht-vector-export-v1',
+      projectName,
+      index: JSON.parse(indexContent),
+      embeddingsBase64: embeddingsBuffer,
+    })
+    return { success: true, data: exportData }
+  } catch (error) {
+    return { success: false, message: String(error) }
+  }
+}
+
+export async function importVectorIndex(
+  rootPath: string,
+  projectName: string,
+  data: string,
+): Promise<{ success: boolean; index?: VectorIndex; message?: string }> {
+  try {
+    const parsed = JSON.parse(data)
+    if (parsed.format !== 'dbht-vector-export-v1' || !parsed.index) {
+      return { success: false, message: 'Invalid export format' }
+    }
+    const dir = getVectorDir(rootPath, projectName)
+    await fs.ensureDir(dir)
+    // Restore index
+    const stored: StoredIndex = parsed.index
+    fs.writeFileSync(getIndexPath(rootPath, projectName), JSON.stringify(stored, null, 2), 'utf-8')
+    // Restore embeddings
+    if (parsed.embeddingsBase64) {
+      const buf = Buffer.from(parsed.embeddingsBase64, 'base64')
+      fs.writeFileSync(getEmbeddingsPath(rootPath, projectName), buf)
+    }
+    return { success: true, index: stored.meta }
+  } catch (error) {
+    return { success: false, message: String(error) }
+  }
 }
 
 // ==================== RAG integration ====================

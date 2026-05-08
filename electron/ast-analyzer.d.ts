@@ -38,6 +38,7 @@ export interface ParseResult {
     foundExtensions: string[];
     scannedPath: string;
 }
-export declare function parseProject(projectPath: string, repoPath: string): Promise<ParseResult>;
+export type ParseProgressFn = (msg: string) => void;
+export declare function parseProject(projectPath: string, repoPath: string, onProgress?: ParseProgressFn): Promise<ParseResult>;
 export declare function getCachedParseResult(): ParseResult | null;
 export declare function setCachedParseResult(result: ParseResult): void;

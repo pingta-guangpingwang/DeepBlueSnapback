@@ -140,6 +140,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('vector:search-batch', projectName, queries),
   vectorEnhanceRag: (projectName: string, query: string, topK?: number) =>
     ipcRenderer.invoke('vector:enhance-rag', projectName, query, topK),
+  vectorFiles: (projectName: string) =>
+    ipcRenderer.invoke('vector:files', projectName),
+  vectorRemoveFiles: (workingCopyPath: string, commitId: string, projectName: string, filePaths: string[]) =>
+    ipcRenderer.invoke('vector:remove-files', workingCopyPath, commitId, projectName, filePaths),
+  vectorExport: (projectName: string) =>
+    ipcRenderer.invoke('vector:export', projectName),
+  vectorImport: (projectName: string, data: string) =>
+    ipcRenderer.invoke('vector:import', projectName, data),
   onVectorProgress: (callback: (msg: string) => void) => {
     ipcRenderer.on('vector:progress', (_, msg) => callback(msg))
     return () => ipcRenderer.removeAllListeners('vector:progress')
@@ -327,6 +335,11 @@ export interface ElectronAPI {
     Promise<{ success: boolean; results: Array<Array<{ chunk: Record<string, unknown>; similarity: number; rank: number }>>; message?: string }>
   vectorEnhanceRag: (projectName: string, query: string, topK?: number) =>
     Promise<{ success: boolean; vectorResults: Array<{ chunk: Record<string, unknown>; similarity: number; rank: number }>; message?: string }>
+  vectorFiles: (projectName: string) => Promise<{ success: boolean; files: Array<{ filePath: string; chunkCount: number; totalChars: number; language: string }>; message?: string }>
+  vectorRemoveFiles: (workingCopyPath: string, commitId: string, projectName: string, filePaths: string[]) =>
+    Promise<{ success: boolean; index?: Record<string, unknown>; message?: string }>
+  vectorExport: (projectName: string) => Promise<{ success: boolean; data?: string; message?: string }>
+  vectorImport: (projectName: string, data: string) => Promise<{ success: boolean; index?: Record<string, unknown>; message?: string }>
   onVectorProgress: (callback: (msg: string) => void) => () => void
 
   // Quality & health

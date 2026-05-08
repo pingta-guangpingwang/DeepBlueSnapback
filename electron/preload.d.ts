@@ -288,7 +288,6 @@ export interface ElectronAPI {
         graph?: Record<string, unknown>;
         message?: string;
     }>;
-    onGraphProgress: (callback: (msg: string) => void) => () => void;
     getGraph: (commitId: string) => Promise<{
         success: boolean;
         graph?: Record<string, unknown>;
@@ -337,6 +336,94 @@ export interface ElectronAPI {
         context?: Record<string, unknown>;
         message?: string;
     }>;
+    vectorIndex: (repoPath: string, workingCopyPath: string, commitId: string, projectName: string, filePaths?: string[]) => Promise<{
+        success: boolean;
+        index?: {
+            schemaVersion: number;
+            projectName: string;
+            commitId: string;
+            model: string;
+            dimensions: number;
+            totalChunks: number;
+            totalFiles: number;
+            totalTokens: number;
+            createdAt: string;
+            updatedAt: string;
+        };
+        message?: string;
+    }>;
+    vectorStatus: (projectName: string) => Promise<{
+        success: boolean;
+        index?: Record<string, unknown>;
+        message?: string;
+    }>;
+    vectorDelete: (projectName: string) => Promise<{
+        success: boolean;
+        message?: string;
+    }>;
+    vectorSearch: (projectName: string, query: {
+        text: string;
+        topK?: number;
+        minSimilarity?: number;
+        fileTypes?: string[];
+    }) => Promise<{
+        success: boolean;
+        results: Array<{
+            chunk: Record<string, unknown>;
+            similarity: number;
+            rank: number;
+        }>;
+        message?: string;
+    }>;
+    vectorSearchBatch: (projectName: string, queries: {
+        text: string;
+        topK?: number;
+        minSimilarity?: number;
+        fileTypes?: string[];
+    }[]) => Promise<{
+        success: boolean;
+        results: Array<Array<{
+            chunk: Record<string, unknown>;
+            similarity: number;
+            rank: number;
+        }>>;
+        message?: string;
+    }>;
+    vectorEnhanceRag: (projectName: string, query: string, topK?: number) => Promise<{
+        success: boolean;
+        vectorResults: Array<{
+            chunk: Record<string, unknown>;
+            similarity: number;
+            rank: number;
+        }>;
+        message?: string;
+    }>;
+    vectorFiles: (projectName: string) => Promise<{
+        success: boolean;
+        files: Array<{
+            filePath: string;
+            chunkCount: number;
+            totalChars: number;
+            language: string;
+        }>;
+        message?: string;
+    }>;
+    vectorRemoveFiles: (workingCopyPath: string, commitId: string, projectName: string, filePaths: string[]) => Promise<{
+        success: boolean;
+        index?: Record<string, unknown>;
+        message?: string;
+    }>;
+    vectorExport: (projectName: string) => Promise<{
+        success: boolean;
+        data?: string;
+        message?: string;
+    }>;
+    vectorImport: (projectName: string, data: string) => Promise<{
+        success: boolean;
+        index?: Record<string, unknown>;
+        message?: string;
+    }>;
+    onVectorProgress: (callback: (msg: string) => void) => () => void;
     analyzeQuality: (commitId: string) => Promise<{
         success: boolean;
         report?: Record<string, unknown>;

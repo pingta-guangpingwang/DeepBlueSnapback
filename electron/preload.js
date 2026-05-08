@@ -97,6 +97,21 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
         electron_1.ipcRenderer.on('graph:progress', (_, msg) => callback(msg));
         return () => electron_1.ipcRenderer.removeAllListeners('graph:progress');
     },
+    // Vector Database
+    vectorIndex: (repoPath, workingCopyPath, commitId, projectName, filePaths) => electron_1.ipcRenderer.invoke('vector:index', repoPath, workingCopyPath, commitId, projectName, filePaths),
+    vectorStatus: (projectName) => electron_1.ipcRenderer.invoke('vector:status', projectName),
+    vectorDelete: (projectName) => electron_1.ipcRenderer.invoke('vector:delete', projectName),
+    vectorSearch: (projectName, query) => electron_1.ipcRenderer.invoke('vector:search', projectName, query),
+    vectorSearchBatch: (projectName, queries) => electron_1.ipcRenderer.invoke('vector:search-batch', projectName, queries),
+    vectorEnhanceRag: (projectName, query, topK) => electron_1.ipcRenderer.invoke('vector:enhance-rag', projectName, query, topK),
+    vectorFiles: (projectName) => electron_1.ipcRenderer.invoke('vector:files', projectName),
+    vectorRemoveFiles: (workingCopyPath, commitId, projectName, filePaths) => electron_1.ipcRenderer.invoke('vector:remove-files', workingCopyPath, commitId, projectName, filePaths),
+    vectorExport: (projectName) => electron_1.ipcRenderer.invoke('vector:export', projectName),
+    vectorImport: (projectName, data) => electron_1.ipcRenderer.invoke('vector:import', projectName, data),
+    onVectorProgress: (callback) => {
+        electron_1.ipcRenderer.on('vector:progress', (_, msg) => callback(msg));
+        return () => electron_1.ipcRenderer.removeAllListeners('vector:progress');
+    },
     // LAN Server
     lanStart: (rootPath, port) => electron_1.ipcRenderer.invoke('lan:start', rootPath, port),
     lanStop: () => electron_1.ipcRenderer.invoke('lan:stop'),

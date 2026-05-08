@@ -14,7 +14,7 @@ import { buildGraph } from './graph-builder'
 import { saveGraph, loadGraph, listGraphs, compareGraphs } from './graph-store'
 import { switchToVersionReadonly, releaseVersionReadonly, getVersionFileList, getVersionFileContent } from './version-switch'
 import { generateHealthReport } from './health-scorer'
-import { buildVectorIndex, getVectorStatus, deleteVectorIndex, searchVectors, searchBatchVectors, enhanceRagContext } from './vector-engine'
+import { buildVectorIndex, getVectorStatus, deleteVectorIndex, searchVectors, searchBatchVectors, enhanceRagContext, getIndexedFiles, removeFilesFromIndex, exportVectorIndex, importVectorIndex } from './vector-engine'
 
 let mainWindow: BrowserWindow | null = null
 const dbvsRepo = new DBHTRepository()
@@ -884,6 +884,62 @@ dbgvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
 - **仓库管理**：创建/导入/删除项目、Checkout 工作副本、Git 远程克隆、Windows 右键菜单集成
 - **自动更新**：应用启动时自动检测所有项目的 DBHT-GUIDE.md 是否为最新版本，旧版自动刷新
 
+### 向量知识库（语义搜索）
+
+DBHT 内置 TF-IDF 向量化引擎，可为项目代码构建语义搜索索引，AI 可以直接通过 CLI 或 REST API 进行自然语言搜索。
+
+#### CLI 命令
+
+\`\`\`bash
+# 构建向量索引（首次构建或重建）
+dbht vector index "${projectPath}"
+
+# 查看索引状态（含索引版本 vs 当前提交版本对比）
+dbht vector status "${projectPath}"
+
+# 语义搜索（自然语言查询）
+dbht vector search "${projectPath}" "how does authentication work" --topK 10 --minSimilarity 0.3
+
+# 删除索引
+dbht vector delete "${projectPath}"
+\`\`\`
+
+#### REST API
+
+当外部 API 启用后（在设置面板中开启），可通过以下端点访问：
+
+\`\`\`bash
+# 构建索引
+curl -X POST http://localhost:3280/api/v1/projects/${projectName}/vector/index
+
+# 查看状态
+curl http://localhost:3280/api/v1/projects/${projectName}/vector/status
+
+# 语义搜索
+curl -X POST http://localhost:3280/api/v1/projects/${projectName}/vector/search \\
+  -H "Content-Type: application/json" \\
+  -d '{"text":"authentication flow","topK":10,"minSimilarity":0.3}'
+
+# 删除索引
+curl -X DELETE http://localhost:3280/api/v1/projects/${projectName}/vector
+\`\`\`
+
+#### 技术特性
+
+- **零依赖**：TF-IDF + 三元组哈希向量化，无需 AI 模型或外部库
+- **即时搜索**：768 维向量 + 余弦相似度，<10ms 响应
+- **版本感知**：自动检测索引版本是否匹配当前提交，过期时提示重建
+- **导入/导出**：支持导出为 JSON 格式（dbht-vector-export-v1），可在团队间共享
+- **智能分块**：基于函数/类边界的代码分块，最大 2000 字符/块
+- **增量管理**：支持按文件添加/移除索引条目
+
+#### AI 使用建议
+
+1. **首次进入项目**：检查向量索引状态，如未构建则构建
+2. **理解代码库**：使用语义搜索快速定位相关代码（如"错误处理逻辑在哪里"）
+3. **重构前分析**：搜索目标功能的所有相关文件和代码块
+4. **版本更新后**：检查索引版本是否匹配，如不匹配则重建
+
 ### 提醒用户查看
 
 如果需要让用户确认变更内容或查看可视化 diff，可以提示用户：
@@ -956,7 +1012,7 @@ AI 每完成一个任务或切换模块时更新此文件即可。
 async function ensureProjectGuide(projectPath: string, projectName: string, repoPath: string): Promise<void> {
   const guidePath = path.join(projectPath, 'DBHT-GUIDE.md')
   const newContent = generateDBHTGuide(projectName, projectPath, repoPath)
-  const versionTag = '<!-- DBHT-GUIDE-VERSION: 4 -->'
+  const versionTag = '<!-- DBHT-GUIDE-VERSION: 5 -->'
 
   if (await fs.pathExists(guidePath)) {
     const existing = await fs.readFile(guidePath, 'utf-8')
@@ -2024,6 +2080,33 @@ ipcMain.handle('vector:enhance-rag', async (_, projectName: string, query: strin
   const rootPath = await getRootPath()
   if (!rootPath) return { success: false, vectorResults: [], message: 'Root path not configured' }
   return await enhanceRagContext(rootPath, projectName, query, topK ?? 5)
+})
+
+ipcMain.handle('vector:files', async (_, projectName: string) => {
+  const rootPath = await getRootPath()
+  if (!rootPath) return { success: false, files: [], message: 'Root path not configured' }
+  return await getIndexedFiles(rootPath, projectName)
+})
+
+ipcMain.handle('vector:remove-files', async (event, workingCopyPath: string, commitId: string, projectName: string, filePaths: string[]) => {
+  const rootPath = await getRootPath()
+  if (!rootPath) return { success: false, message: 'Root path not configured' }
+  const send = (msg: string) => {
+    if (!event.sender.isDestroyed()) event.sender.send('vector:progress', msg)
+  }
+  return await removeFilesFromIndex(rootPath, workingCopyPath, commitId, projectName, filePaths, send)
+})
+
+ipcMain.handle('vector:export', async (_, projectName: string) => {
+  const rootPath = await getRootPath()
+  if (!rootPath) return { success: false, message: 'Root path not configured' }
+  return await exportVectorIndex(rootPath, projectName)
+})
+
+ipcMain.handle('vector:import', async (_, projectName: string, data: string) => {
+  const rootPath = await getRootPath()
+  if (!rootPath) return { success: false, message: 'Root path not configured' }
+  return await importVectorIndex(rootPath, projectName, data)
 })
 
 // ==================== 项目列表辅助函数 ====================

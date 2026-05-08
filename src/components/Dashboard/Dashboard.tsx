@@ -9,8 +9,9 @@ import About from './About'
 import { ArchitectureMap } from './ArchitectureMap/ArchitectureMap'
 import SimpleView from './SimpleView'
 import HealthDashboard from './HealthDashboard'
+import VectorPanel from './VectorPanel'
 
-type TabKey = 'overview' | 'files' | 'graph' | 'health' | 'history' | 'settings' | 'about'
+type TabKey = 'overview' | 'files' | 'graph' | 'vectors' | 'health' | 'history' | 'settings' | 'about'
 
 export default function Dashboard() {
   const [state, dispatch] = useAppState()
@@ -22,6 +23,7 @@ export default function Dashboard() {
     { key: 'overview', label: t.tabs.overview },
     { key: 'files', label: t.tabs.files },
     { key: 'graph', label: t.tabs.graph },
+    { key: 'vectors', label: t.tabs.vectors },
     { key: 'health', label: t.tabs.health },
     { key: 'history', label: t.tabs.history },
     { key: 'settings', label: t.tabs.settings },
@@ -125,6 +127,7 @@ export default function Dashboard() {
             {state.simpleView ? <SimpleView /> : <ArchitectureMap />}
           </>
         )}
+        {state.activeTab === 'vectors' && <VectorPanel />}
         {state.activeTab === 'health' && <HealthDashboard />}
         {state.activeTab === 'history' && <History />}
         {state.activeTab === 'settings' && <Settings />}
