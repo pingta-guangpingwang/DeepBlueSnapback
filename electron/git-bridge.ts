@@ -68,7 +68,7 @@ export class GitBridge {
     }
   }
 
-  async resolveAuth(remoteUrl: string): Promise<{ username: string; password: string } | undefined> {
+  private async resolveAuth(remoteUrl: string): Promise<{ username: string; password: string } | undefined> {
     try {
       const host = new URL(remoteUrl).hostname
       const store = await this.getAuthStore()

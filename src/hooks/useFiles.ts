@@ -13,10 +13,6 @@ export function useFiles() {
     try {
       const result = await window.electronAPI.listFiles(state.projectPath)
       if (result?.success && result.files) {
-        const fileNames = result.files
-          .filter(f => !f.isDirectory)
-          .map(f => f.path)
-        dispatch({ type: 'SET_MANAGED_FILES', payload: fileNames })
         dispatch({ type: 'SET_MESSAGE', payload: '\u5DF2\u52A0\u8F7D\u6587\u4EF6\u5217\u8868\u3002' })
       } else {
         dispatch({ type: 'SET_MESSAGE', payload: '\u52A0\u8F7D\u6587\u4EF6\u5217\u8868\u5931\u8D25' })

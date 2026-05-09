@@ -106,12 +106,6 @@ function createWindow() {
         { label: '开发者工具', accelerator: 'F12', role: 'toggleDevTools' }
       ]
     },
-    {
-      label: '帮助',
-      submenu: [
-        { label: '关于', click: () => mainWindow?.webContents.send('menu:about') }
-      ]
-    }
   ]
 
   const menu = Menu.buildFromTemplate(menuTemplate)
@@ -290,18 +284,6 @@ ipcMain.handle('dialog:select-folder', async () => {
   return result.canceled ? null : result.filePaths[0]
 })
 
-// 检查文件夹是否为空
-ipcMain.handle('fs:is-empty-folder', async (_, folderPath: string) => {
-  try {
-    const files = await fs.readdir(folderPath)
-    // 过滤隐藏文件
-    const visibleFiles = files.filter(f => !f.startsWith('.'))
-    return visibleFiles.length === 0
-  } catch {
-    return false
-  }
-})
-
 // 检查是否是DBHT仓库（新格式：config.json+HEAD.json，或旧格式：.dbvs/，或工作副本：.dbvs-link.json）
 ipcMain.handle('dbgvs:is-repository', async (_, inputPath: string) => {
   // 新格式：集中仓库
@@ -315,11 +297,6 @@ ipcMain.handle('dbgvs:is-repository', async (_, inputPath: string) => {
   }
   // 旧格式：.dbvs/ 子目录
   return fs.pathExists(path.join(inputPath, '.dbvs'))
-})
-
-// 创建DBHT仓库（在集中存储位置）
-ipcMain.handle('dbgvs:create-repository', async (_, repoPath: string, projectName: string) => {
-  return await dbvsRepo.createRepository(repoPath, projectName)
 })
 
 // 初始化已有项目
@@ -578,16 +555,6 @@ ipcMain.handle('fs:list-files', async (_, dirPath: string) => {
   }
 })
 
-// 递归复制目录
-ipcMain.handle('fs:copy-dir', async (_, srcPath: string, destPath: string) => {
-  try {
-    await fs.copy(srcPath, destPath, { overwrite: false, errorOnExist: false })
-    return { success: true }
-  } catch (error) {
-    return { success: false, message: String(error) }
-  }
-})
-
 // 路径拼接
 ipcMain.handle('fs:path-join', async (_, ...paths: string[]) => {
   return { result: path.join(...paths) }
@@ -596,24 +563,6 @@ ipcMain.handle('fs:path-join', async (_, ...paths: string[]) => {
 // 获取路径基础名
 ipcMain.handle('fs:path-basename', async (_, filePath: string) => {
   return { result: path.basename(filePath) }
-})
-
-// 检查管理员权限
-ipcMain.handle('system:check-admin', async () => {
-  try {
-    // 尝试写入一个需要管理员权限的位置来检测
-    const testPath = path.join(process.env.ProgramFiles || 'C:\\Program Files', 'test-permission.tmp')
-    await fs.writeFile(testPath, 'test')
-    await fs.remove(testPath)
-    return true
-  } catch {
-    return false
-  }
-})
-
-// 删除仓库（只删集中仓库）
-ipcMain.handle('dbgvs:delete-repository', async (_, repoPath: string) => {
-  return await dbvsRepo.deleteRepository(repoPath)
 })
 
 // 删除仓库（可选同时删除关联的工作副本文件）
@@ -2047,12 +1996,27 @@ ipcMain.handle('graph:to-rag-context', async (_, commitId: string) => {
 	})
 
 	// Quality & health analysis
-	ipcMain.handle('quality:analyze', async (_, commitId: string) => {
+	ipcMain.handle('quality:analyze', async (_, commitId: string, repoPath: string, workingCopyPath: string, projectName: string) => {
 	  try {
 	    const rootPath = await getRootPath()
 	    if (!rootPath) return { success: false, message: 'Root path not configured' }
-	    const graph = await loadGraph(rootPath, commitId)
-	    if (!graph) return { success: false, message: 'Graph not found for this version' }
+
+	    let graph = await loadGraph(rootPath, commitId)
+
+	    // Auto-build graph if it doesn't exist yet
+	    if (!graph && repoPath && workingCopyPath) {
+	      const parseResult = await parseProject(workingCopyPath, repoPath)
+	      if (parseResult.success && parseResult.files.length > 0) {
+	        graph = buildGraph(parseResult, {
+	          projectName: projectName || path.basename(workingCopyPath),
+	          commitId,
+	          timestamp: new Date().toISOString(),
+	        })
+	        await saveGraph(rootPath, graph)
+	      }
+	    }
+
+	    if (!graph) return { success: false, message: 'No architecture graph found. Build the project from the Graph tab first.' }
 	    const report = generateHealthReport(graph)
 	    return { success: true, report }
 	  } catch (error) {

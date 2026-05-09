@@ -27,10 +27,7 @@ export declare class GitBridge {
         success: boolean;
         message: string;
     }>;
-    resolveAuth(remoteUrl: string): Promise<{
-        username: string;
-        password: string;
-    } | undefined>;
+    private resolveAuth;
     private buildOnAuth;
     connectRepo(dir: string, remoteUrl: string, branch: string, auth: {
         username: string;

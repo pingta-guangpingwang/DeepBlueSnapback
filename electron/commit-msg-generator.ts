@@ -12,7 +12,7 @@ export interface DiffChange {
  * Uses heuristics: file type analysis, change magnitude, naming patterns.
  * Designed as foundation for future LLM enhancement via --ai flag.
  */
-export function generateCommitMessage(changes: DiffChange[], graph?: ArchitectureGraph): {
+function generateCommitMessage(changes: DiffChange[], graph?: ArchitectureGraph): {
   message: string
   summary: string
   suggestedLabels: string[]  // conventional commit labels like feat, fix, refactor, etc.

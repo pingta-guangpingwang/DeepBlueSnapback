@@ -38,33 +38,3 @@ export function VersionSwitcherBanner({
     </div>
   )
 }
-
-interface VersionViewButtonProps {
-  version: string
-  versionLabel: string
-  repoPath: string
-  isCurrentViewing: boolean
-  onView: (version: string) => void
-}
-
-export function VersionViewButton({ version, versionLabel, repoPath, isCurrentViewing, onView }: VersionViewButtonProps) {
-  return (
-    <button
-      className={`version-view-btn ${isCurrentViewing ? 'active' : ''}`}
-      onClick={() => onView(version)}
-      title={`View version ${versionLabel} in read-only mode`}
-      style={{
-        fontSize: '11px',
-        padding: '2px 8px',
-        border: '1px solid #60a5fa',
-        borderRadius: '4px',
-        background: isCurrentViewing ? '#2563eb' : 'transparent',
-        color: isCurrentViewing ? '#fff' : '#60a5fa',
-        cursor: 'pointer',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {isCurrentViewing ? 'Viewing' : 'View'}
-    </button>
-  )
-}

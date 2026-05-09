@@ -4,19 +4,16 @@ export interface ElectronAPI {
   closeWindow: () => Promise<void>
   isMaximized: () => Promise<boolean>
   selectFolder: () => Promise<string | null>
-  isEmptyFolder: (path: string) => Promise<boolean>
   readFile: (path: string) => Promise<{ success: boolean; content?: string; error?: string }>
   createFile: (path: string) => Promise<{ success: boolean; message?: string }>
   writeFile: (path: string, content: string) => Promise<{ success: boolean; message?: string }>
   deleteFile: (path: string) => Promise<{ success: boolean; message?: string }>
   listFiles: (path: string) => Promise<{ success: boolean; files?: Array<{ name: string; path: string; isDirectory: boolean }>; message?: string; errors?: string[] }>
-  copyDir: (src: string, dest: string) => Promise<{ success: boolean; message?: string }>
   pathJoin: (...paths: string[]) => Promise<{ result: string }>
   pathBasename: (filePath: string) => Promise<{ result: string }>
 
   // DBHT 操作（SVN 风格）
   isDBHTRepository: (path: string) => Promise<boolean>
-  createRepository: (repoPath: string, name: string) => Promise<{ success: boolean; message?: string }>
   createProject: (rootPath: string, projectName: string, customPath?: string) => Promise<{ success: boolean; message?: string }>
   getProjects: (rootPath: string) => Promise<{ success: boolean; projects?: Array<{
     name: string; path: string; repoPath: string; status: string; lastUpdate?: string; hasChanges?: boolean
@@ -46,8 +43,6 @@ export interface ElectronAPI {
     message?: string
   }>
   getDiffContent: (repoPath: string, workingCopyPath: string, filePath: string, versionA?: string, versionB?: string) => Promise<{ success: boolean; oldContent?: string; newContent?: string; message?: string }>
-  diffImpact: (repoPath: string, workingCopyPath: string, commitId: string) => Promise<{ success: boolean; report?: Record<string, unknown>; message?: string }>
-  deleteRepository: (repoPath: string) => Promise<{ success: boolean; message?: string }>
   deleteRepositoryFull: (rootPath: string, repoPath: string, deleteWorkingCopies: boolean) => Promise<{ success: boolean; message: string; deletedCopies?: string[] }>
   verify: (repoPath: string) => Promise<{ success: boolean; valid: boolean; errors: string[]; message?: string }>
   getHistoryStructured: (repoPath: string) => Promise<{ success: boolean; commits?: Array<{ id: string; message: string; timestamp: string; fileCount: number; totalSize: number }>; message?: string }>
@@ -65,13 +60,10 @@ export interface ElectronAPI {
   registerCLI: () => Promise<{ success: boolean; message: string }>
   isCLIRegistered: () => Promise<{ registered: boolean }>
   openFolder: (path: string) => Promise<void>
-  checkAdmin: () => Promise<boolean>
 
   // 菜单事件
   onMenuNewProject: (callback: () => void) => () => void
   onMenuOpenProject: (callback: () => void) => () => void
-  onMenuAbout: (callback: () => void) => () => void
-
   // 右键菜单
   registerContextMenu: () => Promise<{ success: boolean; message: string }>
   unregisterContextMenu: () => Promise<{ success: boolean; message: string }>
@@ -155,7 +147,7 @@ export interface ElectronAPI {
   vectorGetSupportedExtensions: () => Promise<{ extensions: SupportedExtension[] }>
 
   // Quality & health
-  analyzeQuality: (commitId: string) => Promise<{ success: boolean; report?: Record<string, unknown>; message?: string }>
+  analyzeQuality: (commitId: string, repoPath: string, workingCopyPath: string, projectName: string) => Promise<{ success: boolean; report?: Record<string, unknown>; message?: string }>
 
   // External API
   externalApiStart: () => Promise<{ success: boolean; message: string; port?: number; address?: string }>

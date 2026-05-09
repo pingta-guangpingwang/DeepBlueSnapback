@@ -136,12 +136,6 @@ function createWindow() {
                 { label: '开发者工具', accelerator: 'F12', role: 'toggleDevTools' }
             ]
         },
-        {
-            label: '帮助',
-            submenu: [
-                { label: '关于', click: () => mainWindow?.webContents.send('menu:about') }
-            ]
-        }
     ];
     const menu = electron_1.Menu.buildFromTemplate(menuTemplate);
     electron_1.Menu.setApplicationMenu(menu);
@@ -298,18 +292,6 @@ function registerIPCHandlers() {
         });
         return result.canceled ? null : result.filePaths[0];
     });
-    // 检查文件夹是否为空
-    electron_1.ipcMain.handle('fs:is-empty-folder', async (_, folderPath) => {
-        try {
-            const files = await fs.readdir(folderPath);
-            // 过滤隐藏文件
-            const visibleFiles = files.filter(f => !f.startsWith('.'));
-            return visibleFiles.length === 0;
-        }
-        catch {
-            return false;
-        }
-    });
     // 检查是否是DBHT仓库（新格式：config.json+HEAD.json，或旧格式：.dbvs/，或工作副本：.dbvs-link.json）
     electron_1.ipcMain.handle('dbgvs:is-repository', async (_, inputPath) => {
         // 新格式：集中仓库
@@ -323,10 +305,6 @@ function registerIPCHandlers() {
         }
         // 旧格式：.dbvs/ 子目录
         return fs.pathExists(path.join(inputPath, '.dbvs'));
-    });
-    // 创建DBHT仓库（在集中存储位置）
-    electron_1.ipcMain.handle('dbgvs:create-repository', async (_, repoPath, projectName) => {
-        return await dbvsRepo.createRepository(repoPath, projectName);
     });
     // 初始化已有项目
     electron_1.ipcMain.handle('dbgvs:init-repository', async (_, repoPath) => {
@@ -566,16 +544,6 @@ function registerIPCHandlers() {
             return { success: false, files: results, message: String(error), errors };
         }
     });
-    // 递归复制目录
-    electron_1.ipcMain.handle('fs:copy-dir', async (_, srcPath, destPath) => {
-        try {
-            await fs.copy(srcPath, destPath, { overwrite: false, errorOnExist: false });
-            return { success: true };
-        }
-        catch (error) {
-            return { success: false, message: String(error) };
-        }
-    });
     // 路径拼接
     electron_1.ipcMain.handle('fs:path-join', async (_, ...paths) => {
         return { result: path.join(...paths) };
@@ -583,23 +551,6 @@ function registerIPCHandlers() {
     // 获取路径基础名
     electron_1.ipcMain.handle('fs:path-basename', async (_, filePath) => {
         return { result: path.basename(filePath) };
-    });
-    // 检查管理员权限
-    electron_1.ipcMain.handle('system:check-admin', async () => {
-        try {
-            // 尝试写入一个需要管理员权限的位置来检测
-            const testPath = path.join(process.env.ProgramFiles || 'C:\\Program Files', 'test-permission.tmp');
-            await fs.writeFile(testPath, 'test');
-            await fs.remove(testPath);
-            return true;
-        }
-        catch {
-            return false;
-        }
-    });
-    // 删除仓库（只删集中仓库）
-    electron_1.ipcMain.handle('dbgvs:delete-repository', async (_, repoPath) => {
-        return await dbvsRepo.deleteRepository(repoPath);
     });
     // 删除仓库（可选同时删除关联的工作副本文件）
     electron_1.ipcMain.handle('dbgvs:delete-repository-full', async (_, rootPath, repoPath, deleteWorkingCopies) => {
@@ -1955,14 +1906,26 @@ AI 智能体在开发过程中必须遵循以下规则：
         return await (0, version_switch_1.getVersionFileContent)(repoPath, version, filePath);
     });
     // Quality & health analysis
-    electron_1.ipcMain.handle('quality:analyze', async (_, commitId) => {
+    electron_1.ipcMain.handle('quality:analyze', async (_, commitId, repoPath, workingCopyPath, projectName) => {
         try {
             const rootPath = await getRootPath();
             if (!rootPath)
                 return { success: false, message: 'Root path not configured' };
-            const graph = await (0, graph_store_1.loadGraph)(rootPath, commitId);
+            let graph = await (0, graph_store_1.loadGraph)(rootPath, commitId);
+            // Auto-build graph if it doesn't exist yet
+            if (!graph && repoPath && workingCopyPath) {
+                const parseResult = await (0, ast_analyzer_1.parseProject)(workingCopyPath, repoPath);
+                if (parseResult.success && parseResult.files.length > 0) {
+                    graph = (0, graph_builder_1.buildGraph)(parseResult, {
+                        projectName: projectName || path.basename(workingCopyPath),
+                        commitId,
+                        timestamp: new Date().toISOString(),
+                    });
+                    await (0, graph_store_1.saveGraph)(rootPath, graph);
+                }
+            }
             if (!graph)
-                return { success: false, message: 'Graph not found for this version' };
+                return { success: false, message: 'No architecture graph found. Build the project from the Graph tab first.' };
             const report = (0, health_scorer_1.generateHealthReport)(graph);
             return { success: true, report };
         }

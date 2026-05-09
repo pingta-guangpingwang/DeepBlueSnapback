@@ -41,21 +41,6 @@ export async function loadGraph(
   }
 }
 
-export async function deleteGraph(
-  rootPath: string,
-  commitId: string
-): Promise<{ success: boolean; message?: string }> {
-  try {
-    const filePath = getGraphPath(rootPath, commitId)
-    if (await fs.pathExists(filePath)) {
-      await fs.remove(filePath)
-    }
-    return { success: true }
-  } catch (error) {
-    return { success: false, message: String(error) }
-  }
-}
-
 export async function listGraphs(
   rootPath: string
 ): Promise<string[]> {
@@ -71,17 +56,6 @@ export async function listGraphs(
       .reverse()
   } catch {
     return []
-  }
-}
-
-export async function graphExists(
-  rootPath: string,
-  commitId: string
-): Promise<boolean> {
-  try {
-    return await fs.pathExists(getGraphPath(rootPath, commitId))
-  } catch {
-    return false
   }
 }
 
@@ -213,51 +187,3 @@ function collectAllNodes(root: GraphNode): GraphNode[] {
   return nodes
 }
 
-// ==================== Architecture Change Log ====================
-
-export interface ArchitectureChangeEntry {
-  versionId: string
-  timestamp: string
-  previousVersionId?: string
-  summary: {
-    nodesAdded: number
-    nodesRemoved: number
-    nodesModified: number
-    edgesAdded: number
-    edgesBroken: number
-    circularDepsChanged: boolean
-    healthScoreChanged?: number
-  }
-}
-
-export async function appendChangeLog(
-  rootPath: string,
-  entry: ArchitectureChangeEntry
-): Promise<void> {
-  const logPath = path.join(getGraphsDir(rootPath), '_change-log.json')
-  let log: ArchitectureChangeEntry[] = []
-  try {
-    if (await fs.pathExists(logPath)) {
-      log = await fs.readJson(logPath)
-    }
-  } catch {
-    // Start fresh
-  }
-
-  log.push(entry)
-  await fs.writeJson(logPath, log, { spaces: 2 })
-}
-
-export async function getChangeLog(
-  rootPath: string
-): Promise<ArchitectureChangeEntry[]> {
-  const logPath = path.join(getGraphsDir(rootPath), '_change-log.json')
-  try {
-    if (await fs.pathExists(logPath)) {
-      return await fs.readJson(logPath)
-    }
-  } catch {
-    // Ignore
-  }
-  return []
-}

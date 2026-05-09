@@ -4,7 +4,6 @@ export interface ElectronAPI {
     closeWindow: () => Promise<void>;
     isMaximized: () => Promise<boolean>;
     selectFolder: () => Promise<string | null>;
-    isEmptyFolder: (path: string) => Promise<boolean>;
     readFile: (path: string) => Promise<{
         success: boolean;
         content?: string;
@@ -32,10 +31,6 @@ export interface ElectronAPI {
         message?: string;
         errors?: string[];
     }>;
-    copyDir: (src: string, dest: string) => Promise<{
-        success: boolean;
-        message?: string;
-    }>;
     pathJoin: (...paths: string[]) => Promise<{
         result: string;
     }>;
@@ -43,10 +38,6 @@ export interface ElectronAPI {
         result: string;
     }>;
     isDBHTRepository: (path: string) => Promise<boolean>;
-    createRepository: (repoPath: string, name: string) => Promise<{
-        success: boolean;
-        message?: string;
-    }>;
     createProject: (rootPath: string, projectName: string, customPath?: string) => Promise<{
         success: boolean;
         message?: string;
@@ -159,15 +150,6 @@ export interface ElectronAPI {
         newContent?: string;
         message?: string;
     }>;
-    diffImpact: (repoPath: string, workingCopyPath: string, commitId: string) => Promise<{
-        success: boolean;
-        report?: Record<string, unknown>;
-        message?: string;
-    }>;
-    deleteRepository: (repoPath: string) => Promise<{
-        success: boolean;
-        message?: string;
-    }>;
     deleteRepositoryFull: (rootPath: string, repoPath: string, deleteWorkingCopies: boolean) => Promise<{
         success: boolean;
         message: string;
@@ -241,10 +223,8 @@ export interface ElectronAPI {
         message?: string;
     }>;
     openFolder: (path: string) => Promise<void>;
-    checkAdmin: () => Promise<boolean>;
     onMenuNewProject: (callback: () => void) => () => void;
     onMenuOpenProject: (callback: () => void) => () => void;
-    onMenuAbout: (callback: () => void) => () => void;
     registerContextMenu: () => Promise<{
         success: boolean;
         message: string;
@@ -478,7 +458,7 @@ export interface ElectronAPI {
     }>;
     onVectorProgress: (callback: (msg: string) => void) => () => void;
     onProjectProgress: (callback: (msg: string) => void) => () => void;
-    analyzeQuality: (commitId: string) => Promise<{
+    analyzeQuality: (commitId: string, repoPath: string, workingCopyPath: string, projectName: string) => Promise<{
         success: boolean;
         report?: Record<string, unknown>;
         message?: string;

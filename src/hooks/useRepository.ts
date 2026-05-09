@@ -76,7 +76,6 @@ export function useRepository() {
     try {
       const result = await window.electronAPI.getHistory(state.repoPath)
       if (result?.success) {
-        dispatch({ type: 'SET_HISTORY_TEXT', payload: result.history || '暂无历史记录' })
         dispatch({ type: 'SET_MESSAGE', payload: '已获取提交历史。' })
       } else {
         dispatch({ type: 'SET_MESSAGE', payload: '获取历史失败：' + (result?.message || '未知错误') })
@@ -101,7 +100,6 @@ export function useRepository() {
     try {
       const result = await window.electronAPI.rollback(state.repoPath, state.projectPath, version)
       if (result?.success) {
-        dispatch({ type: 'SET_ROLLBACK_VERSION', payload: '' })
         dispatch({ type: 'SET_MESSAGE', payload: `已回滚到版本 ${version}。` })
         await loadStatus()
       } else {
@@ -210,7 +208,6 @@ export function useRepository() {
     try {
       const diffResult = await window.electronAPI.getDiff(repoPath, workingCopyPath, filePath)
       if (diffResult?.success) {
-        dispatch({ type: 'SET_DIFF_CONTENT', payload: diffResult.diff || '无差异' })
         dispatch({ type: 'SET_DIFF_MODAL_FILE', payload: filePath })
       } else {
         dispatch({ type: 'SET_MESSAGE', payload: '获取文件差异失败' })

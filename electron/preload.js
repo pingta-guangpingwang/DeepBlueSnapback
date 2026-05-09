@@ -11,18 +11,15 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     // 对话框
     selectFolder: () => electron_1.ipcRenderer.invoke('dialog:select-folder'),
     // 文件系统
-    isEmptyFolder: (path) => electron_1.ipcRenderer.invoke('fs:is-empty-folder', path),
     readFile: (path) => electron_1.ipcRenderer.invoke('fs:read-file', path),
     createFile: (path) => electron_1.ipcRenderer.invoke('fs:create-file', path),
     writeFile: (path, content) => electron_1.ipcRenderer.invoke('fs:write-file', path, content),
     deleteFile: (path) => electron_1.ipcRenderer.invoke('fs:delete-file', path),
     listFiles: (path) => electron_1.ipcRenderer.invoke('fs:list-files', path),
-    copyDir: (src, dest) => electron_1.ipcRenderer.invoke('fs:copy-dir', src, dest),
     pathJoin: (...paths) => electron_1.ipcRenderer.invoke('fs:path-join', ...paths),
     pathBasename: (filePath) => electron_1.ipcRenderer.invoke('fs:path-basename', filePath),
     // DBHT操作（SVN 风格：repoPath = 集中仓库, workingCopyPath = 工作副本）
     isDBHTRepository: (path) => electron_1.ipcRenderer.invoke('dbgvs:is-repository', path),
-    createRepository: (repoPath, name) => electron_1.ipcRenderer.invoke('dbgvs:create-repository', repoPath, name),
     createProject: (rootPath, projectName, customPath) => electron_1.ipcRenderer.invoke('dbgvs:create-project', rootPath, projectName, customPath),
     getProjects: (rootPath) => electron_1.ipcRenderer.invoke('dbgvs:get-projects', rootPath),
     registerProject: (rootPath, projectPath, projectName, initWithCommit) => electron_1.ipcRenderer.invoke('dbgvs:register-project', rootPath, projectPath, projectName, initWithCommit),
@@ -47,8 +44,6 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     getDiff: (repoPath, workingCopyPath, filePath, versionA, versionB) => electron_1.ipcRenderer.invoke('dbgvs:get-diff', repoPath, workingCopyPath, filePath, versionA, versionB),
     getDiffSummary: (repoPath, workingCopyPath) => electron_1.ipcRenderer.invoke('dbgvs:get-diff-summary', repoPath, workingCopyPath),
     getDiffContent: (repoPath, workingCopyPath, filePath, versionA, versionB) => electron_1.ipcRenderer.invoke('dbgvs:get-diff-content', repoPath, workingCopyPath, filePath, versionA, versionB),
-    diffImpact: (repoPath, workingCopyPath, commitId) => electron_1.ipcRenderer.invoke('dbgvs:diff-impact', repoPath, workingCopyPath, commitId),
-    deleteRepository: (repoPath) => electron_1.ipcRenderer.invoke('dbgvs:delete-repository', repoPath),
     deleteRepositoryFull: (rootPath, repoPath, deleteWorkingCopies) => electron_1.ipcRenderer.invoke('dbgvs:delete-repository-full', rootPath, repoPath, deleteWorkingCopies),
     verify: (repoPath) => electron_1.ipcRenderer.invoke('dbgvs:verify', repoPath),
     getHistoryStructured: (repoPath) => electron_1.ipcRenderer.invoke('dbgvs:get-history-structured', repoPath),
@@ -64,8 +59,6 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     isCLIRegistered: () => electron_1.ipcRenderer.invoke('dbgvs:is-cli-registered'),
     // Shell
     openFolder: (path) => electron_1.ipcRenderer.invoke('shell:open-folder', path),
-    // 系统
-    checkAdmin: () => electron_1.ipcRenderer.invoke('system:check-admin'),
     // 菜单事件
     onMenuNewProject: (callback) => {
         electron_1.ipcRenderer.on('menu:new-project', callback);
@@ -74,10 +67,6 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     onMenuOpenProject: (callback) => {
         electron_1.ipcRenderer.on('menu:open-project', callback);
         return () => electron_1.ipcRenderer.removeListener('menu:open-project', callback);
-    },
-    onMenuAbout: (callback) => {
-        electron_1.ipcRenderer.on('menu:about', callback);
-        return () => electron_1.ipcRenderer.removeListener('menu:about', callback);
     },
     // Git Remote Sync
     gitConnect: (workingCopyPath, remoteUrl, branch, username, token) => electron_1.ipcRenderer.invoke('git:connect', workingCopyPath, remoteUrl, branch, username, token),
@@ -162,7 +151,7 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     getVersionFileList: (repoPath, version) => electron_1.ipcRenderer.invoke('version:get-file-list', repoPath, version),
     getVersionFileContent: (repoPath, version, filePath) => electron_1.ipcRenderer.invoke('version:get-file-content', repoPath, version, filePath),
     // Quality & health
-    analyzeQuality: (commitId) => electron_1.ipcRenderer.invoke('quality:analyze', commitId),
+    analyzeQuality: (commitId, repoPath, workingCopyPath, projectName) => electron_1.ipcRenderer.invoke('quality:analyze', commitId, repoPath, workingCopyPath, projectName),
     // External API
     externalApiStart: () => electron_1.ipcRenderer.invoke('external-api:start'),
     externalApiStop: () => electron_1.ipcRenderer.invoke('external-api:stop'),

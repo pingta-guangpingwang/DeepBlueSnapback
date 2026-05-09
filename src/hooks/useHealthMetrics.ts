@@ -5,7 +5,7 @@ interface UseHealthMetricsReturn {
   report: HealthReport | null
   loading: boolean
   error: string | null
-  analyzeHealth: (commitId: string) => Promise<void>
+  analyzeHealth: (commitId: string, repoPath: string, workingCopyPath: string, projectName: string) => Promise<void>
   clearReport: () => void
 }
 
@@ -14,11 +14,11 @@ export function useHealthMetrics(): UseHealthMetricsReturn {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const analyzeHealth = useCallback(async (commitId: string) => {
+  const analyzeHealth = useCallback(async (commitId: string, repoPath: string, workingCopyPath: string, projectName: string) => {
     setLoading(true)
     setError(null)
     try {
-      const result = await window.electronAPI.analyzeQuality(commitId)
+      const result = await window.electronAPI.analyzeQuality(commitId, repoPath, workingCopyPath, projectName)
       if (result.success && result.report) {
         setReport(result.report as unknown as HealthReport)
       } else {

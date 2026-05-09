@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateCommitMessage = generateCommitMessage;
 exports.generateAICommitMessage = generateAICommitMessage;
 /**
  * Generate a meaningful Chinese commit message from change patterns.

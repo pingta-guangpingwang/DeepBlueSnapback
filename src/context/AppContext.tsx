@@ -40,13 +40,10 @@ export interface AppState {
   repoStatus: boolean | null
   statusLines: string[]
   selectedFiles: string[]
-  historyText: string
   commitMessage: string
-  rollbackVersion: string
   repositoryInfo: string
 
   // File management
-  managedFiles: string[]
   editingFile: string | null
   fileContent: string
   newFileName: string
@@ -56,8 +53,6 @@ export interface AppState {
   commitPanelProject: string | null
   commitPanelFiles: Array<{ path: string; status: string }>
   diffModalFile: string | null
-  diffContent: string
-  fileTree: string[]
 
   // CLI 右键菜单待处理动作
   pendingCliAction: string | null
@@ -98,11 +93,8 @@ export type AppAction =
   | { type: 'SET_STATUS_LINES'; payload: string[] }
   | { type: 'SET_SELECTED_FILES'; payload: string[] }
   | { type: 'TOGGLE_SELECTED_FILE'; payload: string }
-  | { type: 'SET_HISTORY_TEXT'; payload: string }
   | { type: 'SET_COMMIT_MESSAGE'; payload: string }
-  | { type: 'SET_ROLLBACK_VERSION'; payload: string }
   | { type: 'SET_REPOSITORY_INFO'; payload: string }
-  | { type: 'SET_MANAGED_FILES'; payload: string[] }
   | { type: 'SET_EDITING_FILE'; payload: string | null }
   | { type: 'SET_FILE_CONTENT'; payload: string }
   | { type: 'SET_NEW_FILE_NAME'; payload: string }
@@ -110,8 +102,6 @@ export type AppAction =
   | { type: 'SET_COMMIT_PANEL_PROJECT'; payload: string | null }
   | { type: 'SET_COMMIT_PANEL_FILES'; payload: Array<{ path: string; status: string }> }
   | { type: 'SET_DIFF_MODAL_FILE'; payload: string | null }
-  | { type: 'SET_DIFF_CONTENT'; payload: string }
-  | { type: 'SET_FILE_TREE'; payload: string[] }
   | { type: 'SET_PENDING_CLI_ACTION'; payload: { action: string | null; targetPath: string } }
   | { type: 'SET_GIT_SYNC_STATUS'; payload: GitSyncStatus | null }
   | { type: 'SET_GIT_CONFLICTS'; payload: ConflictFile[] }
@@ -146,12 +136,9 @@ const initialState: AppState = {
   repoStatus: null,
   statusLines: [],
   selectedFiles: [],
-  historyText: '',
   commitMessage: '\u66F4\u65B0\u63D0\u4EA4',
-  rollbackVersion: '',
   repositoryInfo: '',
 
-  managedFiles: [],
   editingFile: null,
   fileContent: '',
   newFileName: '',
@@ -160,8 +147,6 @@ const initialState: AppState = {
   commitPanelProject: null,
   commitPanelFiles: [],
   diffModalFile: null,
-  diffContent: '',
-  fileTree: [],
 
   pendingCliAction: null,
   cliTargetPath: '',
@@ -191,19 +176,14 @@ function appReducer(state: AppState, action: AppAction): AppState {
         repoPath: '',
         statusLines: [],
         selectedFiles: [],
-        historyText: '',
         commitMessage: '',
-        rollbackVersion: '',
         repositoryInfo: '',
-        managedFiles: [],
         editingFile: null,
         fileContent: '',
         newFileName: '',
         commitPanelProject: null,
         commitPanelFiles: [],
         diffModalFile: null,
-        diffContent: '',
-        fileTree: [],
         gitSyncStatus: null,
         gitConflicts: [],
         showGitRemoteModal: false,
@@ -249,16 +229,10 @@ function appReducer(state: AppState, action: AppAction): AppState {
           ? state.selectedFiles.filter(f => f !== action.payload)
           : [...state.selectedFiles, action.payload],
       }
-    case 'SET_HISTORY_TEXT':
-      return { ...state, historyText: action.payload }
     case 'SET_COMMIT_MESSAGE':
       return { ...state, commitMessage: action.payload }
-    case 'SET_ROLLBACK_VERSION':
-      return { ...state, rollbackVersion: action.payload }
     case 'SET_REPOSITORY_INFO':
       return { ...state, repositoryInfo: action.payload }
-    case 'SET_MANAGED_FILES':
-      return { ...state, managedFiles: action.payload }
     case 'SET_EDITING_FILE':
       return { ...state, editingFile: action.payload }
     case 'SET_FILE_CONTENT':
@@ -273,10 +247,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, commitPanelFiles: action.payload }
     case 'SET_DIFF_MODAL_FILE':
       return { ...state, diffModalFile: action.payload }
-    case 'SET_DIFF_CONTENT':
-      return { ...state, diffContent: action.payload }
-    case 'SET_FILE_TREE':
-      return { ...state, fileTree: action.payload }
     case 'SET_PENDING_CLI_ACTION':
       return { ...state, pendingCliAction: action.payload.action, cliTargetPath: action.payload.targetPath }
     case 'SET_GIT_SYNC_STATUS':

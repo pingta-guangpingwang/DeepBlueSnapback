@@ -12,19 +12,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   selectFolder: () => ipcRenderer.invoke('dialog:select-folder'),
 
   // 文件系统
-  isEmptyFolder: (path: string) => ipcRenderer.invoke('fs:is-empty-folder', path),
   readFile: (path: string) => ipcRenderer.invoke('fs:read-file', path),
   createFile: (path: string) => ipcRenderer.invoke('fs:create-file', path),
   writeFile: (path: string, content: string) => ipcRenderer.invoke('fs:write-file', path, content),
   deleteFile: (path: string) => ipcRenderer.invoke('fs:delete-file', path),
   listFiles: (path: string) => ipcRenderer.invoke('fs:list-files', path),
-  copyDir: (src: string, dest: string) => ipcRenderer.invoke('fs:copy-dir', src, dest),
   pathJoin: (...paths: string[]) => ipcRenderer.invoke('fs:path-join', ...paths),
   pathBasename: (filePath: string) => ipcRenderer.invoke('fs:path-basename', filePath),
 
   // DBHT操作（SVN 风格：repoPath = 集中仓库, workingCopyPath = 工作副本）
   isDBHTRepository: (path: string) => ipcRenderer.invoke('dbgvs:is-repository', path),
-  createRepository: (repoPath: string, name: string) => ipcRenderer.invoke('dbgvs:create-repository', repoPath, name),
   createProject: (rootPath: string, projectName: string, customPath?: string) => ipcRenderer.invoke('dbgvs:create-project', rootPath, projectName, customPath),
   getProjects: (rootPath: string) => ipcRenderer.invoke('dbgvs:get-projects', rootPath),
   registerProject: (rootPath: string, projectPath: string, projectName?: string, initWithCommit?: boolean) => ipcRenderer.invoke('dbgvs:register-project', rootPath, projectPath, projectName, initWithCommit),
@@ -61,9 +58,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('dbgvs:get-diff-summary', repoPath, workingCopyPath),
   getDiffContent: (repoPath: string, workingCopyPath: string, filePath: string, versionA?: string, versionB?: string) =>
     ipcRenderer.invoke('dbgvs:get-diff-content', repoPath, workingCopyPath, filePath, versionA, versionB),
-  diffImpact: (repoPath: string, workingCopyPath: string, commitId: string) =>
-    ipcRenderer.invoke('dbgvs:diff-impact', repoPath, workingCopyPath, commitId),
-  deleteRepository: (repoPath: string) => ipcRenderer.invoke('dbgvs:delete-repository', repoPath),
   deleteRepositoryFull: (rootPath: string, repoPath: string, deleteWorkingCopies: boolean) =>
     ipcRenderer.invoke('dbgvs:delete-repository-full', rootPath, repoPath, deleteWorkingCopies),
   verify: (repoPath: string) => ipcRenderer.invoke('dbgvs:verify', repoPath),
@@ -82,9 +76,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Shell
   openFolder: (path: string) => ipcRenderer.invoke('shell:open-folder', path),
 
-  // 系统
-  checkAdmin: () => ipcRenderer.invoke('system:check-admin'),
-
   // 菜单事件
   onMenuNewProject: (callback: () => void) => {
     ipcRenderer.on('menu:new-project', callback)
@@ -94,11 +85,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('menu:open-project', callback)
     return () => ipcRenderer.removeListener('menu:open-project', callback)
   },
-  onMenuAbout: (callback: () => void) => {
-    ipcRenderer.on('menu:about', callback)
-    return () => ipcRenderer.removeListener('menu:about', callback)
-  },
-
   // Git Remote Sync
   gitConnect: (workingCopyPath: string, remoteUrl: string, branch: string, username: string, token: string) =>
     ipcRenderer.invoke('git:connect', workingCopyPath, remoteUrl, branch, username, token),
@@ -238,8 +224,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('version:get-file-content', repoPath, version, filePath),
 
   // Quality & health
-  analyzeQuality: (commitId: string) =>
-    ipcRenderer.invoke('quality:analyze', commitId),
+  analyzeQuality: (commitId: string, repoPath: string, workingCopyPath: string, projectName: string) =>
+    ipcRenderer.invoke('quality:analyze', commitId, repoPath, workingCopyPath, projectName),
 
   // External API
   externalApiStart: () => ipcRenderer.invoke('external-api:start'),
@@ -263,17 +249,14 @@ export interface ElectronAPI {
   closeWindow: () => Promise<void>
   isMaximized: () => Promise<boolean>
   selectFolder: () => Promise<string | null>
-  isEmptyFolder: (path: string) => Promise<boolean>
   readFile: (path: string) => Promise<{ success: boolean; content?: string; error?: string }>
   createFile: (path: string) => Promise<{ success: boolean; message?: string }>
   writeFile: (path: string, content: string) => Promise<{ success: boolean; message?: string }>
   deleteFile: (path: string) => Promise<{ success: boolean; message?: string }>
   listFiles: (path: string) => Promise<{ success: boolean; files?: Array<{ name: string; path: string; isDirectory: boolean }>; message?: string; errors?: string[] }>
-  copyDir: (src: string, dest: string) => Promise<{ success: boolean; message?: string }>
   pathJoin: (...paths: string[]) => Promise<{ result: string }>
   pathBasename: (filePath: string) => Promise<{ result: string }>
   isDBHTRepository: (path: string) => Promise<boolean>
-  createRepository: (repoPath: string, name: string) => Promise<{ success: boolean; message?: string }>
   createProject: (rootPath: string, projectName: string, customPath?: string) => Promise<{ success: boolean; message?: string }>
   getProjects: (rootPath: string) => Promise<{ success: boolean; projects?: Array<{
     name: string; path: string; repoPath: string; status: string; lastUpdate?: string; hasChanges?: boolean
@@ -303,8 +286,6 @@ export interface ElectronAPI {
     message?: string
   }>
   getDiffContent: (repoPath: string, workingCopyPath: string, filePath: string, versionA?: string, versionB?: string) => Promise<{ success: boolean; oldContent?: string; newContent?: string; message?: string }>
-  diffImpact: (repoPath: string, workingCopyPath: string, commitId: string) => Promise<{ success: boolean; report?: Record<string, unknown>; message?: string }>
-  deleteRepository: (repoPath: string) => Promise<{ success: boolean; message?: string }>
   deleteRepositoryFull: (rootPath: string, repoPath: string, deleteWorkingCopies: boolean) => Promise<{ success: boolean; message: string; deletedCopies?: string[] }>
   verify: (repoPath: string) => Promise<{ success: boolean; valid: boolean; errors: string[]; message?: string }>
   getHistoryStructured: (repoPath: string) => Promise<{ success: boolean; commits?: Array<{ id: string; message: string; timestamp: string; fileCount: number; totalSize: number }>; message?: string }>
@@ -320,10 +301,8 @@ export interface ElectronAPI {
   getRootRepository: () => Promise<{ success: boolean; rootPath?: string | null }>
   saveRootRepository: (path: string) => Promise<{ success: boolean; message?: string }>
   openFolder: (path: string) => Promise<void>
-  checkAdmin: () => Promise<boolean>
   onMenuNewProject: (callback: () => void) => () => void
   onMenuOpenProject: (callback: () => void) => () => void
-  onMenuAbout: (callback: () => void) => () => void
   registerContextMenu: () => Promise<{ success: boolean; message: string }>
   unregisterContextMenu: () => Promise<{ success: boolean; message: string }>
   isContextMenuRegistered: () => Promise<boolean>
@@ -381,7 +360,7 @@ export interface ElectronAPI {
   onProjectProgress: (callback: (msg: string) => void) => () => void
 
   // Quality & health
-  analyzeQuality: (commitId: string) => Promise<{ success: boolean; report?: Record<string, unknown>; message?: string }>
+  analyzeQuality: (commitId: string, repoPath: string, workingCopyPath: string, projectName: string) => Promise<{ success: boolean; report?: Record<string, unknown>; message?: string }>
 
   // External API
   externalApiStart: () => Promise<{ success: boolean; message: string; port?: number; address?: string }>

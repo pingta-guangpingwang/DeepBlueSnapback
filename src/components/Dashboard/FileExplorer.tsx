@@ -174,8 +174,6 @@ export default function FileExplorer() {
     try {
       const result = await window.electronAPI.listFiles(state.projectPath)
       if (result?.success && result.files) {
-        const fileNames = result.files.filter(f => !f.isDirectory).map(f => f.path)
-        dispatch({ type: 'SET_MANAGED_FILES', payload: fileNames })
         setFileEntries(result.files)
       }
     } catch (e) {

@@ -233,11 +233,6 @@ export default function Overview() {
             </div>
             <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{t.overview.changes}</div>
           </div>
-          <div style={{ width: '1px', background: '#e5e7eb' }} />
-          <div style={{ textAlign: 'center', flex: 1 }}>
-            <div style={{ fontSize: '22px', fontWeight: 700, color: '#1f2937' }}>{state.fileTree.length}</div>
-            <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{t.overview.files}</div>
-          </div>
           {statusItems.length > 0 && (
             <>
               <div style={{ width: '1px', background: '#e5e7eb' }} />

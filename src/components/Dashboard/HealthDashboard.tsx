@@ -138,9 +138,10 @@ export default function HealthDashboard() {
 
   const handleAnalyze = useCallback(() => {
     if (lastCommitId) {
-      analyzeHealth(lastCommitId)
+      const projectName = state.projectPath ? state.projectPath.split(/[/\\]/).pop() || '' : ''
+      analyzeHealth(lastCommitId, state.repoPath, state.projectPath, projectName)
     }
-  }, [lastCommitId, analyzeHealth])
+  }, [lastCommitId, state.repoPath, state.projectPath, analyzeHealth])
 
   const gradeColors = report ? (GRADE_COLORS[report.grade] || GRADE_COLORS.F) : null
 

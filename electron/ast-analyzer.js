@@ -34,8 +34,6 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parseProject = parseProject;
-exports.getCachedParseResult = getCachedParseResult;
-exports.setCachedParseResult = setCachedParseResult;
 const fs = __importStar(require("fs-extra"));
 const path = __importStar(require("path"));
 const crypto = __importStar(require("crypto"));
@@ -81,6 +79,8 @@ async function shouldSkipPath(filePath) {
     const ext = path.extname(filePath).toLowerCase();
     const base = path.basename(filePath);
     if (base.startsWith('.'))
+        return true;
+    if (base.startsWith('DBHT-'))
         return true;
     if (SKIP_EXTENSIONS.has(ext))
         return true;
@@ -760,12 +760,4 @@ async function parseProject(projectPath, repoPath, onProgress) {
         foundExtensions: [...stats.foundExtensions],
         scannedPath: projectPath,
     };
-}
-// ==================== Singleton for IPC ====================
-let lastParseResult = null;
-function getCachedParseResult() {
-    return lastParseResult;
-}
-function setCachedParseResult(result) {
-    lastParseResult = result;
 }

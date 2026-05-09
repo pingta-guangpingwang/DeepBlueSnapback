@@ -40,5 +40,3 @@ export interface ParseResult {
 }
 export type ParseProgressFn = (msg: string) => void;
 export declare function parseProject(projectPath: string, repoPath: string, onProgress?: ParseProgressFn): Promise<ParseResult>;
-export declare function getCachedParseResult(): ParseResult | null;
-export declare function setCachedParseResult(result: ParseResult): void;

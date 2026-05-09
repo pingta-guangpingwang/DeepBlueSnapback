@@ -35,12 +35,8 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.saveGraph = saveGraph;
 exports.loadGraph = loadGraph;
-exports.deleteGraph = deleteGraph;
 exports.listGraphs = listGraphs;
-exports.graphExists = graphExists;
 exports.compareGraphs = compareGraphs;
-exports.appendChangeLog = appendChangeLog;
-exports.getChangeLog = getChangeLog;
 const fs = __importStar(require("fs-extra"));
 const path = __importStar(require("path"));
 // ==================== Graph Store ====================
@@ -73,18 +69,6 @@ async function loadGraph(rootPath, commitId) {
         return null;
     }
 }
-async function deleteGraph(rootPath, commitId) {
-    try {
-        const filePath = getGraphPath(rootPath, commitId);
-        if (await fs.pathExists(filePath)) {
-            await fs.remove(filePath);
-        }
-        return { success: true };
-    }
-    catch (error) {
-        return { success: false, message: String(error) };
-    }
-}
 async function listGraphs(rootPath) {
     try {
         const dir = getGraphsDir(rootPath);
@@ -99,14 +83,6 @@ async function listGraphs(rootPath) {
     }
     catch {
         return [];
-    }
-}
-async function graphExists(rootPath, commitId) {
-    try {
-        return await fs.pathExists(getGraphPath(rootPath, commitId));
-    }
-    catch {
-        return false;
     }
 }
 // ==================== Graph Comparison ====================
@@ -219,30 +195,4 @@ function collectAllNodes(root) {
     }
     walk(root);
     return nodes;
-}
-async function appendChangeLog(rootPath, entry) {
-    const logPath = path.join(getGraphsDir(rootPath), '_change-log.json');
-    let log = [];
-    try {
-        if (await fs.pathExists(logPath)) {
-            log = await fs.readJson(logPath);
-        }
-    }
-    catch {
-        // Start fresh
-    }
-    log.push(entry);
-    await fs.writeJson(logPath, log, { spaces: 2 });
-}
-async function getChangeLog(rootPath) {
-    const logPath = path.join(getGraphsDir(rootPath), '_change-log.json');
-    try {
-        if (await fs.pathExists(logPath)) {
-            return await fs.readJson(logPath);
-        }
-    }
-    catch {
-        // Ignore
-    }
-    return [];
 }

@@ -838,14 +838,3 @@ export async function parseProject(
   }
 }
 
-// ==================== Singleton for IPC ====================
-
-let lastParseResult: ParseResult | null = null
-
-export function getCachedParseResult(): ParseResult | null {
-  return lastParseResult
-}
-
-export function setCachedParseResult(result: ParseResult): void {
-  lastParseResult = result
-}
