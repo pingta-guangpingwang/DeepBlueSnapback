@@ -34,6 +34,7 @@ export default function CommitPanel() {
   const [aiSummary, setAiSummary] = useState('')
   const [showRevertConfirm, setShowRevertConfirm] = useState(false)
   const [reverting, setReverting] = useState(false)
+  const [generating, setGenerating] = useState(false)
 
   const STATUS_MAP: Record<string, { text: string; color: string }> = {
     A: { text: t.commitPanel.added, color: '#16a34a' },
@@ -48,6 +49,24 @@ export default function CommitPanel() {
     setAiSession('')
     setAiSummary('')
     setShowRevertConfirm(false)
+  }
+
+  const handleGenerateMessage = async () => {
+    if (!state.commitPanelProject) return
+    const project = state.projects.find(p => p.path === state.commitPanelProject)
+    const repoPath = project?.repoPath || state.repoPath
+    const workingCopyPath = project?.path || state.projectPath
+    if (!repoPath || !workingCopyPath) return
+
+    setGenerating(true)
+    try {
+      const result = await window.electronAPI.generateCommitMessage(repoPath, workingCopyPath)
+      if (result.success && result.message) {
+        dispatch({ type: 'SET_COMMIT_MESSAGE', payload: result.message })
+        if (result.summary) setAiSummary(result.summary)
+      }
+    } catch { /* ignore */ }
+    setGenerating(false)
   }
 
   const onRevert = () => {
@@ -276,7 +295,20 @@ export default function CommitPanel() {
             display: 'flex', flexDirection: 'column',
             padding: '12px', gap: '10px',
           }}>
-            <div style={{ fontWeight: 600, fontSize: '13px', color: '#1f2937' }}>{t.commitPanel.commitMessage}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 600, fontSize: '13px', color: '#1f2937' }}>{t.commitPanel.commitMessage}</span>
+              <button
+                onClick={handleGenerateMessage}
+                disabled={generating || state.commitPanelFiles.length === 0}
+                style={{
+                  fontSize: '11px', padding: '3px 10px',
+                  border: '1px solid #d1d5db', borderRadius: '4px',
+                  background: '#fff', cursor: state.commitPanelFiles.length === 0 ? 'default' : 'pointer',
+                  color: '#374151', whiteSpace: 'nowrap',
+                  opacity: state.commitPanelFiles.length === 0 ? 0.4 : 1,
+                }}
+              >{generating ? t.commitPanel.generating : t.commitPanel.generateMessage}</button>
+            </div>
             <textarea
               value={state.commitMessage}
               onChange={(e) => {

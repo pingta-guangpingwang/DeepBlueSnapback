@@ -124,9 +124,10 @@ dbgvs history "${projectPath}"
 
 1. **开始前**: \`dbgvs status\` 检查当前变更状态
 2. **提交前检查**: \`dbgvs commit ... --dry-run\` 确认变更范围
-3. **提交变更**: 使用 \`--ai\` / \`--session\` / \`--summary\` 完整标记
-4. **查看差异**: \`dbgvs diff "${projectPath}"\` 查看全局变更统计，或 \`dbgvs diff ... --file <路径>\` 查看单文件
-5. **回滚误操作**: \`dbgvs rollback "${projectPath}" --version <版本ID>\`
+3. **自动生成提交摘要**: 在桌面应用提交面板中点击"生成提交信息"按钮，系统会根据变更文件自动生成中文提交描述
+4. **提交变更**: 使用 \`--ai\` / \`--session\` / \`--summary\` 完整标记
+5. **查看差异**: \`dbgvs diff "${projectPath}"\` 查看全局变更统计，或 \`dbgvs diff ... --file <路径>\` 查看单文件
+6. **回滚误操作**: \`dbgvs rollback "${projectPath}" --version <版本ID>\`
 
 ## 故障恢复指引
 
@@ -221,7 +222,7 @@ dbgvs auto-snapshot "${projectPath}" --interval 15 --only-if-changed
 ### 桌面应用功能
 
 - **总览面板**：可视化查看变更文件列表、文件状态（新增/修改/删除）、全局变更统计
-- **提交面板**：可视化勾选文件、输入提交信息、查看文件对比（SourceTree 风格 unified diff）
+- **提交面板**：可视化勾选文件、一键生成 AI 提交摘要、查看文件对比（SourceTree 风格 unified diff）
 - **历史面板**：浏览所有版本的提交历史，查看每次提交的文件清单和 diff 对比，支持一键回滚、恢复单个文件、撤销回滚
 - **设置面板**：Git 远程仓库连接、自动快照开关、数据验证、仓库初始化
 - **仓库管理**：创建/导入/删除项目、Checkout 工作副本、Git 远程克隆、Windows 右键菜单集成
@@ -355,7 +356,7 @@ AI 每完成一个任务或切换模块时更新此文件即可。
 async function ensureProjectGuide(projectPath: string, projectName: string, repoPath: string): Promise<void> {
   const guidePath = path.join(projectPath, 'DBHT-GUIDE.md')
   const newContent = generateDBHTGuide(projectName, projectPath, repoPath)
-  const versionTag = '<!-- DBHT-GUIDE-VERSION: 6 -->'
+  const versionTag = '<!-- DBHT-GUIDE-VERSION: 7 -->'
 
   if (await fs.pathExists(guidePath)) {
     const existing = await fs.readFile(guidePath, 'utf-8')
@@ -951,7 +952,7 @@ ipcMain.handle('dbgvs:ensure-project-docs', async (_, rootPath: string) => {
           if (!beforeExists) updated++
           else {
             const content = await fs.readFile(path.join(wc.path, 'DBHT-GUIDE.md'), 'utf-8')
-            if (content.includes('<!-- DBHT-GUIDE-VERSION: 5 -->')) updated++
+            if (!content.includes('<!-- DBHT-GUIDE-VERSION: 7 -->')) updated++
           }
         }
       }

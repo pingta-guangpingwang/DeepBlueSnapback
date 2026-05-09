@@ -802,6 +802,8 @@ const en = {
     aiNamePlaceholder: 'AI tool name (e.g. claude-code)',
     aiSessionPlaceholder: 'Session ID (link same session)',
     aiSummaryPlaceholder: 'Change summary (one sentence)',
+    generateMessage: 'Generate Message',
+    generating: 'Generating...',
     revertAll: 'Revert All',
     commitChanges: 'Commit Changes',
     confirmRevert: 'Confirm Revert Files',

@@ -796,6 +796,8 @@ const zh: Translations = {
     aiNamePlaceholder: 'AI 工具名 (如 claude-code)',
     aiSessionPlaceholder: '会话 ID (关联同次会话)',
     aiSummaryPlaceholder: '变更摘要 (一句话描述目的)',
+    generateMessage: '生成提交信息',
+    generating: '生成中...',
     revertAll: '一键还原',
     commitChanges: '提交变更',
     confirmRevert: '确认还原文件',

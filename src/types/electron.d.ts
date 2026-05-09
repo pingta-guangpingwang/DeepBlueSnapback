@@ -42,6 +42,13 @@ export interface ElectronAPI {
     totalRemoved?: number
     message?: string
   }>
+  generateCommitMessage: (repoPath: string, workingCopyPath: string) => Promise<{
+    success: boolean
+    message: string
+    summary: string
+    suggestedLabels: string[]
+    source: 'ai' | 'heuristic'
+  }>
   getDiffContent: (repoPath: string, workingCopyPath: string, filePath: string, versionA?: string, versionB?: string) => Promise<{ success: boolean; oldContent?: string; newContent?: string; message?: string }>
   deleteRepositoryFull: (rootPath: string, repoPath: string, deleteWorkingCopies: boolean) => Promise<{ success: boolean; message: string; deletedCopies?: string[] }>
   verify: (repoPath: string) => Promise<{ success: boolean; valid: boolean; errors: string[]; message?: string }>

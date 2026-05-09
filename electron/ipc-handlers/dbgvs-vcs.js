@@ -41,6 +41,7 @@ const ast_analyzer_1 = require("../ast-analyzer");
 const graph_builder_1 = require("../graph-builder");
 const graph_store_1 = require("../graph-store");
 const impact_analyzer_1 = require("../impact-analyzer");
+const commit_msg_generator_1 = require("../commit-msg-generator");
 let autoSnapshotTimer = null;
 function registerVcsHandlers(ipcMain, mainWindow, dbvsRepo) {
     // 检查是否是DBHT仓库
@@ -272,6 +273,26 @@ function registerVcsHandlers(ipcMain, mainWindow, dbvsRepo) {
         }
         catch (error) {
             return { success: true, repos: [] };
+        }
+    });
+    // 生成 AI 提交信息
+    ipcMain.handle('dbgvs:generate-commit-message', async (_, repoPath, workingCopyPath) => {
+        try {
+            const diffResult = await dbvsRepo.getDiffSummary(repoPath, workingCopyPath);
+            if (!diffResult.success || !diffResult.files || diffResult.files.length === 0) {
+                return { success: true, message: '无变更文件', summary: '', suggestedLabels: [], source: 'heuristic' };
+            }
+            const changes = diffResult.files.map(f => ({
+                path: f.path,
+                status: f.status === 'A' ? 'added' : f.status === 'D' ? 'deleted' : 'modified',
+                added: f.added,
+                removed: f.removed,
+            }));
+            const result = await (0, commit_msg_generator_1.generateAICommitMessage)(changes, 'heuristic');
+            return { success: true, ...result };
+        }
+        catch (error) {
+            return { success: false, message: String(error), summary: '', suggestedLabels: [], source: 'heuristic' };
         }
     });
 } // end registerVcsHandlers

@@ -43,6 +43,7 @@ electron_1.contextBridge.exposeInMainWorld('electronAPI', {
     update: (repoPath, workingCopyPath) => electron_1.ipcRenderer.invoke('dbgvs:update', repoPath, workingCopyPath),
     getDiff: (repoPath, workingCopyPath, filePath, versionA, versionB) => electron_1.ipcRenderer.invoke('dbgvs:get-diff', repoPath, workingCopyPath, filePath, versionA, versionB),
     getDiffSummary: (repoPath, workingCopyPath) => electron_1.ipcRenderer.invoke('dbgvs:get-diff-summary', repoPath, workingCopyPath),
+    generateCommitMessage: (repoPath, workingCopyPath) => electron_1.ipcRenderer.invoke('dbgvs:generate-commit-message', repoPath, workingCopyPath),
     getDiffContent: (repoPath, workingCopyPath, filePath, versionA, versionB) => electron_1.ipcRenderer.invoke('dbgvs:get-diff-content', repoPath, workingCopyPath, filePath, versionA, versionB),
     deleteRepositoryFull: (rootPath, repoPath, deleteWorkingCopies) => electron_1.ipcRenderer.invoke('dbgvs:delete-repository-full', rootPath, repoPath, deleteWorkingCopies),
     verify: (repoPath) => electron_1.ipcRenderer.invoke('dbgvs:verify', repoPath),

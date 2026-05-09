@@ -7,6 +7,7 @@ import { parseProject } from '../ast-analyzer'
 import { buildGraph } from '../graph-builder'
 import { saveGraph, loadGraph } from '../graph-store'
 import { analyzeImpact } from '../impact-analyzer'
+import { generateAICommitMessage } from '../commit-msg-generator'
 
 let autoSnapshotTimer: ReturnType<typeof setInterval> | null = null
 
@@ -282,6 +283,28 @@ ipcMain.handle('dbgvs:list-repositories', async (_, rootPath: string) => {
     return { success: true, repos }
   } catch (error) {
     return { success: true, repos: [] }
+  }
+})
+
+// 生成 AI 提交信息
+ipcMain.handle('dbgvs:generate-commit-message', async (_, repoPath: string, workingCopyPath: string) => {
+  try {
+    const diffResult = await dbvsRepo.getDiffSummary(repoPath, workingCopyPath)
+    if (!diffResult.success || !diffResult.files || diffResult.files.length === 0) {
+      return { success: true, message: '无变更文件', summary: '', suggestedLabels: [], source: 'heuristic' as const }
+    }
+
+    const changes = diffResult.files.map(f => ({
+      path: f.path,
+      status: f.status === 'A' ? 'added' : f.status === 'D' ? 'deleted' : 'modified',
+      added: f.added,
+      removed: f.removed,
+    }))
+
+    const result = await generateAICommitMessage(changes, 'heuristic')
+    return { success: true, ...result }
+  } catch (error) {
+    return { success: false, message: String(error), summary: '', suggestedLabels: [], source: 'heuristic' as const }
   }
 })
 
