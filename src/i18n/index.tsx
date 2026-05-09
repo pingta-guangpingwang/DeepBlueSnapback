@@ -21,7 +21,7 @@ function getInitialLocale(): Locale {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved === 'zh' || saved === 'en') return saved
   } catch { /* ignore */ }
-  return 'en'
+  return 'zh'
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
