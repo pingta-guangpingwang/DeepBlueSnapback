@@ -614,6 +614,37 @@ const en = {
     start: 'Get Started',
   },
 
+  // Project setup wizard (first launch)
+  setupWizard: {
+    step1Title: 'Welcome to DBHT',
+    step1Desc: 'Let\'s set up your first project. Choose how you\'d like to begin:',
+    createNew: 'Create New Project',
+    createNewDesc: 'Start a fresh project with version control from day one',
+    importExisting: 'Import Existing Project',
+    importExistingDesc: 'Bring an existing folder under DBHT version control',
+    projectName: 'Project Name',
+    projectNamePlaceholder: 'Enter your project name...',
+    projectPath: 'Project Location',
+    selectPath: 'Select Folder',
+    step2Title: 'Choose Work Mode',
+    step2Desc: 'How will you primarily use DBHT? This sets up commit conventions and auto-snapshot defaults.',
+    modeAI: 'AI-Assisted',
+    modeAIDesc: 'Commits prefixed with AI session markers, optimized for AI agent workflows',
+    modeManual: 'Manual',
+    modeManualDesc: 'Traditional version control — you decide when and what to commit',
+    modeHybrid: 'Hybrid',
+    modeHybridDesc: 'Manual commits with AI-enhanced commit messages and suggestions',
+    step3Title: 'Auto-Snapshot Policy',
+    step3Desc: 'DBHT can automatically create version snapshots at regular intervals to prevent lost work.',
+    snapshotEnabled: 'Enable Auto-Snapshot',
+    snapshotInterval: 'Snapshot Interval (minutes)',
+    snapshotHint: 'Shorter intervals = more versions saved, more disk space used',
+    finish: 'Finish Setup',
+    back: 'Back',
+    creating: 'Creating project...',
+    importing: 'Importing project...',
+  },
+
   // Git Clone Modal
   gitClone: {
     title: 'Clone from Remote Repository',

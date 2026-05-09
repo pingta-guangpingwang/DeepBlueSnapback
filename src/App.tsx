@@ -10,6 +10,7 @@ import DiffViewer from './components/Dashboard/DiffViewer'
 import GitRemoteModal from './components/Dashboard/GitRemoteModal'
 import ConflictModal from './components/Dashboard/ConflictModal'
 import OnboardingGuide from './components/Onboarding/OnboardingGuide'
+import ProjectSetupWizard from './components/Onboarding/ProjectSetupWizard'
 
 const LOCALE_KEY = 'dbht-locale'
 
@@ -250,7 +251,11 @@ function App() {
         <RepoList />
         {state.commitPanelProject && <CommitPanel />}
         {state.diffModalFile && <DiffViewer />}
-        {state.showOnboarding && <OnboardingGuide />}
+        {state.showOnboarding && (
+          state.projects.length === 0
+            ? <ProjectSetupWizard />
+            : <OnboardingGuide />
+        )}
       </>
     )
   }

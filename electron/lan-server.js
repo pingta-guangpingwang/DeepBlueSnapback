@@ -40,23 +40,43 @@ exports.LANServer = void 0;
 const express_1 = __importDefault(require("express"));
 const fs = __importStar(require("fs-extra"));
 const path = __importStar(require("path"));
+const crypto_1 = require("crypto");
 const dbvs_repository_1 = require("./dbvs-repository");
 const repo = new dbvs_repository_1.DBHTRepository();
 class LANServer {
     constructor() {
         this.server = null;
         this.rootPath = '';
+        this.token = '';
         this.app = (0, express_1.default)();
         this.app.use(express_1.default.json());
+        // Auth middleware — protects all routes except /api/info
+        this.app.use((req, res, next) => {
+            if (req.path === '/api/info' || req.method === 'OPTIONS') {
+                next();
+                return;
+            }
+            if (!this.token) {
+                next();
+                return;
+            }
+            const auth = req.headers.authorization;
+            if (!auth || !auth.startsWith('Bearer ') || auth.slice(7) !== this.token) {
+                res.status(401).json({ error: 'Unauthorized', message: 'Invalid or missing Bearer token' });
+                return;
+            }
+            next();
+        });
         this.setupRoutes();
     }
     setupRoutes() {
-        // Get server info
+        // Get server info (no auth required)
         this.app.get('/api/info', (_req, res) => {
             res.json({
                 name: 'DBHT LAN Server',
                 version: '2.0.0',
-                rootPath: this.rootPath
+                rootPath: this.rootPath,
+                authRequired: !!this.token,
             });
         });
         // List projects
@@ -241,14 +261,17 @@ class LANServer {
         });
     }
     /**
-     * Start the LAN server
+     * Start the LAN server. Auto-generates a Bearer token if none exists.
      */
     async start(rootPath, port = 3280) {
         this.rootPath = rootPath;
+        if (!this.token) {
+            this.token = (0, crypto_1.randomUUID)();
+        }
         return new Promise((resolve) => {
             this.server = this.app.listen(port, '0.0.0.0', () => {
                 const address = `http://localhost:${port}`;
-                resolve({ success: true, address, message: `LAN 服务器已启动: ${address}` });
+                resolve({ success: true, address, token: this.token, message: `LAN 服务器已启动: ${address}` });
             });
         });
     }

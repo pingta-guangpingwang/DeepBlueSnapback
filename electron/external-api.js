@@ -45,10 +45,34 @@ exports.getExternalApiStatus = getExternalApiStatus;
 const express_1 = __importDefault(require("express"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
+const electron_1 = require("electron");
 const dbvs_repository_1 = require("./dbvs-repository");
 const CONFIG_FILENAME = 'external-api.json';
 let server = null;
 let currentConfig = { enabled: false, port: 3281, token: '' };
+// ==================== Token Encryption ====================
+function encryptToken(token) {
+    if (!token)
+        return token;
+    if (electron_1.safeStorage.isEncryptionAvailable()) {
+        const encrypted = electron_1.safeStorage.encryptString(token);
+        return 'enc:v1:' + encrypted.toString('base64');
+    }
+    console.warn('[DBHT] safeStorage encryption unavailable, storing API token with base64 obfuscation');
+    return 'b64:v1:' + Buffer.from(token, 'utf-8').toString('base64');
+}
+function decryptToken(stored) {
+    if (!stored)
+        return stored;
+    if (stored.startsWith('enc:v1:')) {
+        const buf = Buffer.from(stored.slice(7), 'base64');
+        return electron_1.safeStorage.decryptString(buf);
+    }
+    if (stored.startsWith('b64:v1:')) {
+        return Buffer.from(stored.slice(7), 'base64').toString('utf-8');
+    }
+    return stored;
+}
 function getExternalApiConfig() {
     return { ...currentConfig };
 }
@@ -57,7 +81,11 @@ function loadExternalApiConfig(rootPath) {
         const configPath = path_1.default.join(rootPath, 'config', CONFIG_FILENAME);
         if (fs_1.default.existsSync(configPath)) {
             const data = fs_1.default.readFileSync(configPath, 'utf-8');
-            currentConfig = { ...currentConfig, ...JSON.parse(data) };
+            const parsed = JSON.parse(data);
+            if (parsed.token) {
+                parsed.token = decryptToken(parsed.token);
+            }
+            currentConfig = { ...currentConfig, ...parsed };
         }
     }
     catch { /* use defaults */ }
@@ -67,7 +95,8 @@ function saveExternalApiConfig(rootPath, config) {
     const configDir = path_1.default.join(rootPath, 'config');
     if (!fs_1.default.existsSync(configDir))
         fs_1.default.mkdirSync(configDir, { recursive: true });
-    fs_1.default.writeFileSync(path_1.default.join(configDir, CONFIG_FILENAME), JSON.stringify(config, null, 2), 'utf-8');
+    const toSave = { ...config, token: encryptToken(config.token) };
+    fs_1.default.writeFileSync(path_1.default.join(configDir, CONFIG_FILENAME), JSON.stringify(toSave, null, 2), 'utf-8');
     currentConfig = { ...config };
 }
 function authMiddleware(req, res, next) {

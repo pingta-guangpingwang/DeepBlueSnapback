@@ -18,6 +18,9 @@ interface GitAuthEntry {
 export declare class GitBridge {
     private authPath;
     constructor();
+    private encryptToken;
+    private decryptToken;
+    private readAuthStoreRaw;
     getAuthStore(): Promise<Record<string, GitAuthEntry>>;
     saveAuthEntry(host: string, username: string, token: string): Promise<{
         success: boolean;

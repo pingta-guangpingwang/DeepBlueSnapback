@@ -608,6 +608,37 @@ const zh: Translations = {
     start: '开始使用',
   },
 
+  // Project setup wizard (first launch)
+  setupWizard: {
+    step1Title: '欢迎使用 DBHT',
+    step1Desc: '让我们来设置你的第一个项目。选择一种方式开始：',
+    createNew: '创建新项目',
+    createNewDesc: '从零开始，立即享受版本管理的保护',
+    importExisting: '导入已有项目',
+    importExistingDesc: '将现有文件夹纳入 DBHT 版本管理',
+    projectName: '项目名称',
+    projectNamePlaceholder: '输入项目名称...',
+    projectPath: '项目位置',
+    selectPath: '选择文件夹',
+    step2Title: '选择工作模式',
+    step2Desc: '你主要如何使用 DBHT？这将设置提交约定和自动快照策略。',
+    modeAI: 'AI 辅助模式',
+    modeAIDesc: '提交自动关联 AI 会话标记，为 AI 智能体工作流优化',
+    modeManual: '手动模式',
+    modeManualDesc: '传统版本管理方式 — 由你决定何时提交、提交什么',
+    modeHybrid: '混合模式',
+    modeHybridDesc: '手动提交，辅以 AI 增强的提交信息和智能建议',
+    step3Title: '自动快照策略',
+    step3Desc: 'DBHT 可以定时自动创建版本快照，防止工作丢失。',
+    snapshotEnabled: '启用自动快照',
+    snapshotInterval: '快照间隔（分钟）',
+    snapshotHint: '间隔越短 = 版本记录越多，磁盘占用越大',
+    finish: '完成设置',
+    back: '返回',
+    creating: '正在创建项目...',
+    importing: '正在导入项目...',
+  },
+
   // Git Clone Modal
   gitClone: {
     title: '从远程仓库克隆',

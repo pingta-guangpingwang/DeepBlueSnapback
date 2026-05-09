@@ -49,8 +49,28 @@ class GitBridge {
     constructor() {
         this.authPath = path.join(electron_1.app.getPath('userData'), 'git-auth.json');
     }
+    // ==================== Encryption ====================
+    encryptToken(token) {
+        if (electron_1.safeStorage.isEncryptionAvailable()) {
+            const encrypted = electron_1.safeStorage.encryptString(token);
+            return 'enc:v1:' + encrypted.toString('base64');
+        }
+        console.warn('[DBHT] safeStorage encryption unavailable, storing token with base64 obfuscation');
+        return 'b64:v1:' + Buffer.from(token, 'utf-8').toString('base64');
+    }
+    decryptToken(stored) {
+        if (stored.startsWith('enc:v1:')) {
+            const buf = Buffer.from(stored.slice(7), 'base64');
+            return electron_1.safeStorage.decryptString(buf);
+        }
+        if (stored.startsWith('b64:v1:')) {
+            return Buffer.from(stored.slice(7), 'base64').toString('utf-8');
+        }
+        // Plaintext — auto-migrate on next save
+        return stored;
+    }
     // ==================== Auth ====================
-    async getAuthStore() {
+    async readAuthStoreRaw() {
         try {
             if (await fs.pathExists(this.authPath)) {
                 return await fs.readJson(this.authPath);
@@ -59,10 +79,21 @@ class GitBridge {
         catch { /* ignore */ }
         return {};
     }
+    async getAuthStore() {
+        const raw = await this.readAuthStoreRaw();
+        const store = {};
+        for (const [host, entry] of Object.entries(raw)) {
+            store[host] = {
+                username: entry.username,
+                token: this.decryptToken(entry.token),
+            };
+        }
+        return store;
+    }
     async saveAuthEntry(host, username, token) {
         try {
-            const store = await this.getAuthStore();
-            store[host] = { username, token };
+            const store = await this.readAuthStoreRaw();
+            store[host] = { username, token: this.encryptToken(token) };
             await fs.writeJson(this.authPath, store, { spaces: 2 });
             return { success: true, message: `凭证已保存 (${host})` };
         }
@@ -72,7 +103,7 @@ class GitBridge {
     }
     async deleteAuthEntry(host) {
         try {
-            const store = await this.getAuthStore();
+            const store = await this.readAuthStoreRaw();
             delete store[host];
             await fs.writeJson(this.authPath, store, { spaces: 2 });
             return { success: true, message: `凭证已删除 (${host})` };

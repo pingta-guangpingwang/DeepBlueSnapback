@@ -2,7 +2,7 @@ import git from 'isomorphic-git'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import http from 'isomorphic-git/http/node'
-import { app } from 'electron'
+import { app, safeStorage } from 'electron'
 
 export interface ConflictFile {
   path: string
@@ -35,9 +35,32 @@ export class GitBridge {
     this.authPath = path.join(app.getPath('userData'), 'git-auth.json')
   }
 
+  // ==================== Encryption ====================
+
+  private encryptToken(token: string): string {
+    if (safeStorage.isEncryptionAvailable()) {
+      const encrypted = safeStorage.encryptString(token)
+      return 'enc:v1:' + encrypted.toString('base64')
+    }
+    console.warn('[DBHT] safeStorage encryption unavailable, storing token with base64 obfuscation')
+    return 'b64:v1:' + Buffer.from(token, 'utf-8').toString('base64')
+  }
+
+  private decryptToken(stored: string): string {
+    if (stored.startsWith('enc:v1:')) {
+      const buf = Buffer.from(stored.slice(7), 'base64')
+      return safeStorage.decryptString(buf)
+    }
+    if (stored.startsWith('b64:v1:')) {
+      return Buffer.from(stored.slice(7), 'base64').toString('utf-8')
+    }
+    // Plaintext — auto-migrate on next save
+    return stored
+  }
+
   // ==================== Auth ====================
 
-  async getAuthStore(): Promise<Record<string, GitAuthEntry>> {
+  private async readAuthStoreRaw(): Promise<Record<string, GitAuthEntry>> {
     try {
       if (await fs.pathExists(this.authPath)) {
         return await fs.readJson(this.authPath)
@@ -46,10 +69,22 @@ export class GitBridge {
     return {}
   }
 
+  async getAuthStore(): Promise<Record<string, GitAuthEntry>> {
+    const raw = await this.readAuthStoreRaw()
+    const store: Record<string, GitAuthEntry> = {}
+    for (const [host, entry] of Object.entries(raw)) {
+      store[host] = {
+        username: entry.username,
+        token: this.decryptToken(entry.token),
+      }
+    }
+    return store
+  }
+
   async saveAuthEntry(host: string, username: string, token: string): Promise<{ success: boolean; message: string }> {
     try {
-      const store = await this.getAuthStore()
-      store[host] = { username, token }
+      const store = await this.readAuthStoreRaw()
+      store[host] = { username, token: this.encryptToken(token) }
       await fs.writeJson(this.authPath, store, { spaces: 2 })
       return { success: true, message: `凭证已保存 (${host})` }
     } catch (error) {
@@ -59,7 +94,7 @@ export class GitBridge {
 
   async deleteAuthEntry(host: string): Promise<{ success: boolean; message: string }> {
     try {
-      const store = await this.getAuthStore()
+      const store = await this.readAuthStoreRaw()
       delete store[host]
       await fs.writeJson(this.authPath, store, { spaces: 2 })
       return { success: true, message: `凭证已删除 (${host})` }

@@ -1,7 +1,9 @@
 import express from 'express'
+import { type Request, type Response, type NextFunction } from 'express'
 import { createServer } from 'http'
 import * as fs from 'fs-extra'
 import * as path from 'path'
+import { randomUUID } from 'crypto'
 import { DBHTRepository } from './dbvs-repository'
 
 const repo = new DBHTRepository()
@@ -10,20 +12,41 @@ export class LANServer {
   private app: express.Application
   private server: ReturnType<typeof createServer> | null = null
   private rootPath: string = ''
+  private token: string = ''
 
   constructor() {
     this.app = express()
     this.app.use(express.json())
+
+    // Auth middleware — protects all routes except /api/info
+    this.app.use((req: Request, res: Response, next: NextFunction) => {
+      if (req.path === '/api/info' || req.method === 'OPTIONS') {
+        next()
+        return
+      }
+      if (!this.token) {
+        next()
+        return
+      }
+      const auth = req.headers.authorization
+      if (!auth || !auth.startsWith('Bearer ') || auth.slice(7) !== this.token) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Invalid or missing Bearer token' })
+        return
+      }
+      next()
+    })
+
     this.setupRoutes()
   }
 
   private setupRoutes() {
-    // Get server info
+    // Get server info (no auth required)
     this.app.get('/api/info', (_req, res) => {
       res.json({
         name: 'DBHT LAN Server',
         version: '2.0.0',
-        rootPath: this.rootPath
+        rootPath: this.rootPath,
+        authRequired: !!this.token,
       })
     })
 
@@ -205,14 +228,17 @@ export class LANServer {
   }
 
   /**
-   * Start the LAN server
+   * Start the LAN server. Auto-generates a Bearer token if none exists.
    */
-  async start(rootPath: string, port: number = 3280): Promise<{ success: boolean; address: string; message: string }> {
+  async start(rootPath: string, port: number = 3280): Promise<{ success: boolean; address: string; token: string; message: string }> {
     this.rootPath = rootPath
+    if (!this.token) {
+      this.token = randomUUID()
+    }
     return new Promise((resolve) => {
       this.server = this.app.listen(port, '0.0.0.0', () => {
         const address = `http://localhost:${port}`
-        resolve({ success: true, address, message: `LAN 服务器已启动: ${address}` })
+        resolve({ success: true, address, token: this.token, message: `LAN 服务器已启动: ${address}` })
       })
     })
   }

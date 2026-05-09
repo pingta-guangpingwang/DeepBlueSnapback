@@ -99,7 +99,7 @@ export interface ElectronAPI {
   onGitProgress: (callback: (msg: string) => void) => () => void
 
   // LAN Server
-  lanStart: (rootPath: string, port?: number) => Promise<{ success: boolean; address: string; message: string }>
+  lanStart: (rootPath: string, port?: number) => Promise<{ success: boolean; address: string; token: string; message: string }>
   lanStop: () => Promise<{ success: boolean; message: string }>
   lanStatus: () => Promise<{ running: boolean; rootPath: string }>
 

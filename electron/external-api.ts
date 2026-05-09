@@ -2,6 +2,7 @@ import express, { type Request, type Response, type NextFunction } from 'express
 import { type Server } from 'http'
 import path from 'path'
 import fs from 'fs'
+import { safeStorage } from 'electron'
 import { DBHTRepository } from './dbvs-repository'
 
 export interface ExternalApiConfig {
@@ -15,6 +16,30 @@ const CONFIG_FILENAME = 'external-api.json'
 let server: Server | null = null
 let currentConfig: ExternalApiConfig = { enabled: false, port: 3281, token: '' }
 
+// ==================== Token Encryption ====================
+
+function encryptToken(token: string): string {
+  if (!token) return token
+  if (safeStorage.isEncryptionAvailable()) {
+    const encrypted = safeStorage.encryptString(token)
+    return 'enc:v1:' + encrypted.toString('base64')
+  }
+  console.warn('[DBHT] safeStorage encryption unavailable, storing API token with base64 obfuscation')
+  return 'b64:v1:' + Buffer.from(token, 'utf-8').toString('base64')
+}
+
+function decryptToken(stored: string): string {
+  if (!stored) return stored
+  if (stored.startsWith('enc:v1:')) {
+    const buf = Buffer.from(stored.slice(7), 'base64')
+    return safeStorage.decryptString(buf)
+  }
+  if (stored.startsWith('b64:v1:')) {
+    return Buffer.from(stored.slice(7), 'base64').toString('utf-8')
+  }
+  return stored
+}
+
 export function getExternalApiConfig(): ExternalApiConfig {
   return { ...currentConfig }
 }
@@ -24,7 +49,11 @@ export function loadExternalApiConfig(rootPath: string): ExternalApiConfig {
     const configPath = path.join(rootPath, 'config', CONFIG_FILENAME)
     if (fs.existsSync(configPath)) {
       const data = fs.readFileSync(configPath, 'utf-8')
-      currentConfig = { ...currentConfig, ...JSON.parse(data) }
+      const parsed = JSON.parse(data)
+      if (parsed.token) {
+        parsed.token = decryptToken(parsed.token)
+      }
+      currentConfig = { ...currentConfig, ...parsed }
     }
   } catch { /* use defaults */ }
   return { ...currentConfig }
@@ -33,7 +62,8 @@ export function loadExternalApiConfig(rootPath: string): ExternalApiConfig {
 export function saveExternalApiConfig(rootPath: string, config: ExternalApiConfig): void {
   const configDir = path.join(rootPath, 'config')
   if (!fs.existsSync(configDir)) fs.mkdirSync(configDir, { recursive: true })
-  fs.writeFileSync(path.join(configDir, CONFIG_FILENAME), JSON.stringify(config, null, 2), 'utf-8')
+  const toSave = { ...config, token: encryptToken(config.token) }
+  fs.writeFileSync(path.join(configDir, CONFIG_FILENAME), JSON.stringify(toSave, null, 2), 'utf-8')
   currentConfig = { ...config }
 }
 
