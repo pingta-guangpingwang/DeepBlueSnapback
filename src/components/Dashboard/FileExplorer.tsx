@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAppState } from '../../context/AppContext'
 import { useFiles } from '../../hooks/useFiles'
 import { useI18n } from '../../i18n'
+import VirtualList from '../common/VirtualList'
+import { flattenTree, type FlatTreeNode } from '../../utils/flattenTree'
 
 interface TreeNode {
   name: string
@@ -16,7 +18,6 @@ interface FileEntry {
   isDirectory: boolean
 }
 
-// 文件类型图标和颜色映射
 function getFileIcon(name: string): { icon: string; color: string } {
   const ext = name.includes('.') ? name.split('.').pop()!.toLowerCase() : ''
   const map: Record<string, { icon: string; color: string }> = {
@@ -75,66 +76,56 @@ function buildTree(files: FileEntry[]): TreeNode[] {
   return root
 }
 
-function TreeNodeView({
-  node,
-  depth,
+function TreeRow({
+  item,
+  index,
+  style,
   expandedDirs,
   toggleDir,
   onEdit,
   onDelete,
 }: {
-  node: TreeNode
-  depth: number
+  item: FlatTreeNode
+  index: number
+  style: React.CSSProperties
   expandedDirs: Set<string>
   toggleDir: (path: string) => void
   onEdit: (path: string) => void
-  onDelete: (name: string) => void
+  onDelete: (path: string) => void
 }) {
   const { t } = useI18n()
-  const isExpanded = expandedDirs.has(node.path)
+  const { node, depth, isExpanded } = item
   const paddingLeft = 14 + depth * 22
 
   if (node.isDirectory) {
     return (
-      <div>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            padding: '4px 10px',
-            paddingLeft: `${paddingLeft}px`,
-            cursor: 'pointer',
-            userSelect: 'none',
-            borderRadius: '4px',
-          }}
-          className="tree-row"
-          onClick={() => toggleDir(node.path)}
-        >
-          <span style={{
-            fontSize: '10px', marginRight: '5px', color: '#9ca3af',
-            display: 'inline-block',
-            transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-            transition: 'transform 0.15s', width: '10px',
-          }}>▶</span>
-          <span style={{ fontSize: '15px', marginRight: '6px' }}>
-            {isExpanded ? '📂' : '📁'}
-          </span>
-          <span style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>{node.name}</span>
-          <span style={{ fontSize: '11px', color: '#9ca3af', marginLeft: '8px' }}>
-            {node.children.length}
-          </span>
-        </div>
-        {isExpanded && node.children.map(child => (
-          <TreeNodeView
-            key={child.path}
-            node={child}
-            depth={depth + 1}
-            expandedDirs={expandedDirs}
-            toggleDir={toggleDir}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        ))}
+      <div
+        style={{
+          ...style,
+          display: 'flex',
+          alignItems: 'center',
+          padding: '4px 10px',
+          paddingLeft: `${paddingLeft}px`,
+          cursor: 'pointer',
+          userSelect: 'none',
+          borderRadius: '4px',
+        }}
+        className="tree-row"
+        onClick={() => toggleDir(node.path)}
+      >
+        <span style={{
+          fontSize: '10px', marginRight: '5px', color: '#9ca3af',
+          display: 'inline-block',
+          transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+          transition: 'transform 0.15s', width: '10px',
+        }}>▶</span>
+        <span style={{ fontSize: '15px', marginRight: '6px' }}>
+          {isExpanded ? '📂' : '📁'}
+        </span>
+        <span style={{ fontSize: '13px', fontWeight: 500, color: '#1f2937' }}>{node.name}</span>
+        <span style={{ fontSize: '11px', color: '#9ca3af', marginLeft: '8px' }}>
+          {node.children.length}
+        </span>
       </div>
     )
   }
@@ -144,6 +135,7 @@ function TreeNodeView({
   return (
     <div
       style={{
+        ...style,
         display: 'flex',
         alignItems: 'center',
         padding: '4px 10px',
@@ -176,20 +168,15 @@ export default function FileExplorer() {
   const [fileEntries, setFileEntries] = useState<FileEntry[]>([])
   const [treeLoading, setTreeLoading] = useState(false)
 
-  // 加载完整文件树（含目录）
   const loadFileTree = useCallback(async () => {
     if (!state.projectPath) return
     setTreeLoading(true)
     try {
       const result = await window.electronAPI.listFiles(state.projectPath)
       if (result?.success && result.files) {
-        // 同时更新 managedFiles 供全局使用
         const fileNames = result.files.filter(f => !f.isDirectory).map(f => f.path)
         dispatch({ type: 'SET_MANAGED_FILES', payload: fileNames })
         setFileEntries(result.files)
-      }
-      if (result?.errors && result.errors.length > 0) {
-        console.warn('Some directories could not be read:', result.errors)
       }
     } catch (e) {
       console.error('Failed to load file tree:', e)
@@ -198,7 +185,6 @@ export default function FileExplorer() {
     }
   }, [state.projectPath, dispatch])
 
-  // Auto-load on mount
   useEffect(() => {
     if (state.projectPath) {
       loadFileTree()
@@ -218,7 +204,6 @@ export default function FileExplorer() {
     const fileName = filePath.split('/').pop() || filePath
     if (!confirm(t.fileExplorer.confirmDelete.replace('{name}', fileName))) return
     deleteFile(fileName)
-    // Refresh tree after delete
     setTimeout(loadFileTree, 300)
   }
 
@@ -228,6 +213,7 @@ export default function FileExplorer() {
   }
 
   const tree = buildTree(fileEntries)
+  const flatNodes = useMemo(() => flattenTree(tree, expandedDirs), [tree, expandedDirs])
 
   return (
     <div className="files-tab">
@@ -268,31 +254,36 @@ export default function FileExplorer() {
             placeholder={t.fileExplorer.contentPlaceholder}
           />
         </div>
+      ) : tree.length === 0 ? (
+        <div style={{
+          border: '1px solid #e5e7eb', borderRadius: '8px', background: '#fff',
+          padding: '20px', textAlign: 'center', color: '#9ca3af',
+        }}>
+          {t.fileExplorer.noFiles}
+        </div>
       ) : (
         <div style={{
-          border: '1px solid #e5e7eb',
-          borderRadius: '8px',
-          background: '#fff',
-          overflow: 'auto',
-          maxHeight: 'calc(100vh - 260px)',
+          border: '1px solid #e5e7eb', borderRadius: '8px', background: '#fff',
+          overflow: 'hidden', flex: 1, minHeight: 0,
         }}>
-          {tree.length === 0 ? (
-            <div style={{ padding: '20px', textAlign: 'center', color: '#9ca3af' }}>
-              {t.fileExplorer.noFiles}
-            </div>
-          ) : (
-            tree.map(node => (
-              <TreeNodeView
-                key={node.path}
-                node={node}
-                depth={0}
+          <VirtualList
+            items={flatNodes}
+            itemHeight={28}
+            height="calc(100vh - 260px)"
+            overscan={12}
+            itemKey={(index) => flatNodes[index].node.path}
+            renderItem={(item, index, style) => (
+              <TreeRow
+                item={item}
+                index={index}
+                style={style}
                 expandedDirs={expandedDirs}
                 toggleDir={toggleDir}
                 onEdit={handleEdit}
                 onDelete={handleDeleteFile}
               />
-            ))
-          )}
+            )}
+          />
         </div>
       )}
     </div>

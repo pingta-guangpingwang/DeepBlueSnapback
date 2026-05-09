@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useI18n } from '../../i18n'
 import { useAppState } from '../../context/AppContext'
 import { useVectorDB } from '../../hooks/useVectorDB'
+import VirtualList from '../common/VirtualList'
 import type { SupportedExtension, IngestFilesResult, VectorChunkInfo } from '../../types/electron'
 
 function formatSize(bytes: number): string {
@@ -506,30 +507,39 @@ export default function VectorPanel() {
                   </button>
                 </div>
               </div>
-              <div className="vector-files-list">
-                {filteredIndexedFiles.map(f => (
-                  <div
-                    key={f.filePath}
-                    className={`vector-file-item ${selectedFiles.has(f.filePath) ? 'selected' : ''}`}
-                    onClick={() => toggleFile(f.filePath)}
-                    onDoubleClick={(e) => { e.preventDefault(); handleFileDoubleClick(f.filePath) }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedFiles.has(f.filePath)}
-                      onChange={() => toggleFile(f.filePath)}
-                      onClick={e => e.stopPropagation()}
-                    />
-                    <span className="vector-file-path">{f.filePath}</span>
-                    <span className="vector-file-meta">
-                      <span className="vector-file-chunks">{f.chunkCount} chunks</span>
-                      <span className="vector-file-lang">{f.language}</span>
-                    </span>
-                  </div>
-                ))}
-                {filteredIndexedFiles.length === 0 && fileFilter.trim() !== '' && (
+              <div className="vector-files-list" style={{ maxHeight: '240px' }}>
+                {filteredIndexedFiles.length === 0 && fileFilter.trim() !== '' ? (
                   <div className="vector-no-results">No files match "{fileFilter}"</div>
-                )}
+                ) : filteredIndexedFiles.length > 0 ? (
+                  <VirtualList
+                    items={filteredIndexedFiles}
+                    itemHeight={36}
+                    height={240}
+                    overscan={6}
+                    itemKey={(index) => filteredIndexedFiles[index].filePath}
+                    renderItem={(f, _idx, style) => (
+                      <div
+                        key={f.filePath}
+                        className={`vector-file-item ${selectedFiles.has(f.filePath) ? 'selected' : ''}`}
+                        style={{ ...style, display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', boxSizing: 'border-box' }}
+                        onClick={() => toggleFile(f.filePath)}
+                        onDoubleClick={(e) => { e.preventDefault(); handleFileDoubleClick(f.filePath) }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedFiles.has(f.filePath)}
+                          onChange={() => toggleFile(f.filePath)}
+                          onClick={e => e.stopPropagation()}
+                        />
+                        <span className="vector-file-path">{f.filePath}</span>
+                        <span className="vector-file-meta">
+                          <span className="vector-file-chunks">{f.chunkCount} chunks</span>
+                          <span className="vector-file-lang">{f.language}</span>
+                        </span>
+                      </div>
+                    )}
+                  />
+                ) : null}
               </div>
             </div>
           )}
@@ -631,16 +641,23 @@ export default function VectorPanel() {
                     <span>{detailFile.chunks.reduce((s, c) => s + c.tokenCount, 0).toLocaleString()} tokens</span>
                     <span>{detailFile.chunks[0]?.language || 'unknown'}</span>
                   </div>
-                  <div className="vector-detail-chunks">
-                    {detailFile.chunks.map(chunk => (
-                      <div key={chunk.id} className="vector-detail-chunk">
-                        <div className="vector-detail-chunk-header">
-                          Lines {chunk.startLine}–{chunk.endLine}
-                          <span className="vector-detail-chunk-tokens">{chunk.tokenCount} tokens</span>
+                  <div className="vector-detail-chunks" style={{ maxHeight: 'calc(90vh - 120px)', minHeight: 0 }}>
+                    <VirtualList
+                      items={detailFile.chunks}
+                      itemHeight={100}
+                      height="calc(90vh - 120px)"
+                      overscan={5}
+                      itemKey={(index) => detailFile.chunks[index].id}
+                      renderItem={(chunk, _idx, style) => (
+                        <div key={chunk.id} className="vector-detail-chunk" style={{ ...style, boxSizing: 'border-box', padding: '6px 14px' }}>
+                          <div className="vector-detail-chunk-header">
+                            Lines {chunk.startLine}–{chunk.endLine}
+                            <span className="vector-detail-chunk-tokens">{chunk.tokenCount} tokens</span>
+                          </div>
+                          <pre className="vector-detail-chunk-content">{chunk.content.slice(0, 500)}{chunk.content.length > 500 ? '...' : ''}</pre>
                         </div>
-                        <pre className="vector-detail-chunk-content">{chunk.content.slice(0, 500)}{chunk.content.length > 500 ? '...' : ''}</pre>
-                      </div>
-                    ))}
+                      )}
+                    />
                   </div>
                 </>
               )}

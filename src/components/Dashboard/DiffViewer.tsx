@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useAppState } from '../../context/AppContext'
 import { computeLineDiff, getDiffStats, type DiffLine } from './DiffView'
 import { useI18n } from '../../i18n'
+import VirtualList from '../common/VirtualList'
 
 export default function DiffViewer() {
   const [state, dispatch] = useAppState()
@@ -108,75 +109,65 @@ export default function DiffViewer() {
         {error ? (
           <div style={{ padding: '40px', textAlign: 'center', color: '#dc2626' }}>{error}</div>
         ) : (
-          <div style={{ flex: 1, overflow: 'auto', background: '#fafbfc' }}>
-            <table style={{
-              width: '100%', borderCollapse: 'collapse',
-              fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-              fontSize: '13px', lineHeight: '1.6'
-            }}>
-              <tbody>
-                {diffLines.map((line, idx) => {
-                  let bg = 'transparent'
-                  let lineColor = '#374151'
-                  let prefix = ' '
-                  let gutterBg = '#fafbfc'
-                  let gutterColor = '#9ca3af'
+          <div style={{ flex: 1, background: '#fafbfc' }}>
+            <VirtualList
+              items={diffLines}
+              itemHeight={22}
+              height="100%"
+              width="100%"
+              overscan={10}
+              itemKey={(index) => index}
+              renderItem={(line, _idx, style) => {
+                let bg = 'transparent'
+                let lineColor = '#374151'
+                let prefix = ' '
+                let gutterBg = '#fafbfc'
+                let gutterColor = '#9ca3af'
 
-                  if (line.type === 'added') {
-                    bg = '#dcfce7'
-                    lineColor = '#166534'
-                    prefix = '+'
-                    gutterBg = '#bbf7d0'
-                    gutterColor = '#16a34a'
-                  } else if (line.type === 'removed') {
-                    bg = '#fee2e2'
-                    lineColor = '#991b1b'
-                    prefix = '-'
-                    gutterBg = '#fecaca'
-                    gutterColor = '#dc2626'
-                  }
+                if (line.type === 'added') {
+                  bg = '#dcfce7'
+                  lineColor = '#166534'
+                  prefix = '+'
+                  gutterBg = '#bbf7d0'
+                  gutterColor = '#16a34a'
+                } else if (line.type === 'removed') {
+                  bg = '#fee2e2'
+                  lineColor = '#991b1b'
+                  prefix = '-'
+                  gutterBg = '#fecaca'
+                  gutterColor = '#dc2626'
+                }
 
-                  return (
-                    <tr key={idx} style={{ background: bg }}>
-                      {/* Old line number */}
-                      <td style={{
-                        padding: '0 8px', textAlign: 'right', color: gutterColor,
-                        background: gutterBg, borderRight: '1px solid #e5e7eb',
-                        userSelect: 'none', minWidth: '40px', fontSize: '12px',
-                        verticalAlign: 'top', lineHeight: '1.6',
-                      }}>
-                        {line.oldLineNo ?? ''}
-                      </td>
-                      {/* New line number */}
-                      <td style={{
-                        padding: '0 8px', textAlign: 'right', color: gutterColor,
-                        background: gutterBg, borderRight: '1px solid #e5e7eb',
-                        userSelect: 'none', minWidth: '40px', fontSize: '12px',
-                        verticalAlign: 'top', lineHeight: '1.6',
-                      }}>
-                        {line.newLineNo ?? ''}
-                      </td>
-                      {/* Prefix */}
-                      <td style={{
-                        padding: '0 4px', textAlign: 'center', color: lineColor,
-                        userSelect: 'none', fontWeight: 700, fontSize: '13px',
-                        verticalAlign: 'top', lineHeight: '1.6',
-                      }}>
-                        {prefix}
-                      </td>
-                      {/* Content */}
-                      <td style={{
-                        padding: '0 8px', color: lineColor,
-                        whiteSpace: 'pre-wrap', wordBreak: 'break-all',
-                        lineHeight: '1.6',
-                      }}>
-                        {line.content || '\u00A0'}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                return (
+                  <div style={{
+                    ...style,
+                    display: 'flex',
+                    background: bg,
+                    fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                    fontSize: '13px', lineHeight: '22px',
+                  }}>
+                    <div style={{
+                      minWidth: '40px', textAlign: 'right', padding: '0 8px',
+                      color: gutterColor, background: gutterBg,
+                      borderRight: '1px solid #e5e7eb', userSelect: 'none', fontSize: '12px',
+                    }}>{line.oldLineNo ?? ''}</div>
+                    <div style={{
+                      minWidth: '40px', textAlign: 'right', padding: '0 8px',
+                      color: gutterColor, background: gutterBg,
+                      borderRight: '1px solid #e5e7eb', userSelect: 'none', fontSize: '12px',
+                    }}>{line.newLineNo ?? ''}</div>
+                    <div style={{
+                      padding: '0 4px', textAlign: 'center', color: lineColor,
+                      userSelect: 'none', fontWeight: 700, fontSize: '13px',
+                    }}>{prefix}</div>
+                    <div style={{
+                      flex: 1, padding: '0 8px', color: lineColor,
+                      whiteSpace: 'pre-wrap', wordBreak: 'break-all',
+                    }}>{line.content || '\u00A0'}</div>
+                  </div>
+                )
+              }}
+            />
           </div>
         )}
       </div>
