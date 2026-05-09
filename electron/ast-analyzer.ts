@@ -101,6 +101,7 @@ async function shouldSkipPath(filePath: string): Promise<boolean> {
   const base = path.basename(filePath)
 
   if (base.startsWith('.')) return true
+  if (base.startsWith('DBHT-')) return true
   if (SKIP_EXTENSIONS.has(ext)) return true
 
   // Check if file is readable text (skip binaries)

@@ -56,7 +56,16 @@ const BINARY_EXTENSIONS = new Set(['.pdf', '.docx'])
 const SUPPORTED_EXT_SET = new Set(SUPPORTED_INGEST_EXTENSIONS.map(e => e.extension))
 
 const SKIP_DIRS = new Set(['node_modules', '.git', '.dbvs', '__pycache__', 'dist', 'build',
-  '.next', '.nuxt', 'target', 'bin', 'obj', 'vendor', '.venv', 'venv', 'env', '.svn', '.hg'])
+  '.next', '.nuxt', 'target', 'bin', 'obj', 'vendor', '.venv', 'venv', 'env', '.svn', '.hg',
+  'graphs', 'vectors', '.vscode', '.idea'])
+
+// Files whose name starts with these prefixes are DBHT-internal and should be excluded
+function isInternalFile(baseName: string): boolean {
+  if (baseName.startsWith('DBHT-')) return true
+  if (baseName.startsWith('.dbvs-')) return true
+  if (baseName.startsWith('._')) return true
+  return false
+}
 
 export function isBinaryFormat(extension: string): boolean {
   return BINARY_EXTENSIONS.has(extension.toLowerCase())
@@ -74,6 +83,7 @@ export function findSupportedFiles(rootDir: string): string[] {
         if (stat.isDirectory()) {
           results.push(...findSupportedFiles(fullPath))
         } else if (stat.isFile() && stat.size < 5_000_000) {
+          if (isInternalFile(entry)) continue
           const ext = path.extname(entry).toLowerCase()
           if (SUPPORTED_EXT_SET.has(ext)) results.push(fullPath)
         }
