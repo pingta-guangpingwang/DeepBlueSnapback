@@ -194,9 +194,9 @@ program.command('get-root')
     }
 });
 // ==================== 项目管理（与 GUI 统一：使用 projects.json + repositories/）====================
-/** 读取 projects.json 注册表 */
+/** 读取 projects.json 注册表（与 GUI 统一路径：config/projects.json） */
 async function readProjectRegistry(rootPath) {
-    const registryPath = path.join(rootPath, 'projects.json');
+    const registryPath = path.join(rootPath, 'config', 'projects.json');
     if (!(await fs.pathExists(registryPath)))
         return [];
     try {
@@ -206,9 +206,11 @@ async function readProjectRegistry(rootPath) {
         return [];
     }
 }
-/** 写入 projects.json 注册表 */
+/** 写入 projects.json 注册表（与 GUI 统一路径：config/projects.json） */
 async function writeProjectRegistry(rootPath, registry) {
-    await fs.writeJson(path.join(rootPath, 'projects.json'), registry, { spaces: 2 });
+    const registryPath = path.join(rootPath, 'config', 'projects.json');
+    await fs.ensureDir(path.dirname(registryPath));
+    await fs.writeJson(registryPath, registry, { spaces: 2 });
 }
 program.command('list-projects')
     .description('列出所有项目')
@@ -1050,7 +1052,7 @@ program.command('unregister <projectPath>')
     try {
         const rootPath = getRootPath(program.opts());
         const normalized = path.resolve(projectPath);
-        const registryPath = path.join(rootPath, 'projects.json');
+        const registryPath = path.join(rootPath, 'config', 'projects.json');
         if (!(await fs.pathExists(registryPath))) {
             out({ success: false, message: '项目注册表不存在' }, fmt);
             process.exit(1);

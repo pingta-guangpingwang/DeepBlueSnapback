@@ -21,7 +21,10 @@ function getInitialLocale(): Locale {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved === 'zh' || saved === 'en') return saved
   } catch { /* ignore */ }
-  return 'zh'
+  // Persist default so the mandatory language picker only shows once
+  const dfl: Locale = 'zh'
+  try { localStorage.setItem(STORAGE_KEY, dfl) } catch { /* ignore */ }
+  return dfl
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
