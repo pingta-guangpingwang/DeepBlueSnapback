@@ -248,36 +248,94 @@ program.command('import-project <src>')
       const name = path.basename(path.resolve(src))
       const normalizedPath = path.resolve(src)
       const repoPath = path.resolve(path.join(rootPath, 'repositories', name))
+
+      // 1. 检查是否已经是工作副本
+      const linkPath = path.join(normalizedPath, '.dbvs-link.json')
+      if (await fs.pathExists(linkPath)) {
+        try {
+          const link = await fs.readJson(linkPath)
+          const registry = await readProjectRegistry(rootPath)
+          const entry = registry.find((e: any) => path.resolve(e.repoPath) === path.resolve(link.repoPath))
+          const history = await repo.getHistoryStructured(link.repoPath)
+          const lastCommit = history.success && history.commits?.length > 0 ? history.commits[0] : null
+          out({
+            success: false,
+            message: `该项目已是 DBHT 工作副本，无需重复导入`,
+            projectName: entry?.name || name,
+            repoPath: link.repoPath,
+            workingCopyPath: normalizedPath,
+            totalCommits: history.success ? history.commits?.length || 0 : 0,
+            lastCommit: lastCommit ? {
+              id: lastCommit.id,
+              message: lastCommit.message,
+              timestamp: lastCommit.timestamp,
+            } : null,
+          }, fmt)
+          process.exit(1)
+          return
+        } catch { /* link file corrupted, continue with import */ }
+      }
+
+      // 2. 检查是否已在注册表中
+      const registry = await readProjectRegistry(rootPath)
+      const existing = registry.find((e: any) => path.resolve(e.repoPath) === repoPath)
+      if (existing) {
+        const history = await repo.getHistoryStructured(repoPath)
+        const lastCommit = history.success && history.commits?.length > 0 ? history.commits[0] : null
+        out({
+          success: false,
+          message: `项目 "${existing.name}" 已存在，无需重复导入`,
+          projectName: existing.name,
+          repoPath,
+          workingCopies: existing.workingCopies,
+          totalCommits: history.success ? history.commits?.length || 0 : 0,
+          lastCommit: lastCommit ? {
+            id: lastCommit.id,
+            message: lastCommit.message,
+            timestamp: lastCommit.timestamp,
+          } : null,
+        }, fmt)
+        process.exit(1)
+        return
+      }
+
+      // 3. 检查仓库是否已存在（外部 AI 初始化的情况）
+      const repoExists = await fs.pathExists(path.join(repoPath, 'config.json'))
+      const isNewRepo = !repoExists
+
       await fs.ensureDir(path.join(rootPath, 'repositories'))
 
       // 创建集中仓库
-      if (!(await fs.pathExists(path.join(repoPath, 'config.json')))) {
+      if (!repoExists) {
         await repo.createRepository(repoPath, name)
       }
 
       // 链接工作副本
       await repo.initWorkingCopy(repoPath, normalizedPath)
 
-      // 初始提交
-      const treeResult = await repo.getFileTree(normalizedPath)
-      if (treeResult.success && treeResult.files && treeResult.files.length > 0) {
-        const filePaths = treeResult.files.map((f: any) => f.path)
-        await repo.commit(repoPath, normalizedPath, '初始导入', filePaths)
+      // 仅在新仓库时做初始提交
+      if (isNewRepo) {
+        const treeResult = await repo.getFileTree(normalizedPath)
+        if (treeResult.success && treeResult.files && treeResult.files.length > 0) {
+          const filePaths = treeResult.files.map((f: any) => f.path)
+          await repo.commit(repoPath, normalizedPath, '初始导入', filePaths)
+        }
       }
 
       // 注册到 projects.json
-      const registry = await readProjectRegistry(rootPath)
-      const existing = registry.find((e: any) => path.resolve(e.repoPath) === repoPath)
-      if (existing) {
-        if (!existing.workingCopies.some((wc: any) => path.resolve(wc.path) === normalizedPath)) {
-          existing.workingCopies.push({ path: normalizedPath })
-        }
-      } else {
+      if (!existing) {
         registry.push({ name, repoPath, workingCopies: [{ path: normalizedPath }], created: new Date().toISOString() })
       }
       await writeProjectRegistry(rootPath, registry)
 
-      out({ success: true, message: `项目 "${name}" 已导入`, repoPath, workingCopyPath: normalizedPath }, fmt)
+      const history = await repo.getHistoryStructured(repoPath)
+      out({
+        success: true,
+        message: isNewRepo ? `项目 "${name}" 已导入` : `项目 "${name}" 已关联到已有仓库`,
+        repoPath,
+        workingCopyPath: normalizedPath,
+        totalCommits: history.success ? history.commits?.length || 0 : 0,
+      }, fmt)
     } catch (error) {
       out({ success: false, message: String(error) }, fmt)
       process.exit(1)
