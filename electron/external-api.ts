@@ -128,6 +128,12 @@ function readRegistry(rootPath: string): ProjectRegistryEntry[] {
   return entries
 }
 
+function writeRegistry(rootPath: string, entries: ProjectRegistryEntry[]): void {
+  const registryPath = path.join(rootPath, 'config', 'projects.json')
+  fs.mkdirSync(path.dirname(registryPath), { recursive: true })
+  fs.writeFileSync(registryPath, JSON.stringify(entries, null, 2), 'utf-8')
+}
+
 export async function startExternalApi(rootPath: string): Promise<{
   success: boolean; message: string; port?: number; address?: string
 }> {
@@ -563,8 +569,27 @@ export async function startExternalApi(rootPath: string): Promise<{
       const params = req.body || {}
 
       // Helper: resolve projectPath → { repoPath, workingCopyPath }
+      // .dbvs-link.json is authoritative — always check it first
       const resolveProject = async (projectPath?: string) => {
         if (!projectPath) return null
+        // 1) Check .dbvs-link.json first (ground truth for repo binding)
+        try {
+          const linkPath = path.join(projectPath, '.dbvs-link.json')
+          if (fs.existsSync(linkPath)) {
+            const link = JSON.parse(fs.readFileSync(linkPath, 'utf-8'))
+            const repoPath = link.repoPath
+            // If registry has a stale entry, auto-heal it
+            const reg = readRegistry(rootPath)
+            const stale = reg.find((e: { repoPath: string; workingCopies?: Array<{ path: string }> }) =>
+              e.repoPath !== repoPath && e.workingCopies?.some(wc => wc.path === projectPath))
+            if (stale) {
+              stale.repoPath = repoPath
+              try { writeRegistry(rootPath, reg) } catch { /* ignore */ }
+            }
+            return { repoPath, workingCopyPath: projectPath }
+          }
+        } catch { /* ignore */ }
+        // 2) Fallback: check registry
         const registry2 = readRegistry(rootPath)
         for (const entry of registry2) {
           const wc = entry.workingCopies?.[0]
@@ -572,14 +597,6 @@ export async function startExternalApi(rootPath: string): Promise<{
             return { repoPath: entry.repoPath, workingCopyPath: wc?.path || entry.repoPath }
           }
         }
-        // Fallback: check if projectPath is a working copy with .dbvs-link.json
-        try {
-          const linkPath = path.join(projectPath, '.dbvs-link.json')
-          if (fs.existsSync(linkPath)) {
-            const link = JSON.parse(fs.readFileSync(linkPath, 'utf-8'))
-            return { repoPath: link.repoPath, workingCopyPath: projectPath }
-          }
-        } catch { /* ignore */ }
         return null
       }
 

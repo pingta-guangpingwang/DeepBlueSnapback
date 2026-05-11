@@ -160,8 +160,19 @@ class DBHTRepository {
         try {
             await fs.ensureDir(workingCopyPath);
             const linkPath = path.join(workingCopyPath, '.dbvs-link.json');
+            const resolvedRepo = path.resolve(repoPath);
+            // Guard: don't silently rebind an existing working copy to a different repo
+            if (await fs.pathExists(linkPath)) {
+                const existing = await fs.readJson(linkPath);
+                if (path.resolve(existing.repoPath) !== resolvedRepo) {
+                    return {
+                        success: false,
+                        message: `工作副本已绑定到仓库 ${existing.repoPath}，不能重新绑定到 ${resolvedRepo}。请先手动删除 .dbvs-link.json 后再操作。`
+                    };
+                }
+            }
             const link = {
-                repoPath: path.resolve(repoPath),
+                repoPath: resolvedRepo,
                 checkedOutVersion: version || null
             };
             await fs.writeJson(linkPath, link, { spaces: 2 });
@@ -176,15 +187,15 @@ class DBHTRepository {
      * 可能是直接传了 repoPath，也可能是传了工作副本路径
      */
     async resolvePaths(inputPath) {
-        // 检查是否本身就是仓库路径（有 config.json + HEAD.json）
-        if (await fs.pathExists(path.join(inputPath, 'config.json')) &&
-            await fs.pathExists(path.join(inputPath, 'HEAD.json'))) {
-            return { repoPath: inputPath, workingCopyPath: inputPath };
-        }
-        // 检查是否是工作副本（有 .dbvs-link.json）
+        // .dbvs-link.json is authoritative — always check it first
         const link = await this.readWorkingCopyLink(inputPath);
         if (link) {
             return { repoPath: link.repoPath, workingCopyPath: inputPath };
+        }
+        // Fallback: inputPath itself is a repository
+        if (await fs.pathExists(path.join(inputPath, 'config.json')) &&
+            await fs.pathExists(path.join(inputPath, 'HEAD.json'))) {
+            return { repoPath: inputPath, workingCopyPath: inputPath };
         }
         return null;
     }
